@@ -1,0 +1,12 @@
+[package]
+name = "rustytime"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+axum = "0.8.4"
+diesel = "2.2.12"
+tokio = { version = "1.46.1", features = ["full"] }
+tower-http = { version = "0.6.6", features = ["trace", "request-id"] }
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
