@@ -1,5 +1,9 @@
+mod db;
 mod handlers;
+mod models;
 mod routes;
+mod schema;
+mod utils;
 
 use axum::http::{Request, Response};
 use axum::{Router, routing::get};
@@ -9,6 +13,7 @@ use tracing::{error, info};
 use tracing_subscriber::EnvFilter;
 
 use routes::create_api_router;
+use db::create_pool;
 
 #[tokio::main]
 async fn main() {
@@ -20,10 +25,15 @@ async fn main() {
 
     info!("🚀 Starting the rustytime server...");
 
+    // create database connection pool
+    let pool = create_pool();
+    info!("✅ Database connection pool created");
+
     // main app router
     let app = Router::new()
         .route("/", get(|| async { "Server is up" }))
-        .nest("/api", create_api_router())
+        .nest("/api/v1", create_api_router())
+        .with_state(pool)
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(|request: &Request<axum::body::Body>| {

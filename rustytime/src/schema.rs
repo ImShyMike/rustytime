@@ -1,0 +1,46 @@
+// @generated automatically by Diesel CLI.
+
+diesel::table! {
+    heartbeats (user_id, created_at) {
+        id -> Int4,
+        created_at -> Timestamptz,
+        user_id -> Int4,
+        entity -> Text,
+        #[sql_name = "type"]
+        type_ -> Text,
+        ip_address -> Inet,
+        project -> Nullable<Text>,
+        branch -> Nullable<Text>,
+        language -> Nullable<Text>,
+        category -> Nullable<Text>,
+        is_write -> Nullable<Bool>,
+        editor -> Nullable<Text>,
+        operating_system -> Nullable<Text>,
+        machine -> Nullable<Text>,
+        lines -> Nullable<Int4>,
+        project_root_count -> Nullable<Int4>,
+        dependencies -> Nullable<Array<Nullable<Text>>>,
+        line_additions -> Nullable<Int4>,
+        line_deletions -> Nullable<Int4>,
+        lineno -> Nullable<Int4>,
+        cursorpos -> Nullable<Int4>,
+    }
+}
+
+diesel::table! {
+    users (id) {
+        id -> Int4,
+        email -> Nullable<Text>,
+        name -> Nullable<Text>,
+        avatar_url -> Nullable<Text>,
+        created_at -> Timestamptz,
+        api_key -> Uuid,
+    }
+}
+
+diesel::joinable!(heartbeats -> users (user_id));
+
+diesel::allow_tables_to_appear_in_same_query!(
+    heartbeats,
+    users,
+);
