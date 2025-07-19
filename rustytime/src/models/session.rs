@@ -59,7 +59,7 @@ impl Session {
         access_token: &str,
         gh_user_id: i64,
     ) -> QueryResult<Session> {
-        // check if a session already exists for this GitHub user
+        // check if a session already exists for this user
         if let Some(existing_session) = Self::find_by_github_user_id(conn, gh_user_id)? {
             // update the existing session with new access token
             diesel::update(sessions::table.find(existing_session.id))

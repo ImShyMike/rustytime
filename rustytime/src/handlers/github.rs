@@ -1,7 +1,7 @@
 use axum::{
     extract::{Query, State},
     http::StatusCode,
-    response::{Html, Redirect},
+    response::Redirect,
 };
 use diesel::prelude::*;
 use oauth2::{
@@ -44,7 +44,7 @@ pub fn create_github_client()
 
     let redirect_url = RedirectUrl::new(
         env::var("REDIRECT_URL")
-            .unwrap_or_else(|_| "http://localhost:3000/api/v1/auth/github/callback".to_string()),
+            .unwrap_or_else(|_| "http://localhost:3000/auth/github/callback".to_string()),
     )
     .expect("Invalid redirect URL");
 
@@ -69,7 +69,7 @@ pub async fn callback(
     State(app_state): State<AppState>,
     cookies: Cookies,
     Query(params): Query<AuthRequest>,
-) -> Result<Html<String>, StatusCode> {
+) -> Result<Redirect, StatusCode> {
     let code = AuthorizationCode::new(params.code);
 
     let http_client = reqwest::Client::new();
@@ -122,49 +122,7 @@ pub async fn callback(
     let session_cookie = SessionManager::create_session_cookie(session.id);
     cookies.add(session_cookie);
 
-    Ok(Html(format!(
-        r#"
-        <html>
-            <head>
-                <title>Welcome to rustytime</title>
-                <style>
-                    body {{ font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }}
-                    .user-info {{ background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; }}
-                    .avatar {{ border-radius: 50%; }}
-                    .api-key {{ background: #e8f4f8; padding: 10px; border-radius: 4px; font-family: monospace; }}
-                    .success {{ color: #28a745; }}
-                    .logout {{ margin-top: 20px; }}
-                </style>
-            </head>
-            <body>
-                <h1 class="success">✅ Welcome to rustytime, {}!</h1>
-                
-                <div class="user-info">
-                    <img src="{}" alt="Avatar" width="100" height="100" class="avatar">
-                    <h3>User Information</h3>
-                    <p><strong>GitHub Username:</strong> {}</p>
-                    <p><strong>GitHub ID:</strong> {}</p>
-                    <p><strong>Profile:</strong> <a href="{}" target="_blank">{}</a></p>
-                    <p><strong>Account Created:</strong> {}</p>
-                </div>
-
-                <div class="api-key">
-                    <h3>Your API Key</h3>
-                    <p><strong>API Key:</strong> {}</p>
-                    <p><small>Use this key to authenticate with the API</small></p>
-                </div>
-            </body>
-        </html>
-        "#,
-        user_info.login,
-        user_info.avatar_url,
-        user_info.login,
-        user_info.id,
-        user_info.html_url,
-        user_info.html_url,
-        user.created_at.format("%Y-%m-%d %H:%M:%S UTC"),
-        user.api_key
-    )))
+    Ok(axum::response::Redirect::to("/dashboard"))
 }
 
 pub async fn logout(
@@ -194,79 +152,6 @@ pub async fn logout(
     cookies.add(remove_cookie);
 
     Ok(Redirect::to("/"))
-}
-
-pub async fn dashboard(
-    State(app_state): State<AppState>,
-    cookies: Cookies,
-) -> Result<Html<String>, StatusCode> {
-    // get current user from session
-    let user = SessionManager::get_current_user(&cookies, &app_state.db_pool)
-        .await
-        .map_err(|err| {
-            eprintln!("Database error: {}", err);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?
-        .ok_or(StatusCode::UNAUTHORIZED)?;
-
-    // get user's session info
-    let session_id =
-        SessionManager::get_session_from_cookies(&cookies).ok_or(StatusCode::UNAUTHORIZED)?;
-
-    let session_data = SessionManager::validate_session(&app_state.db_pool, session_id)
-        .await
-        .map_err(|err| {
-            eprintln!("Session validation error: {}", err);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?
-        .ok_or(StatusCode::UNAUTHORIZED)?;
-
-    Ok(Html(format!(
-        r#"
-        <html>
-            <head>
-                <title>rustytime Dashboard</title>
-                <style>
-                    body {{ font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }}
-                    .user-info {{ background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; }}
-                    .avatar {{ border-radius: 50%; }}
-                    .api-key {{ background: #e8f4f8; padding: 10px; border-radius: 4px; font-family: monospace; }}
-                    .success {{ color: #28a745; }}
-                    .logout {{ margin-top: 20px; }}
-                    .logout a {{ background: #dc3545; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; }}
-                </style>
-            </head>
-            <body>
-                <h1 class="success">🎯 rustytime Dashboard</h1>
-                
-                <div class="user-info">
-                    <img src="{}" alt="Avatar" width="100" height="100" class="avatar">
-                    <h3>User Information</h3>
-                    <p><strong>Name:</strong> {}</p>
-                    <p><strong>GitHub ID:</strong> {}</p>
-                    <p><strong>Account Created:</strong> {}</p>
-                    <p><strong>Session Expires:</strong> {}</p>
-                </div>
-
-                <div class="api-key">
-                    <h3>Your API Key</h3>
-                    <p><strong>API Key:</strong> {}</p>
-                    <p><small>Use this key to authenticate with the API</small></p>
-                </div>
-
-                <div class="logout">
-                    <a href="/api/v1/auth/github/logout">Logout</a>
-                </div>
-            </body>
-        </html>
-        "#,
-        user.avatar_url.as_deref().unwrap_or(""),
-        user.name.as_deref().unwrap_or("Unknown"),
-        session_data.github_user_id,
-        user.created_at.format("%Y-%m-%d %H:%M:%S UTC"),
-        session_data.expires_at.format("%Y-%m-%d %H:%M:%S UTC"),
-        user.api_key
-    )))
 }
 
 async fn fetch_github_user(token: &str) -> Result<GitHubUser, reqwest::Error> {

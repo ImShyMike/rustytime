@@ -7,7 +7,7 @@ mod state;
 mod utils;
 
 use axum::http::{Request, Response};
-use axum::{Router, routing::get};
+use axum::{Router, routing::get, middleware};
 use std::net::SocketAddr;
 use tower_cookies::CookieManagerLayer;
 use tower_http::trace::TraceLayer;
@@ -15,7 +15,7 @@ use tracing::{error, info};
 use tracing_subscriber::EnvFilter;
 
 use db::create_pool;
-use routes::create_api_router;
+use routes::{create_api_router, github};
 use state::AppState;
 
 #[tokio::main]
@@ -42,6 +42,11 @@ async fn main() {
     // create application state
     let app_state = AppState::new(pool, github_client);
 
+    // create protected routes router with auth middleware
+    let protected_routes = Router::new()
+        .route("/dashboard", get(handlers::dashboard::dashboard))
+        .layer(middleware::from_fn_with_state(app_state.clone(), utils::middleware::require_auth));
+
     // main app router
     let app = Router::new()
         .route("/", get(|| async { 
@@ -50,14 +55,15 @@ async fn main() {
                     <body>
                         <h1>RustyTime OAuth2 Demo</h1>
                         <p>This is a demo application showing GitHub OAuth2 integration with Rust and Axum.</p>
-                        <a href="/api/v1/auth/github/login">Login with GitHub</a>
+                        <a href="/auth/github/login">Login with GitHub</a>
                         <br><br>
                         <a href="/dashboard">Go to Dashboard</a> (requires authentication)
                     </body>
                 </html>
             "#)
         }))
-        .route("/dashboard", get(handlers::github::dashboard))
+        .merge(protected_routes)
+        .nest("/auth", github::github_routes())
         .nest("/api/v1", create_api_router())
         .with_state(app_state)
         .layer(CookieManagerLayer::new())

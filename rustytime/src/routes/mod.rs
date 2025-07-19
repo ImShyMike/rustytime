@@ -11,5 +11,4 @@ pub fn create_api_router() -> Router<AppState> {
             get(|| async { axum::response::Redirect::permanent("/") }),
         )
         .nest("/users", user::user_routes())
-        .nest("/auth", github::github_routes())
 }
