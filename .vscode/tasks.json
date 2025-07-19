@@ -1,0 +1,15 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run RustyTime Server",
+			"type": "shell",
+			"command": "cargo run",
+			"group": "build",
+			"isBackground": true,
+			"problemMatcher": [
+				"$rustc"
+			]
+		}
+	]
+}

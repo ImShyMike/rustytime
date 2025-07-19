@@ -28,19 +28,29 @@ diesel::table! {
 }
 
 diesel::table! {
+    sessions (id) {
+        id -> Uuid,
+        user_id -> Int4,
+        github_access_token -> Text,
+        github_user_id -> Int8,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+        expires_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     users (id) {
         id -> Int4,
-        email -> Nullable<Text>,
         name -> Nullable<Text>,
         avatar_url -> Nullable<Text>,
         created_at -> Timestamptz,
         api_key -> Uuid,
+        github_id -> Text,
     }
 }
 
 diesel::joinable!(heartbeats -> users (user_id));
+diesel::joinable!(sessions -> users (user_id));
 
-diesel::allow_tables_to_appear_in_same_query!(
-    heartbeats,
-    users,
-);
+diesel::allow_tables_to_appear_in_same_query!(heartbeats, sessions, users,);

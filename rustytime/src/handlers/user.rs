@@ -7,8 +7,9 @@ use serde_json::json;
 use std::net::SocketAddr;
 
 use crate::db::DbPool;
-use crate::models::*;
+use crate::models::heartbeat::*;
 use crate::schema::heartbeats;
+use crate::state::AppState;
 use crate::utils::auth::{get_user_id_from_api_key, get_valid_api_key};
 
 #[derive(diesel::QueryableByName)]
@@ -56,12 +57,16 @@ async fn process_heartbeat_request(
             ip_network,
         );
 
-        match store_heartbeat_in_db(pool, new_heartbeat).await {
-            Ok(heartbeat) => {
-                let response = HeartbeatApiResponse {
-                    data: heartbeat.into(),
-                };
-                Ok(Json(HeartbeatApiResponseVariant::Single(response)))
+        match store_heartbeats_in_db(pool, vec![new_heartbeat]).await {
+            Ok(mut heartbeats) => {
+                if let Some(heartbeat) = heartbeats.pop() {
+                    let response = HeartbeatApiResponse {
+                        data: heartbeat.into(),
+                    };
+                    Ok(Json(HeartbeatApiResponseVariant::Single(response)))
+                } else {
+                    Err(StatusCode::INTERNAL_SERVER_ERROR)
+                }
             }
             Err(e) => {
                 eprintln!("❌ Error inserting heartbeat: {}", e);
@@ -95,18 +100,18 @@ async fn process_heartbeat_request(
 }
 
 pub async fn create_heartbeats(
-    State(pool): State<DbPool>,
+    State(app_state): State<AppState>,
     Path(id): Path<String>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     headers: axum::http::HeaderMap,
     uri: axum::http::Uri,
     Json(heartbeat_input): Json<HeartbeatInput>,
 ) -> Result<Json<HeartbeatApiResponseVariant>, StatusCode> {
-    process_heartbeat_request(&pool, id, addr, headers, uri, heartbeat_input).await
+    process_heartbeat_request(&app_state.db_pool, id, addr, headers, uri, heartbeat_input).await
 }
 
 pub async fn get_statusbar_today(
-    State(pool): State<DbPool>,
+    State(app_state): State<AppState>,
     Path(id): Path<String>,
     headers: axum::http::HeaderMap,
     uri: axum::http::Uri,
@@ -124,16 +129,16 @@ pub async fn get_statusbar_today(
             None => return Err(StatusCode::UNAUTHORIZED),
         };
 
-        let user_result = get_user_id_from_api_key(&pool, &api_key).await;
+        let user_result = get_user_id_from_api_key(&app_state.db_pool, &api_key).await;
         match user_result {
             Some(id) => user_id = id,
             None => return Err(StatusCode::UNAUTHORIZED),
         };
     }
 
-    match get_today_heartbeats(&pool, user_id).await {
+    match get_today_heartbeats(&app_state.db_pool, user_id).await {
         Ok(_heartbeats) => {
-            let total_seconds = calculate_duration_seconds(&pool, user_id)
+            let total_seconds = calculate_duration_seconds(&app_state.db_pool, user_id)
                 .await
                 .unwrap_or(0);
             let hours = total_seconds / 3600;
@@ -161,31 +166,6 @@ pub async fn get_statusbar_today(
         }
         Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
     }
-}
-
-async fn store_heartbeat_in_db(
-    pool: &DbPool,
-    new_heartbeat: NewHeartbeat,
-) -> Result<Heartbeat, diesel::result::Error> {
-    let pool = pool.clone();
-    tokio::task::spawn_blocking(move || {
-        let mut connection = pool.get().expect("Failed to get DB connection from pool");
-
-        match diesel::insert_into(heartbeats::table)
-            .values(&new_heartbeat)
-            .on_conflict_do_nothing()
-            .get_result(&mut connection)
-        {
-            Ok(heartbeat) => Ok(heartbeat),
-            Err(diesel::result::Error::NotFound) => heartbeats::table
-                .filter(heartbeats::user_id.eq(new_heartbeat.user_id))
-                .filter(heartbeats::created_at.eq(new_heartbeat.created_at))
-                .first(&mut connection),
-            Err(e) => Err(e),
-        }
-    })
-    .await
-    .unwrap()
 }
 
 async fn store_heartbeats_in_db(

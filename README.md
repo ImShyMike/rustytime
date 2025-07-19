@@ -1,2 +1,3 @@
 # rustytime
- 🕒 blazingly fast time tracking for developers
+
+🕒 blazingly fast time tracking for developers

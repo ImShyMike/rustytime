@@ -3,20 +3,26 @@ mod handlers;
 mod models;
 mod routes;
 mod schema;
+mod state;
 mod utils;
 
 use axum::http::{Request, Response};
 use axum::{Router, routing::get};
 use std::net::SocketAddr;
+use tower_cookies::CookieManagerLayer;
 use tower_http::trace::TraceLayer;
 use tracing::{error, info};
 use tracing_subscriber::EnvFilter;
 
-use routes::create_api_router;
 use db::create_pool;
+use routes::create_api_router;
+use state::AppState;
 
 #[tokio::main]
 async fn main() {
+    // load environment variables from .env file
+    dotenvy::dotenv().ok();
+
     // logging stuff
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env())
@@ -29,11 +35,32 @@ async fn main() {
     let pool = create_pool();
     info!("✅ Database connection pool created");
 
+    // create GitHub OAuth client
+    let github_client = handlers::github::create_github_client();
+    info!("✅ GitHub OAuth client created");
+
+    // create application state
+    let app_state = AppState::new(pool, github_client);
+
     // main app router
     let app = Router::new()
-        .route("/", get(|| async { "Server is up" }))
+        .route("/", get(|| async { 
+            axum::response::Html(r#"
+                <html>
+                    <body>
+                        <h1>RustyTime OAuth2 Demo</h1>
+                        <p>This is a demo application showing GitHub OAuth2 integration with Rust and Axum.</p>
+                        <a href="/api/v1/auth/github/login">Login with GitHub</a>
+                        <br><br>
+                        <a href="/dashboard">Go to Dashboard</a> (requires authentication)
+                    </body>
+                </html>
+            "#)
+        }))
+        .route("/dashboard", get(handlers::github::dashboard))
         .nest("/api/v1", create_api_router())
-        .with_state(pool)
+        .with_state(app_state)
+        .layer(CookieManagerLayer::new())
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(|request: &Request<axum::body::Body>| {
