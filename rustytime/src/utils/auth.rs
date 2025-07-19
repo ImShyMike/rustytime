@@ -11,13 +11,10 @@ async fn get_api_key_from_header(headers: &axum::http::HeaderMap) -> Option<Stri
     if let Some(auth_header) = headers.get("Authorization") {
         if let Ok(auth_str) = auth_header.to_str() {
             // check if it starts with "Bearer" or "Basic"
-            if auth_str.starts_with("Bearer ") {
-                // extract the API key
-                let api_key = &auth_str[7..];
+            if let Some(api_key) = auth_str.strip_prefix("Bearer ") {
                 return Some(api_key.to_string());
-            } else if auth_str.starts_with("Basic ") {
+            } else if let Some(base64_key) = auth_str.strip_prefix("Basic ") {
                 // decode base64
-                let base64_key = &auth_str[6..];
                 if let Ok(decoded) = BASE64_STANDARD.decode(base64_key) {
                     if let Ok(api_key) = String::from_utf8(decoded) {
                         return Some(api_key);
@@ -35,7 +32,7 @@ async fn get_api_key_from_query(query: &axum::http::Uri) -> Option<String> {
         api_key: Option<String>,
     }
 
-    if let Ok(params) = Query::<QueryParams>::try_from_uri(&query) {
+    if let Ok(params) = Query::<QueryParams>::try_from_uri(query) {
         return params.0.api_key;
     }
     None
@@ -45,10 +42,10 @@ async fn validate_api_key(api_key: &str) -> bool {
     if api_key.len() != 36 {
         return false; // invalid length
     }
-    if let Ok(_) = uuid::Uuid::parse_str(api_key) {
-        return true;
+    if uuid::Uuid::parse_str(api_key).is_ok() {
+        true
     } else {
-        return false; // invalid UUID format
+        false // invalid UUID format
     }
 }
 

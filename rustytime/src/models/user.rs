@@ -13,7 +13,7 @@ pub struct User {
     pub avatar_url: Option<String>,
     pub created_at: DateTime<Utc>,
     pub api_key: Uuid,
-    pub github_id: String,
+    pub github_id: i32,
 }
 
 #[derive(Insertable, Deserialize, Debug)]
@@ -21,14 +21,11 @@ pub struct User {
 pub struct NewUser {
     pub name: Option<String>,
     pub avatar_url: Option<String>,
-    pub github_id: String,
+    pub github_id: i32,
 }
 
 impl User {
-    pub fn find_by_github_id(
-        conn: &mut PgConnection,
-        github_id: &str,
-    ) -> QueryResult<Option<User>> {
+    pub fn find_by_github_id(conn: &mut PgConnection, github_id: i32) -> QueryResult<Option<User>> {
         users::table
             .filter(users::github_id.eq(github_id))
             .first::<User>(conn)
@@ -43,7 +40,7 @@ impl User {
 
     pub fn create_or_update(
         conn: &mut PgConnection,
-        github_id: &str,
+        github_id: i32,
         username: &str,
         avatar_url: &str,
     ) -> QueryResult<User> {
@@ -62,7 +59,7 @@ impl User {
         } else {
             // create new user
             let new_user = NewUser {
-                github_id: github_id.to_string(),
+                github_id,
                 name: Some(username.to_string()),
                 avatar_url: Some(avatar_url.to_string()),
             };

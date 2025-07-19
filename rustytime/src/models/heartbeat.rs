@@ -8,14 +8,14 @@ use crate::schema::heartbeats;
 #[derive(Deserialize, Debug)]
 #[serde(untagged)]
 pub enum HeartbeatInput {
-    Single(HeartbeatRequest),
+    Single(Box<HeartbeatRequest>),
     Multiple(Vec<HeartbeatRequest>),
 }
 
 impl HeartbeatInput {
     pub fn into_vec(self) -> Vec<HeartbeatRequest> {
         match self {
-            HeartbeatInput::Single(heartbeat) => vec![heartbeat],
+            HeartbeatInput::Single(heartbeat) => vec![*heartbeat],
             HeartbeatInput::Multiple(heartbeats) => heartbeats,
         }
     }
@@ -85,6 +85,7 @@ pub struct Heartbeat {
     pub editor: Option<String>,
     pub operating_system: Option<String>,
     pub machine: Option<String>,
+    pub user_agent: String,
     pub lines: Option<i32>,
     pub project_root_count: Option<i32>,
     pub dependencies: Option<Vec<Option<String>>>,
@@ -110,6 +111,7 @@ pub struct NewHeartbeat {
     pub editor: Option<String>,
     pub operating_system: Option<String>,
     pub machine: Option<String>,
+    pub user_agent: String,
     pub lines: Option<i32>,
     pub project_root_count: Option<i32>,
     pub dependencies: Option<Vec<Option<String>>>,
@@ -141,6 +143,7 @@ impl NewHeartbeat {
             editor: None,
             operating_system: None,
             machine: None,
+            user_agent: String::new(),
             lines: None,
             project_root_count: None,
             dependencies: None,
@@ -156,12 +159,23 @@ impl NewHeartbeat {
             request.time as i64,
             (request.time.fract() * 1_000_000_000.0) as u32,
         )
-        .unwrap_or_else(|| Utc::now());
+        .unwrap_or_else(Utc::now);
 
         // convert dependencies Vec<String> to Vec<Option<String>> if present
-        let dependencies = request
-            .dependencies
-            .map(|deps| deps.into_iter().map(Some).collect());
+        // and limit them to max 50 items and max 254 chars each
+        let dependencies = request.dependencies.map(|deps| {
+            deps.into_iter()
+                .take(50)
+                .map(|dep| {
+                    let truncated = if dep.len() > 254 {
+                        dep.chars().take(254).collect::<String>()
+                    } else {
+                        dep
+                    };
+                    Some(truncated)
+                })
+                .collect()
+        });
 
         Self {
             created_at,
@@ -177,6 +191,7 @@ impl NewHeartbeat {
             editor: None,
             operating_system: None,
             machine: None,
+            user_agent: String::new(),
             lines: request.lines,
             project_root_count: request.project_root_count,
             dependencies,

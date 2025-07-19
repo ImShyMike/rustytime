@@ -79,10 +79,12 @@ impl Session {
         }
     }
 
+    #[allow(dead_code)]
     pub fn delete_by_user_id(conn: &mut PgConnection, user_id: i32) -> QueryResult<usize> {
         diesel::delete(sessions::table.filter(dsl::user_id.eq(user_id))).execute(conn)
     }
 
+    #[allow(dead_code)]
     pub fn is_expired(&self) -> bool {
         self.expires_at < Utc::now()
     }

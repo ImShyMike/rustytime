@@ -2,9 +2,9 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"label": "Run RustyTime Server",
+			"label": "Run rustytime server",
 			"type": "shell",
-			"command": "cargo run",
+			"command": "cd rustytime && cargo run",
 			"group": "build",
 			"isBackground": true,
 			"problemMatcher": [

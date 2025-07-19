@@ -42,9 +42,8 @@ async fn process_heartbeat_request(
     };
 
     let user_result = get_user_id_from_api_key(pool, &api_key).await;
-    let user_id: i32;
-    match user_result {
-        Some(id) => user_id = id,
+    let user_id: i32 = match user_result {
+        Some(id) => id,
         None => return Err(StatusCode::UNAUTHORIZED),
     };
 
@@ -116,12 +115,11 @@ pub async fn get_statusbar_today(
     headers: axum::http::HeaderMap,
     uri: axum::http::Uri,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    let user_id: i32;
-    if id != "current" {
-        user_id = match id.parse::<i32>() {
+    let user_id: i32 = if id != "current" {
+        match id.parse::<i32>() {
             Ok(id) => id,
             Err(_) => return Err(StatusCode::BAD_REQUEST),
-        };
+        }
     } else {
         let api_key = get_valid_api_key(&headers, &uri).await;
         let api_key = match api_key {
@@ -131,10 +129,10 @@ pub async fn get_statusbar_today(
 
         let user_result = get_user_id_from_api_key(&app_state.db_pool, &api_key).await;
         match user_result {
-            Some(id) => user_id = id,
+            Some(id) => id,
             None => return Err(StatusCode::UNAUTHORIZED),
-        };
-    }
+        }
+    };
 
     match get_today_heartbeats(&app_state.db_pool, user_id).await {
         Ok(_heartbeats) => {

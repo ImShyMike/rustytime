@@ -5,18 +5,29 @@ diesel::table! {
         id -> Int4,
         created_at -> Timestamptz,
         user_id -> Int4,
-        entity -> Text,
+        #[max_length = 512]
+        entity -> Varchar,
         #[sql_name = "type"]
-        type_ -> Text,
+        #[max_length = 50]
+        type_ -> Varchar,
         ip_address -> Inet,
-        project -> Nullable<Text>,
-        branch -> Nullable<Text>,
-        language -> Nullable<Text>,
-        category -> Nullable<Text>,
+        #[max_length = 100]
+        project -> Nullable<Varchar>,
+        #[max_length = 100]
+        branch -> Nullable<Varchar>,
+        #[max_length = 50]
+        language -> Nullable<Varchar>,
+        #[max_length = 50]
+        category -> Nullable<Varchar>,
         is_write -> Nullable<Bool>,
-        editor -> Nullable<Text>,
-        operating_system -> Nullable<Text>,
-        machine -> Nullable<Text>,
+        #[max_length = 50]
+        editor -> Nullable<Varchar>,
+        #[max_length = 100]
+        operating_system -> Nullable<Varchar>,
+        #[max_length = 100]
+        machine -> Nullable<Varchar>,
+        #[max_length = 255]
+        user_agent -> Varchar,
         lines -> Nullable<Int4>,
         project_root_count -> Nullable<Int4>,
         dependencies -> Nullable<Array<Nullable<Text>>>,
@@ -42,11 +53,13 @@ diesel::table! {
 diesel::table! {
     users (id) {
         id -> Int4,
-        name -> Nullable<Text>,
-        avatar_url -> Nullable<Text>,
+        #[max_length = 100]
+        name -> Nullable<Varchar>,
+        #[max_length = 200]
+        avatar_url -> Nullable<Varchar>,
         created_at -> Timestamptz,
         api_key -> Uuid,
-        github_id -> Text,
+        github_id -> Int4,
     }
 }
 

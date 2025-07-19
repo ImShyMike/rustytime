@@ -102,7 +102,7 @@ pub async fn callback(
     // create or update user in database
     let user = User::create_or_update(
         &mut conn,
-        &user_info.id.to_string(),
+        user_info.id as i32,
         &user_info.login,
         &user_info.avatar_url,
     )
