@@ -1,11 +1,7 @@
-use axum::{
-    extract::State,
-    response::Html,
-    http::StatusCode,
-};
-use tower_cookies::Cookies;
 use crate::state::AppState;
 use crate::utils::session::SessionManager;
+use axum::{extract::State, http::StatusCode, response::Html};
+use tower_cookies::Cookies;
 
 pub async fn dashboard(
     State(app_state): State<AppState>,
@@ -32,50 +28,23 @@ pub async fn dashboard(
         })?
         .expect("Session should be valid since middleware validated authentication");
 
-    Ok(Html(format!(
-        r#"
-        <html>
-            <head>
-                <title>rustytime Dashboard</title>
-                <style>
-                    body {{ font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }}
-                    .user-info {{ background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; }}
-                    .avatar {{ border-radius: 50%; }}
-                    .api-key {{ background: #e8f4f8; padding: 10px; border-radius: 4px; font-family: monospace; }}
-                    .success {{ color: #28a745; }}
-                    .logout {{ margin-top: 20px; }}
-                    .logout a {{ background: #dc3545; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; }}
-                </style>
-            </head>
-            <body>
-                <h1 class="success">🎯 rustytime Dashboard</h1>
-                
-                <div class="user-info">
-                    <img src="{}" alt="Avatar" width="100" height="100" class="avatar">
-                    <h3>User Information</h3>
-                    <p><strong>Name:</strong> {}</p>
-                    <p><strong>GitHub ID:</strong> {}</p>
-                    <p><strong>Account Created:</strong> {}</p>
-                    <p><strong>Session Expires:</strong> {}</p>
-                </div>
+    let rendered = app_state
+        .template_engine
+        .render(
+            "dashboard.html",
+            minijinja::context! {
+                avatar_url => user.avatar_url.as_deref().unwrap_or(""),
+                user_name => user.name.as_deref().unwrap_or("Unknown"),
+                github_id => session_data.github_user_id,
+                created_at => user.created_at.format("%Y-%m-%d %H:%M:%S UTC").to_string(),
+                expires_at => session_data.expires_at.format("%Y-%m-%d %H:%M:%S UTC").to_string(),
+                api_key => user.api_key.to_string()
+            },
+        )
+        .map_err(|err| {
+            eprintln!("Template rendering error: {}", err);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
 
-                <div class="api-key">
-                    <h3>Your API Key</h3>
-                    <p><strong>API Key:</strong> {}</p>
-                    <p><small>Use this key to authenticate with the API</small></p>
-                </div>
-
-                <div class="logout">
-                    <a href="/auth/github/logout">Logout</a>
-                </div>
-            </body>
-        </html>
-        "#,
-        user.avatar_url.as_deref().unwrap_or(""),
-        user.name.as_deref().unwrap_or("Unknown"),
-        session_data.github_user_id,
-        user.created_at.format("%Y-%m-%d %H:%M:%S UTC"),
-        session_data.expires_at.format("%Y-%m-%d %H:%M:%S UTC"),
-        user.api_key
-    )))
+    Ok(Html(rendered))
 }

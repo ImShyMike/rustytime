@@ -29,7 +29,7 @@ pub struct GitHubUser {
     pub login: String,
     pub id: u64,
     pub avatar_url: String,
-    pub html_url: String,
+    // pub html_url: String,
 }
 
 pub fn create_github_client()

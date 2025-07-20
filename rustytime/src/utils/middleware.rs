@@ -1,7 +1,7 @@
 use axum::{
     extract::{Request, State},
     middleware::Next,
-    response::{IntoResponse, Response, Redirect},
+    response::{IntoResponse, Redirect, Response},
 };
 use tower_cookies::Cookies;
 

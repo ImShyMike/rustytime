@@ -4,7 +4,7 @@ use axum::{Router, routing::get};
 
 pub fn github_routes() -> Router<AppState> {
     Router::new()
-        .route("/github/login", get(login))
-        .route("/github/callback", get(callback))
-        .route("/github/logout", get(logout))
+        .route("/login", get(login))
+        .route("/callback", get(callback))
+        .route("/logout", get(logout))
 }

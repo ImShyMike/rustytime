@@ -1,4 +1,5 @@
 use crate::db::DbPool;
+use crate::utils::templates::TemplateEngine;
 use oauth2::{EndpointNotSet, EndpointSet, basic::BasicClient};
 
 /// App state that holds shared resources
@@ -7,6 +8,7 @@ pub struct AppState {
     pub db_pool: DbPool,
     pub github_client:
         BasicClient<EndpointSet, EndpointNotSet, EndpointNotSet, EndpointNotSet, EndpointSet>,
+    pub template_engine: TemplateEngine,
 }
 
 impl AppState {
@@ -19,10 +21,12 @@ impl AppState {
             EndpointNotSet,
             EndpointSet,
         >,
+        template_engine: TemplateEngine,
     ) -> Self {
         Self {
             db_pool,
             github_client,
+            template_engine,
         }
     }
 }
