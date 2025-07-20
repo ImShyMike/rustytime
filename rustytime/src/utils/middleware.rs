@@ -8,7 +8,7 @@ use tower_cookies::Cookies;
 use crate::state::AppState;
 use crate::utils::session::SessionManager;
 
-/// middleware to require authentication
+/// Middleware to require authentication
 pub async fn require_auth(
     State(app_state): State<AppState>,
     cookies: Cookies,
@@ -22,7 +22,7 @@ pub async fn require_auth(
     next.run(request).await
 }
 
-/// middleware to optionally check authentication (doesn't fail if not authenticated)
+/// Middleware to inject the user if authenticated
 pub async fn optional_auth(
     State(app_state): State<AppState>,
     cookies: Cookies,

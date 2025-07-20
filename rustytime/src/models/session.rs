@@ -28,6 +28,7 @@ pub struct NewSession {
 }
 
 impl Session {
+    #[allow(dead_code)]
     pub fn find_by_user_id(conn: &mut PgConnection, user_id: i32) -> QueryResult<Option<Session>> {
         dsl::sessions
             .filter(dsl::user_id.eq(user_id))
