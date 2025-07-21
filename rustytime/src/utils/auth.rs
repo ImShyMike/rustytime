@@ -6,6 +6,7 @@ use serde::Deserialize;
 use crate::db::DbPool;
 use crate::schema::users::dsl;
 
+/// Try to get API key from the "Authorization" header
 async fn get_api_key_from_header(headers: &axum::http::HeaderMap) -> Option<String> {
     // parse "Authorization" header
     if let Some(auth_header) = headers.get("Authorization") {
@@ -26,29 +27,25 @@ async fn get_api_key_from_header(headers: &axum::http::HeaderMap) -> Option<Stri
     None
 }
 
-async fn get_api_key_from_query(query: &axum::http::Uri) -> Option<String> {
-    #[derive(Deserialize)]
-    struct QueryParams {
-        api_key: Option<String>,
-    }
+#[derive(Deserialize)]
+struct QueryParams {
+    api_key: Option<String>,
+}
 
+/// Try to get API key from the URI's query parameters
+async fn get_api_key_from_query(query: &axum::http::Uri) -> Option<String> {
     if let Ok(params) = Query::<QueryParams>::try_from_uri(query) {
         return params.0.api_key;
     }
     None
 }
 
+/// Check if the API key is a valid UUID with dashes
 async fn validate_api_key(api_key: &str) -> bool {
-    if api_key.len() != 36 {
-        return false; // invalid length
-    }
-    if uuid::Uuid::parse_str(api_key).is_ok() {
-        true
-    } else {
-        false // invalid UUID format
-    }
+    api_key.len() == 36 && uuid::Uuid::parse_str(api_key).is_ok()
 }
 
+// Tries to get a valid API key from headers or query parameters in that order
 pub async fn get_valid_api_key(
     headers: &axum::http::HeaderMap,
     query: &axum::http::Uri,
@@ -65,6 +62,7 @@ pub async fn get_valid_api_key(
     None
 }
 
+/// Get user ID from the API key
 pub async fn get_user_id_from_api_key(pool: &DbPool, api_key_value: &str) -> Option<i32> {
     let api_key_uuid = uuid::Uuid::parse_str(api_key_value).ok()?;
     let mut conn = pool.get().ok()?;

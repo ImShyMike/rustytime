@@ -4,6 +4,7 @@ use minijinja::context;
 use crate::models::user::User;
 use crate::state::AppState;
 
+/// Handler for the homepage (will likely be done using SvelteKit later)
 pub async fn home_page(
     State(app_state): State<AppState>,
     user: Option<Extension<User>>,

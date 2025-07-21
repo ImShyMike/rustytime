@@ -30,6 +30,7 @@ impl TemplateEngine {
         })
     }
 
+    /// Render a template with the given context
     pub fn render(&self, template_name: &str, context: minijinja::Value) -> Result<String, Error> {
         let env = self.reloader.acquire_env()?;
         let template = env.get_template(template_name)?;

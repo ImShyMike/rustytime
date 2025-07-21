@@ -32,6 +32,7 @@ pub struct GitHubUser {
     // pub html_url: String,
 }
 
+/// Create a new GitHub OAuth client
 pub fn create_github_client()
 -> BasicClient<EndpointSet, EndpointNotSet, EndpointNotSet, EndpointNotSet, EndpointSet> {
     let client_id = ClientId::new(env::var("GITHUB_CLIENT_ID").expect("Missing GITHUB_CLIENT_ID"));
@@ -55,6 +56,7 @@ pub fn create_github_client()
         .set_redirect_uri(redirect_url)
 }
 
+/// Handler to initiate GitHub OAuth login
 pub async fn login(State(app_state): State<AppState>) -> Redirect {
     let (auth_url, _csrf_token) = app_state
         .github_client
@@ -65,6 +67,7 @@ pub async fn login(State(app_state): State<AppState>) -> Redirect {
     Redirect::to(auth_url.as_ref())
 }
 
+/// Handler for GitHub OAuth callback
 pub async fn callback(
     State(app_state): State<AppState>,
     cookies: Cookies,
@@ -125,6 +128,7 @@ pub async fn callback(
     Ok(axum::response::Redirect::to("/dashboard"))
 }
 
+/// Handler to log out the user
 pub async fn logout(
     State(app_state): State<AppState>,
     cookies: Cookies,
@@ -154,6 +158,7 @@ pub async fn logout(
     Ok(Redirect::to("/"))
 }
 
+/// Fetch GitHub user information using the access token
 async fn fetch_github_user(token: &str) -> Result<GitHubUser, reqwest::Error> {
     let client = reqwest::Client::new();
     let user: GitHubUser = client

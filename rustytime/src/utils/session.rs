@@ -23,7 +23,7 @@ pub struct SessionData {
 pub struct SessionManager;
 
 impl SessionManager {
-    /// create a new session cookie
+    /// Create a new session cookie
     pub fn create_session_cookie(session_id: Uuid) -> Cookie<'static> {
         let expires = Utc::now() + Duration::days(SESSION_DURATION_DAYS);
 
@@ -36,14 +36,14 @@ impl SessionManager {
             .build()
     }
 
-    /// get session from cookie
+    /// Get session from cookie
     pub fn get_session_from_cookies(cookies: &Cookies) -> Option<Uuid> {
         cookies
             .get(SESSION_COOKIE_NAME)
             .and_then(|cookie| Uuid::parse_str(cookie.value()).ok())
     }
 
-    /// validate session and return user info
+    /// Validate session and return user info
     pub async fn validate_session(
         pool: &DbPool,
         session_id: Uuid,
@@ -65,7 +65,7 @@ impl SessionManager {
         }))
     }
 
-    /// remove session cookie
+    /// Remove the session cookie
     pub fn remove_session_cookie() -> Cookie<'static> {
         Cookie::build((SESSION_COOKIE_NAME, ""))
             .path("/")
@@ -74,7 +74,7 @@ impl SessionManager {
             .build()
     }
 
-    /// check if user is authenticated
+    /// Check if user is authenticated
     pub async fn is_authenticated(cookies: &Cookies, pool: &DbPool) -> bool {
         if let Some(session_id) = Self::get_session_from_cookies(cookies) {
             if let Ok(Some(_)) = Self::validate_session(pool, session_id).await {
@@ -84,7 +84,7 @@ impl SessionManager {
         false
     }
 
-    /// get current user from session
+    /// Try to get the current user using the session cookie
     pub async fn get_current_user(
         cookies: &Cookies,
         pool: &DbPool,

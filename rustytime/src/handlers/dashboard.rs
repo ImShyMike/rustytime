@@ -3,6 +3,7 @@ use crate::utils::session::SessionManager;
 use axum::{extract::State, http::StatusCode, response::Html};
 use tower_cookies::Cookies;
 
+/// Handler for the dashboard page (will likely be done using svelteKit later)
 pub async fn dashboard(
     State(app_state): State<AppState>,
     cookies: Cookies,

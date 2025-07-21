@@ -12,12 +12,9 @@ use crate::schema::heartbeats;
 use crate::state::AppState;
 use crate::utils::auth::{get_user_id_from_api_key, get_valid_api_key};
 
-#[derive(diesel::QueryableByName)]
-struct DurationResult {
-    #[diesel(sql_type = diesel::sql_types::Integer)]
-    duration: i32,
-}
+const HEARTBEAT_TIMEOUT: i32 = 120; // 2 minutes in seconds
 
+/// Process heartbeat request and store in the database
 async fn process_heartbeat_request(
     pool: &DbPool,
     id: String,
@@ -98,6 +95,7 @@ async fn process_heartbeat_request(
     }
 }
 
+/// Handler to create heartbeats
 pub async fn create_heartbeats(
     State(app_state): State<AppState>,
     Path(id): Path<String>,
@@ -109,6 +107,7 @@ pub async fn create_heartbeats(
     process_heartbeat_request(&app_state.db_pool, id, addr, headers, uri, heartbeat_input).await
 }
 
+/// Handler to get today's status bar data
 pub async fn get_statusbar_today(
     State(app_state): State<AppState>,
     Path(id): Path<String>,
@@ -135,10 +134,8 @@ pub async fn get_statusbar_today(
     };
 
     match get_today_heartbeats(&app_state.db_pool, user_id).await {
-        Ok(_heartbeats) => {
-            let total_seconds = calculate_duration_seconds(&app_state.db_pool, user_id)
-                .await
-                .unwrap_or(0);
+        Ok(heartbeats) => {
+            let total_seconds = calculate_duration_seconds(heartbeats);
             let hours = total_seconds / 3600;
             let minutes = (total_seconds % 3600) / 60;
 
@@ -166,6 +163,7 @@ pub async fn get_statusbar_today(
     }
 }
 
+/// Store heartbeats in the database
 async fn store_heartbeats_in_db(
     pool: &DbPool,
     new_heartbeats: Vec<NewHeartbeat>,
@@ -188,6 +186,7 @@ async fn store_heartbeats_in_db(
     .unwrap()
 }
 
+/// Get today's heartbeats for a user
 async fn get_today_heartbeats(
     pool: &DbPool,
     user_id: i32,
@@ -209,43 +208,25 @@ async fn get_today_heartbeats(
     .unwrap()
 }
 
-async fn calculate_duration_seconds(
-    pool: &DbPool,
-    user_id: i32,
-) -> Result<i32, diesel::result::Error> {
-    let pool = pool.clone();
-    tokio::task::spawn_blocking(move || {
-        let mut connection = pool.get().expect("Failed to get DB connection from pool");
-        let today = Utc::now().date_naive();
-        let tomorrow = today.succ_opt().unwrap_or(today);
-        let heartbeat_timeout = 120; // 2 minutes in seconds
+/// Calculate total duration in seconds for a list of heartbeats
+fn calculate_duration_seconds(mut heartbeats: Vec<Heartbeat>) -> i32 {
+    if heartbeats.len() < 2 {
+        return 0;
+    }
 
-        let query = format!(
-            "SELECT COALESCE(SUM(diff), 0)::integer as duration FROM (
-                SELECT CASE
-                    WHEN LAG(created_at) OVER (ORDER BY created_at) IS NULL THEN 0
-                    ELSE LEAST(
-                        EXTRACT(EPOCH FROM (created_at - LAG(created_at) OVER (ORDER BY created_at))),
-                        {}
-                    )
-                END as diff
-                FROM heartbeats
-                WHERE user_id = $1
-                    AND created_at >= $2
-                    AND created_at < $3
-                    AND created_at IS NOT NULL
-                ORDER BY created_at ASC
-            ) AS diffs",
-            heartbeat_timeout
-        );
+    // sort heartbeats by created_at in-place
+    heartbeats.sort_unstable_by(|a, b| a.created_at.cmp(&b.created_at));
 
-        diesel::sql_query(query)
-            .bind::<diesel::sql_types::Integer, _>(user_id)
-            .bind::<diesel::sql_types::Timestamptz, _>(today.and_hms_opt(0, 0, 0).unwrap().and_utc())
-            .bind::<diesel::sql_types::Timestamptz, _>(tomorrow.and_hms_opt(0, 0, 0).unwrap().and_utc())
-            .get_result::<DurationResult>(&mut connection)
-            .map(|result| result.duration)
-    })
-    .await
-    .unwrap()
+    heartbeats
+        .windows(2)
+        .map(|pair| {
+            let diff_seconds = pair[1]
+                .created_at
+                .signed_duration_since(pair[0].created_at)
+                .num_seconds() as i32;
+            
+            // only count positive differences within timeout
+            diff_seconds.clamp(0, HEARTBEAT_TIMEOUT)
+        })
+        .sum()
 }

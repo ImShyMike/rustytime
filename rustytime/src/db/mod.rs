@@ -5,6 +5,7 @@ use std::env;
 
 pub type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
+/// Create a new database connection pool
 pub fn create_pool() -> DbPool {
     dotenv().ok();
 

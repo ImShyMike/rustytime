@@ -7,6 +7,7 @@ use crate::state::AppState;
 use crate::utils::middleware;
 use axum::{Router, middleware as axum_middleware, routing::get};
 
+/// Create the main application router
 pub fn create_app_router(app_state: AppState) -> Router {
     Router::new()
         // public routes
