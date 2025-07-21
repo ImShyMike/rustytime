@@ -172,15 +172,17 @@ async fn store_heartbeats_in_db(
     tokio::task::spawn_blocking(move || {
         let mut connection = pool.get().expect("Failed to get DB connection from pool");
 
-        match diesel::insert_into(heartbeats::table)
-            .values(&new_heartbeats)
-            .on_conflict_do_nothing()
-            .get_results(&mut connection)
-        {
-            Ok(heartbeats) => Ok(heartbeats),
-            Err(diesel::result::Error::NotFound) => Ok(vec![]),
-            Err(e) => Err(e),
-        }
+        connection.transaction(|conn| {
+            match diesel::insert_into(heartbeats::table)
+                .values(&new_heartbeats)
+                .on_conflict_do_nothing()
+                .get_results(conn)
+            {
+                Ok(heartbeats) => Ok(heartbeats),
+                Err(diesel::result::Error::NotFound) => Ok(vec![]),
+                Err(e) => Err(e),
+            }
+        })
     })
     .await
     .unwrap()
@@ -210,7 +212,8 @@ async fn get_today_heartbeats(
 
 /// Calculate total duration in seconds for a list of heartbeats
 fn calculate_duration_seconds(mut heartbeats: Vec<Heartbeat>) -> i32 {
-    if heartbeats.len() < 2 {
+    // early returns if there are no heartbeats or only one
+    if heartbeats.len() <= 1 {
         return 0;
     }
 
@@ -224,7 +227,7 @@ fn calculate_duration_seconds(mut heartbeats: Vec<Heartbeat>) -> i32 {
                 .created_at
                 .signed_duration_since(pair[0].created_at)
                 .num_seconds() as i32;
-            
+
             // only count positive differences within timeout
             diff_seconds.clamp(0, HEARTBEAT_TIMEOUT)
         })

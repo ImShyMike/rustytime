@@ -19,7 +19,7 @@ use db::create_pool;
 use state::AppState;
 use utils::logging::init_tracing;
 
-use crate::{routes::create_app_router, utils::templates::TemplateEngine};
+use crate::routes::create_app_router;
 
 #[tokio::main]
 async fn main() {
@@ -43,16 +43,14 @@ async fn main() {
     let github_client = handlers::github::create_github_client();
     info!("✅ GitHub OAuth client created");
 
-    // initialize the template engine
-    let template_engine = TemplateEngine::new().expect("Failed to initialize template engine");
-
     // create application state
-    let app_state = AppState::new(pool, github_client, template_engine);
+    let app_state = AppState::new(pool, github_client);
 
     // create the main application router
     let app = create_app_router(app_state)
         .layer(CookieManagerLayer::new())
         .layer(
+            // setup request logging
             TraceLayer::new_for_http()
                 .make_span_with(|request: &Request<Body>| {
                     tracing::info_span!(

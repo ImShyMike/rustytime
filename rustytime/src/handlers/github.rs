@@ -75,13 +75,11 @@ pub async fn callback(
 ) -> Result<Redirect, StatusCode> {
     let code = AuthorizationCode::new(params.code);
 
-    let http_client = reqwest::Client::new();
-
     // exchange code for access token
     let token_response = app_state
         .github_client
         .exchange_code(code)
-        .request_async(&http_client)
+        .request_async(&app_state.http_client)
         .await
         .map_err(|err| {
             eprintln!("Token exchange error: {}", err);
@@ -91,10 +89,12 @@ pub async fn callback(
     let access_token = token_response.access_token().secret();
 
     // fetch user info from GitHub
-    let user_info = fetch_github_user(access_token).await.map_err(|err| {
-        eprintln!("GitHub API error: {}", err);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
+    let user_info = fetch_github_user(&app_state.http_client, access_token)
+        .await
+        .map_err(|err| {
+            eprintln!("GitHub API error: {}", err);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
 
     // get database connection
     let mut conn = app_state.db_pool.get().map_err(|err| {
@@ -159,8 +159,10 @@ pub async fn logout(
 }
 
 /// Fetch GitHub user information using the access token
-async fn fetch_github_user(token: &str) -> Result<GitHubUser, reqwest::Error> {
-    let client = reqwest::Client::new();
+async fn fetch_github_user(
+    client: &reqwest::Client,
+    token: &str,
+) -> Result<GitHubUser, reqwest::Error> {
     let user: GitHubUser = client
         .get("https://api.github.com/user")
         .bearer_auth(token)

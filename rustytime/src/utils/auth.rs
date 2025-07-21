@@ -7,7 +7,7 @@ use crate::db::DbPool;
 use crate::schema::users::dsl;
 
 /// Try to get API key from the "Authorization" header
-async fn get_api_key_from_header(headers: &axum::http::HeaderMap) -> Option<String> {
+fn get_api_key_from_header(headers: &axum::http::HeaderMap) -> Option<String> {
     // parse "Authorization" header
     if let Some(auth_header) = headers.get("Authorization") {
         if let Ok(auth_str) = auth_header.to_str() {
@@ -33,7 +33,7 @@ struct QueryParams {
 }
 
 /// Try to get API key from the URI's query parameters
-async fn get_api_key_from_query(query: &axum::http::Uri) -> Option<String> {
+fn get_api_key_from_query(query: &axum::http::Uri) -> Option<String> {
     if let Ok(params) = Query::<QueryParams>::try_from_uri(query) {
         return params.0.api_key;
     }
@@ -41,7 +41,7 @@ async fn get_api_key_from_query(query: &axum::http::Uri) -> Option<String> {
 }
 
 /// Check if the API key is a valid UUID with dashes
-async fn validate_api_key(api_key: &str) -> bool {
+fn validate_api_key(api_key: &str) -> bool {
     api_key.len() == 36 && uuid::Uuid::parse_str(api_key).is_ok()
 }
 
@@ -50,12 +50,12 @@ pub async fn get_valid_api_key(
     headers: &axum::http::HeaderMap,
     query: &axum::http::Uri,
 ) -> Option<String> {
-    if let Some(api_key) = get_api_key_from_header(headers).await {
-        if validate_api_key(&api_key).await {
+    if let Some(api_key) = get_api_key_from_header(headers) {
+        if validate_api_key(&api_key) {
             return Some(api_key);
         }
-    } else if let Some(api_key) = get_api_key_from_query(query).await {
-        if validate_api_key(&api_key).await {
+    } else if let Some(api_key) = get_api_key_from_query(query) {
+        if validate_api_key(&api_key) {
             return Some(api_key);
         }
     }
