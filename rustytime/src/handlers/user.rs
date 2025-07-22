@@ -1,5 +1,6 @@
 use axum::extract::{ConnectInfo, Json, Path, State};
 use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
 use chrono::Utc;
 use diesel::prelude::*;
 use ipnetwork::IpNetwork;
@@ -7,12 +8,12 @@ use serde_json::json;
 use std::net::SocketAddr;
 
 use crate::db::DbPool;
+use crate::models::heartbeat::Heartbeat;
 use crate::models::heartbeat::*;
 use crate::schema::heartbeats;
 use crate::state::AppState;
 use crate::utils::auth::{get_user_id_from_api_key, get_valid_api_key};
-
-const HEARTBEAT_TIMEOUT: i32 = 120; // 2 minutes in seconds
+use crate::utils::time::human_readable_duration;
 
 /// Process heartbeat request and store in the database
 async fn process_heartbeat_request(
@@ -22,26 +23,26 @@ async fn process_heartbeat_request(
     headers: axum::http::HeaderMap,
     uri: axum::http::Uri,
     heartbeat_input: HeartbeatInput,
-) -> Result<Json<HeartbeatApiResponseVariant>, StatusCode> {
+) -> Result<Response, Response> {
     if id != "current" {
-        return Err(StatusCode::BAD_REQUEST);
+        return Err((StatusCode::BAD_REQUEST, "Bad request").into_response());
     }
 
     let heartbeat_requests = heartbeat_input.into_vec();
     if heartbeat_requests.len() > 25 {
-        return Err(StatusCode::BAD_REQUEST);
+        return Err((StatusCode::BAD_REQUEST, "Bad request").into_response());
     }
 
     let api_key = get_valid_api_key(&headers, &uri).await;
     let api_key = match api_key {
         Some(key) => key,
-        None => return Err(StatusCode::UNAUTHORIZED),
+        None => return Err((StatusCode::UNAUTHORIZED, "Unauthorized").into_response()),
     };
 
     let user_result = get_user_id_from_api_key(pool, &api_key).await;
     let user_id: i32 = match user_result {
         Some(id) => id,
-        None => return Err(StatusCode::UNAUTHORIZED),
+        None => return Err((StatusCode::UNAUTHORIZED, "Unauthorized").into_response()),
     };
 
     let ip_network = IpNetwork::from(addr.ip());
@@ -51,6 +52,7 @@ async fn process_heartbeat_request(
             heartbeat_requests.into_iter().next().unwrap(),
             user_id,
             ip_network,
+            &headers,
         );
 
         match store_heartbeats_in_db(pool, vec![new_heartbeat]).await {
@@ -59,37 +61,50 @@ async fn process_heartbeat_request(
                     let response = HeartbeatApiResponse {
                         data: heartbeat.into(),
                     };
-                    Ok(Json(HeartbeatApiResponseVariant::Single(response)))
+                    Ok((
+                        StatusCode::CREATED,
+                        Json(HeartbeatApiResponseVariant::Single(response)),
+                    )
+                        .into_response())
                 } else {
-                    Err(StatusCode::INTERNAL_SERVER_ERROR)
+                    Err((StatusCode::INTERNAL_SERVER_ERROR, "Internal server error")
+                        .into_response())
                 }
             }
             Err(e) => {
                 eprintln!("❌ Error inserting heartbeat: {}", e);
-                Err(StatusCode::INTERNAL_SERVER_ERROR)
+                Err((StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response())
             }
         }
     } else {
         let new_heartbeats: Vec<NewHeartbeat> = heartbeat_requests
             .into_iter()
-            .map(|req| NewHeartbeat::from_request(req, user_id, ip_network))
+            .map(|req| NewHeartbeat::from_request(req, user_id, ip_network, &headers))
             .collect();
 
         match store_heartbeats_in_db(pool, new_heartbeats).await {
             Ok(heartbeats) => {
                 if heartbeats.is_empty() {
                     let response = HeartbeatsApiResponse { data: vec![] };
-                    Ok(Json(HeartbeatApiResponseVariant::Multiple(response)))
+                    Ok((
+                        StatusCode::CREATED,
+                        Json(HeartbeatApiResponseVariant::Multiple(response)),
+                    )
+                        .into_response())
                 } else {
                     let response = HeartbeatsApiResponse {
                         data: heartbeats.into_iter().map(|h| h.into()).collect(),
                     };
-                    Ok(Json(HeartbeatApiResponseVariant::Multiple(response)))
+                    Ok((
+                        StatusCode::CREATED,
+                        Json(HeartbeatApiResponseVariant::Multiple(response)),
+                    )
+                        .into_response())
                 }
             }
             Err(e) => {
                 eprintln!("❌ Error inserting heartbeats: {}", e);
-                Err(StatusCode::INTERNAL_SERVER_ERROR)
+                Err((StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response())
             }
         }
     }
@@ -103,7 +118,7 @@ pub async fn create_heartbeats(
     headers: axum::http::HeaderMap,
     uri: axum::http::Uri,
     Json(heartbeat_input): Json<HeartbeatInput>,
-) -> Result<Json<HeartbeatApiResponseVariant>, StatusCode> {
+) -> Result<Response, Response> {
     process_heartbeat_request(&app_state.db_pool, id, addr, headers, uri, heartbeat_input).await
 }
 
@@ -113,53 +128,70 @@ pub async fn get_statusbar_today(
     Path(id): Path<String>,
     headers: axum::http::HeaderMap,
     uri: axum::http::Uri,
-) -> Result<Json<serde_json::Value>, StatusCode> {
+) -> Result<Json<serde_json::Value>, Response> {
     let user_id: i32 = if id != "current" {
         match id.parse::<i32>() {
             Ok(id) => id,
-            Err(_) => return Err(StatusCode::BAD_REQUEST),
+            Err(_) => return Err((StatusCode::BAD_REQUEST, "Bad request").into_response()),
         }
     } else {
         let api_key = get_valid_api_key(&headers, &uri).await;
         let api_key = match api_key {
             Some(key) => key,
-            None => return Err(StatusCode::UNAUTHORIZED),
+            None => return Err((StatusCode::BAD_REQUEST, "Bad request").into_response()),
         };
 
         let user_result = get_user_id_from_api_key(&app_state.db_pool, &api_key).await;
         match user_result {
             Some(id) => id,
-            None => return Err(StatusCode::UNAUTHORIZED),
+            None => return Err((StatusCode::BAD_REQUEST, "Bad request").into_response()),
         }
     };
 
-    match get_today_heartbeats(&app_state.db_pool, user_id).await {
-        Ok(heartbeats) => {
-            let total_seconds = calculate_duration_seconds(heartbeats);
-            let hours = total_seconds / 3600;
-            let minutes = (total_seconds % 3600) / 60;
+    // calculate today's date range
+    let today = Utc::now().date_naive();
+    let start_of_day = today.and_hms_opt(0, 0, 0).unwrap().and_utc();
+    let end_of_day = today
+        .succ_opt()
+        .unwrap_or(today)
+        .and_hms_opt(0, 0, 0)
+        .unwrap()
+        .and_utc();
 
-            let digital_time = format!("{:02}:{:02}", hours, minutes);
-            let text_time = if hours > 0 {
-                format!("{} hrs {} mins", hours, minutes)
-            } else {
-                format!("{} mins", minutes)
-            };
+    let mut conn = app_state.db_pool.get().map_err(|err| {
+        eprintln!("Database connection error: {}", err);
+        (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
+    })?;
+
+    match Heartbeat::get_user_duration_seconds(
+        &mut conn,
+        DurationInput {
+            user_id: Some(user_id),
+            start_date: Some(start_of_day),
+            end_date: Some(end_of_day),
+            project: None,
+            entity: None,
+            language: None,
+            type_filter: None,
+        },
+    ) {
+        Ok(total_seconds) => {
+            let time_obj = human_readable_duration(total_seconds);
 
             Ok(Json(json!({
                 "data": {
                     "grand_total": {
                         "decimal": format!("{:.2}", total_seconds as f64 / 3600.0),
-                        "digital": digital_time,
-                        "hours": hours,
-                        "minutes": minutes,
-                        "text": text_time,
+                        "digital": format!("{:02}:{:02}", time_obj.hours, time_obj.minutes),
+                        "hours": time_obj.hours,
+                        "minutes": time_obj.minutes,
+                        "text": time_obj.human_readable,
                         "total_seconds": total_seconds
                     }
                 }
             })))
         }
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Err(_) => Err((StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()),
     }
 }
 
@@ -186,50 +218,4 @@ async fn store_heartbeats_in_db(
     })
     .await
     .unwrap()
-}
-
-/// Get today's heartbeats for a user
-async fn get_today_heartbeats(
-    pool: &DbPool,
-    user_id: i32,
-) -> Result<Vec<Heartbeat>, diesel::result::Error> {
-    let pool = pool.clone();
-    tokio::task::spawn_blocking(move || {
-        let mut connection = pool.get().expect("Failed to get DB connection from pool");
-        let today = Utc::now().date_naive();
-        let tomorrow = today.succ_opt().unwrap_or(today);
-
-        heartbeats::table
-            .filter(heartbeats::user_id.eq(user_id))
-            .filter(heartbeats::created_at.ge(today.and_hms_opt(0, 0, 0).unwrap().and_utc()))
-            .filter(heartbeats::created_at.lt(tomorrow.and_hms_opt(0, 0, 0).unwrap().and_utc()))
-            .select(Heartbeat::as_select())
-            .load(&mut connection)
-    })
-    .await
-    .unwrap()
-}
-
-/// Calculate total duration in seconds for a list of heartbeats
-fn calculate_duration_seconds(mut heartbeats: Vec<Heartbeat>) -> i32 {
-    // early returns if there are no heartbeats or only one
-    if heartbeats.len() <= 1 {
-        return 0;
-    }
-
-    // sort heartbeats by created_at in-place
-    heartbeats.sort_unstable_by(|a, b| a.created_at.cmp(&b.created_at));
-
-    heartbeats
-        .windows(2)
-        .map(|pair| {
-            let diff_seconds = pair[1]
-                .created_at
-                .signed_duration_since(pair[0].created_at)
-                .num_seconds() as i32;
-
-            // only count positive differences within timeout
-            diff_seconds.clamp(0, HEARTBEAT_TIMEOUT)
-        })
-        .sum()
 }

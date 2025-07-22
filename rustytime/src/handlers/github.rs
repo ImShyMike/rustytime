@@ -2,7 +2,9 @@ use axum::{
     extract::{Query, State},
     http::StatusCode,
     response::Redirect,
+    response::{IntoResponse, Response},
 };
+use base64::{Engine as _, engine::general_purpose};
 use diesel::prelude::*;
 use oauth2::{
     AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EndpointNotSet, EndpointSet,
@@ -20,7 +22,6 @@ use crate::utils::session::SessionManager;
 #[derive(Deserialize)]
 pub struct AuthRequest {
     pub code: String,
-    #[allow(dead_code)]
     pub state: String,
 }
 
@@ -57,10 +58,23 @@ pub fn create_github_client()
 }
 
 /// Handler to initiate GitHub OAuth login
-pub async fn login(State(app_state): State<AppState>) -> Redirect {
+pub async fn login(
+    State(app_state): State<AppState>,
+    Query(redirect_params): Query<std::collections::HashMap<String, String>>,
+) -> Redirect {
+    // get the redirect URL from query parameters, default to dashboard
+    let redirect_to = redirect_params
+        .get("redirect")
+        .cloned()
+        .unwrap_or_else(|| "/dashboard".to_string());
+
+    // use the redirect URL as the state parameter (base64 encoded for safety)
+    let state = general_purpose::STANDARD.encode(&redirect_to);
+    let csrf_token = CsrfToken::new(state);
+
     let (auth_url, _csrf_token) = app_state
         .github_client
-        .authorize_url(CsrfToken::new_random)
+        .authorize_url(|| csrf_token)
         .add_scope(Scope::new("read:user".to_string()))
         .url();
 
@@ -72,7 +86,7 @@ pub async fn callback(
     State(app_state): State<AppState>,
     cookies: Cookies,
     Query(params): Query<AuthRequest>,
-) -> Result<Redirect, StatusCode> {
+) -> Result<Redirect, Response> {
     let code = AuthorizationCode::new(params.code);
 
     // exchange code for access token
@@ -83,7 +97,7 @@ pub async fn callback(
         .await
         .map_err(|err| {
             eprintln!("Token exchange error: {}", err);
-            StatusCode::UNAUTHORIZED
+            (StatusCode::UNAUTHORIZED, "Unauthorized").into_response()
         })?;
 
     let access_token = token_response.access_token().secret();
@@ -93,13 +107,13 @@ pub async fn callback(
         .await
         .map_err(|err| {
             eprintln!("GitHub API error: {}", err);
-            StatusCode::INTERNAL_SERVER_ERROR
+            (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
         })?;
 
     // get database connection
     let mut conn = app_state.db_pool.get().map_err(|err| {
         eprintln!("Database connection error: {}", err);
-        StatusCode::INTERNAL_SERVER_ERROR
+        (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
     })?;
 
     // create or update user in database
@@ -111,34 +125,50 @@ pub async fn callback(
     )
     .map_err(|err| {
         eprintln!("Database error creating/updating user: {}", err);
-        StatusCode::INTERNAL_SERVER_ERROR
+        (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
     })?;
 
     // create or update session for authentication
     let session = Session::create_or_update(&mut conn, user.id, access_token, user_info.id as i64)
         .map_err(|err| {
             eprintln!("Database error creating/updating session: {}", err);
-            StatusCode::INTERNAL_SERVER_ERROR
+            (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
         })?;
 
     // set session cookie
     let session_cookie = SessionManager::create_session_cookie(session.id);
     cookies.add(session_cookie);
 
-    Ok(axum::response::Redirect::to("/dashboard"))
+    // decode the redirect URL from the state parameter
+    let redirect_to = match general_purpose::STANDARD.decode(&params.state) {
+        Ok(decoded_bytes) => match String::from_utf8(decoded_bytes) {
+            Ok(decoded_string) => {
+                // validate that the redirect URL is safe (starts with / for relative paths)
+                if decoded_string.starts_with('/') {
+                    decoded_string
+                } else {
+                    "/dashboard".to_string()
+                }
+            }
+            Err(_) => "/dashboard".to_string(),
+        },
+        Err(_) => "/dashboard".to_string(),
+    };
+
+    Ok(axum::response::Redirect::to(&redirect_to))
 }
 
 /// Handler to log out the user
 pub async fn logout(
     State(app_state): State<AppState>,
     cookies: Cookies,
-) -> Result<Redirect, StatusCode> {
+) -> Result<Redirect, Response> {
     // get session from cookie
     if let Some(session_id) = SessionManager::get_session_from_cookies(&cookies) {
         // delete session from database
         let mut conn = app_state.db_pool.get().map_err(|err| {
             eprintln!("Database connection error: {}", err);
-            StatusCode::INTERNAL_SERVER_ERROR
+            (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
         })?;
 
         diesel::delete(
@@ -147,7 +177,7 @@ pub async fn logout(
         .execute(&mut conn)
         .map_err(|err| {
             eprintln!("Database error deleting session: {}", err);
-            StatusCode::INTERNAL_SERVER_ERROR
+            (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
         })?;
     }
 

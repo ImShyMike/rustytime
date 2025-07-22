@@ -1,4 +1,9 @@
-use axum::{Extension, extract::State, http::StatusCode, response::Html};
+use axum::{
+    Extension,
+    extract::State,
+    http::StatusCode,
+    response::{Html, IntoResponse, Response},
+};
 use minijinja::context;
 
 use crate::models::user::User;
@@ -8,7 +13,7 @@ use crate::state::AppState;
 pub async fn home_page(
     State(app_state): State<AppState>,
     user: Option<Extension<User>>,
-) -> Result<Html<String>, StatusCode> {
+) -> Result<Html<String>, Response> {
     // check if user is authenticated
     let is_authenticated = user.is_some();
 
@@ -22,7 +27,7 @@ pub async fn home_page(
         )
         .map_err(|err| {
             eprintln!("Template rendering error: {}", err);
-            StatusCode::INTERNAL_SERVER_ERROR
+            (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
         })?;
 
     Ok(Html(rendered))

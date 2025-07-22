@@ -2,7 +2,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>rustytime</title>
+        <title>🦀 rustytime</title>
         <style>
             body {
                 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
@@ -56,6 +56,15 @@
                 gap: 10px;
                 margin-top: 20px;
             }
+            .stats {
+                background: #f0f0f0;
+                padding: 15px;
+                border-radius: 6px;
+                margin-top: 20px;
+            }
+            p {
+                margin: 8px;
+            }
         </style>
     </head>
     <body>
@@ -74,6 +83,8 @@
             <p><strong>GitHub ID:</strong> {{ github_id }}</p>
             <p><strong>Account Created:</strong> {{ created_at }}</p>
             <p><strong>Session Expires:</strong> {{ expires_at }}</p>
+            <p><strong>Total Heartbeats:</strong> {{ total_heartbeats }}</p>
+            <p><strong>Total Time:</strong> {{ formatted_time }} seconds</p>
         </div>
 
         <div class="api-key">

@@ -75,6 +75,7 @@ impl SessionManager {
     }
 
     /// Check if user is authenticated
+    #[allow(dead_code)]
     pub async fn is_authenticated(cookies: &Cookies, pool: &DbPool) -> bool {
         if let Some(session_id) = Self::get_session_from_cookies(cookies) {
             if let Ok(Some(_)) = Self::validate_session(pool, session_id).await {

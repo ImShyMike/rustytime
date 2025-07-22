@@ -60,6 +60,7 @@ diesel::table! {
         created_at -> Timestamptz,
         api_key -> Uuid,
         github_id -> Int4,
+        is_admin -> Bool,
     }
 }
 

@@ -10,6 +10,7 @@ pub struct TemplateEngine {
 
 impl TemplateEngine {
     pub fn new() -> Result<Self, Error> {
+        #[allow(unused_variables)] // needed to avoid warning when in release mode
         let reloader = AutoReloader::new(move |notifier| {
             let template_path = PathBuf::from("templates");
             let mut env = Environment::new();

@@ -1,3 +1,4 @@
+pub mod admin;
 pub mod api;
 pub mod github;
 
@@ -18,10 +19,17 @@ pub fn create_app_router(app_state: AppState) -> Router {
         .merge(protected_routes(app_state.clone()))
         // optional authentication
         .merge(semi_protected_routes(app_state.clone()))
+        // admin routes
+        .merge(create_admin_routes(app_state.clone()))
         // API routes
         .nest("/api/v1", api::create_api_router())
         // inject application state
-        .with_state(app_state)
+        .with_state(app_state.clone())
+        // add metrics tracking middleware
+        .layer(axum_middleware::from_fn_with_state(
+            app_state,
+            middleware::track_metrics,
+        ))
 }
 
 /// Public routes that don't require authentication
@@ -46,5 +54,15 @@ fn semi_protected_routes(app_state: AppState) -> Router<AppState> {
         .layer(axum_middleware::from_fn_with_state(
             app_state,
             middleware::optional_auth,
+        ))
+}
+
+/// Admin routes that require admin privileges
+pub fn create_admin_routes(app_state: AppState) -> Router<AppState> {
+    Router::new()
+        .nest("/admin", admin::admin_routes(app_state.clone()))
+        .layer(axum_middleware::from_fn_with_state(
+            app_state,
+            middleware::require_admin,
         ))
 }

@@ -14,6 +14,7 @@ pub struct User {
     pub created_at: DateTime<Utc>,
     pub api_key: Uuid,
     pub github_id: i32,
+    pub is_admin: bool,
 }
 
 #[derive(Insertable, Deserialize, Debug)]
@@ -65,5 +66,23 @@ impl User {
             };
             Self::create(conn, &new_user)
         }
+    }
+
+    pub fn is_admin(&self) -> bool {
+        self.is_admin
+    }
+
+    pub fn list_all_users(conn: &mut PgConnection) -> QueryResult<Vec<User>> {
+        users::table.load::<User>(conn)
+    }
+
+    pub fn list_admins(conn: &mut PgConnection) -> QueryResult<Vec<User>> {
+        users::table
+            .filter(users::is_admin.eq(true))
+            .load::<User>(conn)
+    }
+
+    pub fn count_total_users(conn: &mut PgConnection) -> QueryResult<i64> {
+        users::table.count().get_result(conn)
     }
 }
