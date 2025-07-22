@@ -4,6 +4,7 @@ use diesel::prelude::*;
 use diesel::sql_types::{BigInt, Date, Nullable, Text};
 use ipnetwork::IpNetwork;
 use serde::{Deserialize, Serialize};
+use lang_types::Language;
 
 use crate::schema::heartbeats;
 use crate::utils::http::parse_user_agent;
@@ -247,6 +248,19 @@ impl NewHeartbeat {
                 .collect()
         });
 
+        // guess language from entity if not provided
+        let language = request.language.or_else(|| {
+            let ext = std::path::Path::new(&request.entity)
+                .extension()
+                .and_then(|s| s.to_str())
+                .unwrap_or("");
+            if !ext.is_empty() {
+                Language::from_extension(ext).map(|lang| lang.name().to_string())
+            } else {
+                Some("Unknown".to_string())
+            }
+        });
+
         // handle test heartbeats
         let type_ = if request.entity == "test.txt" {
             "test".to_string()
@@ -262,7 +276,7 @@ impl NewHeartbeat {
             ip_address,
             project: request.project,
             branch: request.branch,
-            language: request.language,
+            language,
             category: request.category,
             is_write: request.is_write,
             editor,

@@ -67,4 +67,8 @@ diesel::table! {
 diesel::joinable!(heartbeats -> users (user_id));
 diesel::joinable!(sessions -> users (user_id));
 
-diesel::allow_tables_to_appear_in_same_query!(heartbeats, sessions, users,);
+diesel::allow_tables_to_appear_in_same_query!(
+    heartbeats,
+    sessions,
+    users,
+);
