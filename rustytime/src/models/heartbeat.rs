@@ -11,6 +11,32 @@ use crate::utils::http::parse_user_agent;
 
 const TIMEOUT_SECONDS: i32 = 120; // 2 minutes in seconds
 
+// Character limits 
+const MAX_ENTITY_LENGTH: usize = 512;
+const MAX_TYPE_LENGTH: usize = 50;
+const MAX_PROJECT_LENGTH: usize = 100;
+const MAX_BRANCH_LENGTH: usize = 100;
+const MAX_LANGUAGE_LENGTH: usize = 50;
+const MAX_CATEGORY_LENGTH: usize = 50;
+const MAX_EDITOR_LENGTH: usize = 50;
+const MAX_OS_LENGTH: usize = 100;
+const MAX_MACHINE_LENGTH: usize = 100;
+const MAX_USER_AGENT_LENGTH: usize = 255;
+
+/// Truncate a string to the specified maximum length, respecting UTF-8 boundaries
+fn truncate_string(s: String, max_length: usize) -> String {
+    if s.chars().count() <= max_length {
+        s
+    } else {
+        s.chars().take(max_length).collect()
+    }
+}
+
+/// Truncate an optional string to the specified maximum length
+fn truncate_optional_string(s: Option<String>, max_length: usize) -> Option<String> {
+    s.map(|s| truncate_string(s, max_length))
+}
+
 #[derive(QueryableByName, Debug, Clone, Serialize)]
 pub struct LanguageCount {
     #[diesel(sql_type = Nullable<Text>)]
@@ -178,8 +204,8 @@ impl NewHeartbeat {
         Self {
             created_at,
             user_id,
-            entity,
-            type_,
+            entity: truncate_string(entity, MAX_ENTITY_LENGTH),
+            type_: truncate_string(type_, MAX_TYPE_LENGTH),
             ip_address,
             project: None,
             branch: None,
@@ -271,18 +297,18 @@ impl NewHeartbeat {
         Self {
             created_at,
             user_id,
-            entity: request.entity,
-            type_,
+            entity: truncate_string(request.entity, MAX_ENTITY_LENGTH),
+            type_: truncate_string(type_, MAX_TYPE_LENGTH),
             ip_address,
-            project: request.project,
-            branch: request.branch,
-            language,
-            category: request.category,
+            project: truncate_optional_string(request.project, MAX_PROJECT_LENGTH),
+            branch: truncate_optional_string(request.branch, MAX_BRANCH_LENGTH),
+            language: truncate_optional_string(language, MAX_LANGUAGE_LENGTH),
+            category: truncate_optional_string(request.category, MAX_CATEGORY_LENGTH),
             is_write: request.is_write,
-            editor,
-            operating_system,
-            machine,
-            user_agent,
+            editor: truncate_optional_string(editor, MAX_EDITOR_LENGTH),
+            operating_system: truncate_optional_string(operating_system, MAX_OS_LENGTH),
+            machine: truncate_string(machine, MAX_MACHINE_LENGTH),
+            user_agent: truncate_string(user_agent, MAX_USER_AGENT_LENGTH),
             lines: request.lines,
             project_root_count: request.project_root_count,
             dependencies,

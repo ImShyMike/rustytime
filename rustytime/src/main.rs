@@ -39,6 +39,12 @@ async fn main() {
     let pool = create_pool();
     info!("✅ Database connection pool created");
 
+    // run database migrations
+    if let Err(e) = db::run_migrations(&pool) {
+        error!("Failed to run migrations: {}", e);
+        std::process::exit(1);
+    }
+
     // create GitHub OAuth client
     let github_client = handlers::github::create_github_client();
     info!("✅ GitHub OAuth client created");
