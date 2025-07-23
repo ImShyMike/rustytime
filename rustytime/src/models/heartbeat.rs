@@ -3,15 +3,15 @@ use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use diesel::sql_types::{BigInt, Date, Nullable, Text};
 use ipnetwork::IpNetwork;
-use serde::{Deserialize, Serialize};
 use lang_types::Language;
+use serde::{Deserialize, Serialize};
 
 use crate::schema::heartbeats;
 use crate::utils::http::parse_user_agent;
 
 const TIMEOUT_SECONDS: i32 = 120; // 2 minutes in seconds
 
-// Character limits 
+// Character limits
 const MAX_ENTITY_LENGTH: usize = 512;
 const MAX_TYPE_LENGTH: usize = 50;
 const MAX_PROJECT_LENGTH: usize = 100;

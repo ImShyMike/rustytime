@@ -2,7 +2,7 @@ use minijinja::{Environment, Error};
 use std::sync::Arc;
 
 #[cfg(feature = "dev-templates")]
-use minijinja::{path_loader};
+use minijinja::path_loader;
 #[cfg(feature = "dev-templates")]
 use minijinja_autoreload::AutoReloader;
 #[cfg(feature = "dev-templates")]
@@ -37,15 +37,19 @@ impl TemplateEngine {
         #[cfg(not(feature = "dev-templates"))]
         {
             let mut env = Environment::new();
-            
+
             // embed templates as static strings for production
-            env.add_template("admin_dashboard.html", include_str!("../../templates/admin_dashboard.html"))?;
-            env.add_template("dashboard.html", include_str!("../../templates/dashboard.html"))?;
+            env.add_template(
+                "admin_dashboard.html",
+                include_str!("../../templates/admin_dashboard.html"),
+            )?;
+            env.add_template(
+                "dashboard.html",
+                include_str!("../../templates/dashboard.html"),
+            )?;
             env.add_template("home.html", include_str!("../../templates/home.html"))?;
 
-            Ok(TemplateEngine {
-                env: Arc::new(env),
-            })
+            Ok(TemplateEngine { env: Arc::new(env) })
         }
     }
 

@@ -6,7 +6,9 @@ RUN apk add --no-cache \
     pkgconfig \
     openssl-dev \
     openssl-libs-static \
-    postgresql-dev
+    postgresql-dev \
+    bash \
+    netcat-openbsd
 
 # Add target
 RUN rustup target add x86_64-unknown-linux-musl

@@ -11,14 +11,20 @@ services:
     volumes:
       - timescaledb_data:/var/lib/postgresql/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER:-username}", "-d", "${POSTGRES_DB:-rustytime}"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
 
   rustytime:
     container_name: rustytime
     build: .
     depends_on:
-      - timescaledb
+      timescaledb:
+        condition: service_healthy
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@timescaledb:5432/${POSTGRES_DB}
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}/${POSTGRES_DB}
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
       REDIRECT_URL: ${REDIRECT_URL}

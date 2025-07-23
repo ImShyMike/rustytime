@@ -23,6 +23,7 @@ pub struct NewUser {
     pub name: Option<String>,
     pub avatar_url: Option<String>,
     pub github_id: i32,
+    pub is_admin: bool,
 }
 
 impl User {
@@ -58,11 +59,14 @@ impl User {
                 Ok(existing_user)
             }
         } else {
+            let total_users = Self::count_total_users(conn)?;
+
             // create new user
             let new_user = NewUser {
                 github_id,
                 name: Some(username.to_string()),
                 avatar_url: Some(avatar_url.to_string()),
+                is_admin: total_users == 0, // make the first user an admin
             };
             Self::create(conn, &new_user)
         }
