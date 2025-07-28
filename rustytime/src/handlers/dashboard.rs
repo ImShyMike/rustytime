@@ -44,19 +44,25 @@ pub async fn dashboard(
         (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
     })?;
 
-    // get total duration
-    let total_seconds = Heartbeat::get_user_total_duration_seconds(&mut conn, session_data.user_id)
-        .map_err(|err| {
-            eprintln!("Database error fetching heartbeats: {}", err);
-            (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
-        })?;
-
     // get heartbeat count
     let total_heartbeats = Heartbeat::get_user_heartbeat_count(&mut conn, session_data.user_id)
         .map_err(|err| {
             eprintln!("Database error getting heartbeat count: {}", err);
             (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
         })? as usize;
+
+    let dashboard_stats = Heartbeat::get_dashboard_stats(&mut conn, session_data.user_id);
+    if dashboard_stats.is_err() {
+        eprintln!(
+            "Database error getting dashboard stats: {}",
+            dashboard_stats.err().unwrap()
+        );
+        return Err((StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response());
+    }
+
+    let dashboard_stats = dashboard_stats.unwrap();
+
+    let dev_mode = cfg!(debug_assertions);
 
     let rendered = app_state
         .template_engine
@@ -70,7 +76,13 @@ pub async fn dashboard(
                 expires_at => session_data.expires_at.format("%Y-%m-%d %H:%M:%S UTC").to_string(),
                 api_key => user.api_key.to_string(),
                 total_heartbeats => total_heartbeats,
-                formatted_time => human_readable_duration(total_seconds).human_readable,
+                formatted_time => human_readable_duration(dashboard_stats.total_time).human_readable,
+                top_projects => dashboard_stats.top_projects,
+                top_editors => dashboard_stats.top_editors,
+                top_os => dashboard_stats.top_oses,
+                top_languages => dashboard_stats.top_languages,
+                is_admin => user.is_admin,
+                dev_mode,
             },
         )
         .map_err(|err| {

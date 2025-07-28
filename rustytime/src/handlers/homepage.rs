@@ -17,12 +17,15 @@ pub async fn home_page(
     // check if user is authenticated
     let is_authenticated = user.is_some();
 
+    let is_admin = user.as_ref().is_some_and(|u| u.is_admin());
+
     let rendered = app_state
         .template_engine
         .render(
             "home.html",
             context! {
-                is_authenticated => is_authenticated
+                is_authenticated => is_authenticated,
+                is_admin => is_admin
             },
         )
         .map_err(|err| {

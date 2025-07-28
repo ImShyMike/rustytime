@@ -37,6 +37,29 @@ fn truncate_optional_string(s: Option<String>, max_length: usize) -> Option<Stri
     s.map(|s| truncate_string(s, max_length))
 }
 
+#[derive(QueryableByName)]
+struct Row {
+    #[diesel(sql_type = Nullable<Text>)]
+    name: Option<String>,
+    #[diesel(sql_type = BigInt)]
+    total_seconds: i64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct UsageStat {
+    pub name: String,
+    pub total_seconds: i64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DashboardStats {
+    pub total_time: i64,
+    pub top_projects: Vec<UsageStat>,
+    pub top_languages: Vec<UsageStat>,
+    pub top_oses: Vec<UsageStat>,
+    pub top_editors: Vec<UsageStat>,
+}
+
 #[derive(QueryableByName, Debug, Clone, Serialize)]
 pub struct LanguageCount {
     #[diesel(sql_type = Nullable<Text>)]
@@ -274,8 +297,8 @@ impl NewHeartbeat {
                 .collect()
         });
 
-        // guess language from entity if not provided
-        let language = request.language.or_else(|| {
+        // guess language from entity
+        let language = {
             let ext = std::path::Path::new(&request.entity)
                 .extension()
                 .and_then(|s| s.to_str())
@@ -285,7 +308,7 @@ impl NewHeartbeat {
             } else {
                 Some("Unknown".to_string())
             }
-        });
+        };
 
         // handle test heartbeats
         let type_ = if request.entity == "test.txt" {
@@ -506,5 +529,81 @@ impl Heartbeat {
             .filter(heartbeats::user_id.eq(user_id))
             .count()
             .get_result(conn)
+    }
+
+    /// Get top 10 projects, editors, OSes, and languages by total seconds
+    pub fn get_dashboard_stats(
+        conn: &mut PgConnection,
+        user_id: i32,
+    ) -> QueryResult<DashboardStats> {
+        // helper closure to run the SQL for a given field
+        let mut get_stats = |field: &str| -> QueryResult<Vec<UsageStat>> {
+            let sql = format!(
+                r#"
+                WITH ordered AS (
+                    SELECT {field}, created_at
+                    FROM heartbeats
+                    WHERE {field} IS NOT NULL
+                    AND user_id = $1
+                    ORDER BY created_at ASC
+                ),
+                grouped AS (
+                    SELECT
+                        {field} as name,
+                        created_at,
+                        LEAD(created_at) OVER (PARTITION BY {field} ORDER BY created_at) as next_created_at
+                    FROM ordered
+                ),
+                diffs AS (
+                    SELECT
+                        name,
+                        EXTRACT(EPOCH FROM (COALESCE(next_created_at, created_at) - created_at))::integer as diff_seconds
+                    FROM grouped
+                )
+                SELECT
+                    name,
+                    SUM(
+                        CASE
+                            WHEN diff_seconds IS NULL OR diff_seconds < 0 THEN 0
+                            WHEN diff_seconds > $2 THEN $2
+                            ELSE diff_seconds
+                        END
+                    ) as total_seconds
+                FROM diffs
+                GROUP BY name
+                ORDER BY total_seconds DESC
+                LIMIT 10
+                "#,
+                field = field,
+            );
+
+            let rows: Vec<Row> = diesel::sql_query(sql)
+                .bind::<diesel::sql_types::Int4, _>(user_id)
+                .bind::<diesel::sql_types::Int4, _>(TIMEOUT_SECONDS)
+                .load(conn)?;
+
+            Ok(rows
+                .into_iter()
+                .map(|row| UsageStat {
+                    name: row.name.unwrap_or_else(|| "Unknown".to_string()),
+                    total_seconds: row.total_seconds,
+                })
+                .collect())
+        };
+
+        let top_projects = get_stats("project")?;
+        let top_editors = get_stats("editor")?;
+        let top_oses = get_stats("operating_system")?;
+        let top_languages = get_stats("language")?;
+
+        let total_time = Self::get_user_total_duration_seconds(conn, user_id)?;
+
+        Ok(DashboardStats {
+            total_time,
+            top_projects,
+            top_languages,
+            top_oses,
+            top_editors,
+        })
     }
 }

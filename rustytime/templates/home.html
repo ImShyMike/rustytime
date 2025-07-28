@@ -42,6 +42,12 @@
             .btn-secondary:hover {
                 background: #5a6268;
             }
+            .btn-red {
+                background: #dc3545;
+            }
+            .btn-red:hover {
+                background: #c82333;
+            }
         </style>
     </head>
     <body>
@@ -52,9 +58,13 @@
 
         <div class="actions">
             {% if is_authenticated %}
-            <a href="/dashboard" class="btn btn-secondary">Go to Dashboard</a>
+                <a href="/dashboard" class="btn btn-secondary">Dashboard</a>
+                {% if is_admin %}
+                    <a href="/admin" class="btn btn-red">Admin Panel</a>
+                {% endif %}
+                <a href="/auth/github/logout" class="btn">Logout</a>
             {% else %}
-            <a href="/auth/github/login" class="btn">Login with GitHub</a>
+                <a href="/auth/github/login" class="btn">Login with GitHub</a>
             {% endif %}
         </div>
     </body>

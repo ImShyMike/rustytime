@@ -65,6 +65,19 @@
             p {
                 margin: 8px;
             }
+                .admin-badge {
+                background: #e74c3c;
+                color: white;
+                padding: 0.2rem 0.5rem;
+                border-radius: 12px;
+                font-size: 0.8rem;
+                font-weight: 500;
+            }
+            .highlight {
+                background: #fffae6;
+                padding: 0.2rem 0.5rem;
+                border-radius: 4px;
+            }
         </style>
     </head>
     <body>
@@ -79,7 +92,7 @@
                 class="avatar"
             />
             <h3>User Information</h3>
-            <p><strong>Name:</strong> {{ user_name }}</p>
+            <p><strong>Name:</strong> {{ user_name }}{% if is_admin %} <span class="admin-badge">Admin</span>{% endif %}</p>
             <p><strong>GitHub ID:</strong> {{ github_id }}</p>
             <p><strong>Account Created:</strong> {{ created_at }}</p>
             <p><strong>Session Expires:</strong> {{ expires_at }}</p>
@@ -89,8 +102,38 @@
 
         <div class="api-key">
             <h3>Your API Key</h3>
-            <p><strong>API Key:</strong> {{ api_key }}</p>
-            <p><small>Use this key to authenticate with the API</small></p>
+            <p><strong>API Key:</strong> <span class="highlight">{{ api_key }}</span></p>
+            {% if dev_mode %}
+                <p><strong>Seed the database: </strong> <small class="highlight">export API_KEY="{{ api_key }}" && ./seed_db.sh</small></p>
+            {% endif %}
+        </div>
+
+        <div class="stats">
+            <h3>Dashboard Statistics</h3>
+            <h4>Top Projects</h4>
+            <ul>
+                {% for project in top_projects %}
+                <li>{{ project.name }}: {{ project.total_seconds }} seconds</li>
+                {% endfor %}
+            </ul>
+            <h4>Top Languages</h4>
+            <ul>
+                {% for language in top_languages %}
+                <li>{{ language.name }}: {{ language.total_seconds }} seconds</li>
+                {% endfor %}
+            </ul>
+            <h4>Top Operating Systems</h4>
+            <ul>
+                {% for os in top_os %}
+                <li>{{ os.name }}: {{ os.total_seconds }} seconds</li>
+                {% endfor %}
+            </ul>
+            <h4>Top Editors</h4>
+            <ul>
+                {% for editor in top_editors %}
+                <li>{{ editor.name }}: {{ editor.total_seconds }} seconds</li>
+                {% endfor %}
+            </ul>
         </div>
 
         <div class="buttons">
