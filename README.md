@@ -11,6 +11,10 @@
 - ✅ WakaTime compatible
 - ✅ Fast and memory efficient
 
+## What is this?
+
+`rustytime` is a simple WakaTime compatible backend that can be used to track time in any program with an existing [plugin](https://wakatime.com/plugins)!
+
 ## Installation
 
 ### Compiling from source
@@ -40,7 +44,8 @@ Dependencies:
 mkdir rustytime
 cd rustytime
 curl -O https://raw.githubusercontent.com/ImShyMike/rustytime/main/.env.example
+curl -o docker-compose.yml https://raw.githubusercontent.com/ImShyMike/rustytime/main/docker-compose.yml
 mv .env.example .env
 # Edit the .env file before running docker compose
-docker compose -f https://raw.githubusercontent.com/ImShyMike/rustytime/main/docker-compose.yml up
+docker compose up
 ```

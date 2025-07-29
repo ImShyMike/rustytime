@@ -10,9 +10,6 @@ RUN apk add --no-cache \
     bash \
     netcat-openbsd
 
-# Add target
-RUN rustup target add x86_64-unknown-linux-musl
-
 # Set environment variables
 ENV OPENSSL_STATIC=1
 ENV OPENSSL_DIR=/usr
@@ -31,9 +28,14 @@ RUN mkdir -p rustytime/src && \
 
 WORKDIR /app/rustytime
 
-# Fetch and build dependencies
-RUN cargo fetch --target x86_64-unknown-linux-musl
-RUN cargo build --release --no-default-features --target x86_64-unknown-linux-musl
+# Fetch and build dependencies (native compilation)
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/app/rustytime/target \
+    cargo fetch
+
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/app/rustytime/target \
+    cargo build --release --no-default-features
 
 # Remove dummy source
 RUN rm -rf src/
@@ -43,9 +45,13 @@ COPY rustytime/src ./src
 COPY rustytime/migrations ./migrations
 COPY rustytime/templates ./templates
 
-# Build with actual source
-RUN touch src/main.rs && \
-    cargo build --release --no-default-features --target x86_64-unknown-linux-musl
+# Build with actual source and copy binary out of cache
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/app/rustytime/target \
+    touch src/main.rs && \
+    cargo build --release --no-default-features && \
+    mkdir -p /tmp/target && \
+    cp /app/rustytime/target/release/rustytime /tmp/target/rustytime
 
 # Runtime stage
 FROM alpine:latest
@@ -55,8 +61,7 @@ RUN apk add --no-cache \
     ca-certificates \
     libgcc
 
-COPY --from=builder /app/rustytime/target/x86_64-unknown-linux-musl/release/rustytime /usr/local/bin/rustytime
+COPY --from=builder /tmp/target/rustytime /usr/local/bin/rustytime
 
 EXPOSE 3000
-
 CMD ["rustytime"]
