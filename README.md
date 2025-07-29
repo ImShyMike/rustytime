@@ -39,7 +39,7 @@ Dependencies:
 ```bash
 mkdir rustytime
 cd rustytime
-curl -O https://raw.githubusercontent.com/ImShyMike/rustytime/main/rustytime/.env.example
+curl -O https://raw.githubusercontent.com/ImShyMike/rustytime/main/.env.example
 mv .env.example .env
 # Edit the .env file before running docker compose
 docker compose -f https://raw.githubusercontent.com/ImShyMike/rustytime/main/docker-compose.yml up
