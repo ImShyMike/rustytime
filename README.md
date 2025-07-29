@@ -4,6 +4,13 @@
 
 ---
 
+## Features
+
+- ✅ Time tracking
+- ✅ Stat visualization
+- ✅ WakaTime compatible
+- ✅ Fast and memory efficient
+
 ## Installation
 
 ### Compiling from source

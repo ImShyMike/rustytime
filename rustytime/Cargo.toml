@@ -16,7 +16,7 @@ debug = false
 axum =  { version = "0.8.4", features = ["macros"] }
 diesel = { version = "2.2.12", features = ["chrono", "postgres", "uuid", "r2d2", "serde_json", "network-address"] }
 diesel_migrations = "2.2.0"
-tokio = { version = "1.46.1", features = ["full"] }
+tokio = { version = "1.47.0", features = ["full"] }
 tower-http = { version = "0.6.6", features = ["trace", "request-id"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
