@@ -73,9 +73,16 @@ fn redirect_to_login(request: Request) -> Redirect {
         .map(|pq| pq.as_str())
         .unwrap_or("/");
 
+    // validate the current_path
+    let safe_path = if current_path.starts_with("/") {
+        current_path
+    } else {
+        "/"
+    };
+
     let redirect_url = format!(
         "/auth/github/login?redirect={}",
-        urlencoding::encode(current_path)
+        urlencoding::encode(safe_path)
     );
 
     Redirect::to(&redirect_url)
