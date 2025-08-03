@@ -49,3 +49,13 @@ mv .env.example .env
 # Edit the .env file before running docker compose
 docker compose up
 ```
+
+## Usage
+
+Simply run the docker compose and open the website at [http://localhost:3000](http://localhost:3000)
+
+> The database seeding script is only compatible with Linux at the moment D:
+
+## License
+
+This project is licensed under the [GNU GPLv3](./LICENSE)
