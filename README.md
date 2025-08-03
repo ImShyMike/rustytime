@@ -4,6 +4,8 @@
 
 ---
 
+> If you want to try this project out, you can head over to [https://rustytime.shymike.dev](https://rustytime.shymike.dev/) for a deployed version
+
 ## Features
 
 - ✅ Time tracking
@@ -55,6 +57,10 @@ docker compose up
 Simply run the docker compose and open the website at [http://localhost:3000](http://localhost:3000)
 
 > The database seeding script is only compatible with Linux at the moment D:
+
+## WakaTime
+
+When using a WakaTime client, point your requests to `http://localhost:3000/api/v1` (or `https://rustytime.shymike.dev/api/v1` if using the deployed version)
 
 ## License
 
