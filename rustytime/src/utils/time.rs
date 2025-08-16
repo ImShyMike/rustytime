@@ -1,4 +1,5 @@
 #[allow(dead_code)]
+#[derive(Debug)]
 pub struct Time {
     pub human_readable: String,
     pub seconds: i64,
@@ -19,12 +20,12 @@ impl Time {
     }
 }
 
-pub fn human_readable_duration(seconds: i64) -> Time {
+pub fn human_readable_duration(seconds: i64, just_hours: bool) -> Time {
     let minutes = seconds / 60;
     let hours = minutes / 60;
     let days = hours / 24;
 
-    let human_readable = if days > 0 {
+    let human_readable = if !just_hours && days > 0 {
         format!(
             "{}d {}h {}m {}s",
             days,
@@ -40,5 +41,11 @@ pub fn human_readable_duration(seconds: i64) -> Time {
         format!("{}s", seconds)
     };
 
-    Time::new(human_readable, seconds % 60, minutes % 60, hours % 24, days)
+    Time::new(
+        human_readable,
+        seconds % 60,
+        minutes % 60,
+        if just_hours { hours } else { hours % 24 },
+        if just_hours { 0 } else { days },
+    )
 }

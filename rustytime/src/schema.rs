@@ -3,6 +3,7 @@
 diesel::table! {
     heartbeats (user_id, created_at) {
         id -> Int4,
+        time -> Int8,
         created_at -> Timestamptz,
         user_id -> Int4,
         entity -> Text,

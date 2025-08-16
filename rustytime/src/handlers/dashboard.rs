@@ -76,7 +76,7 @@ pub async fn dashboard(
                 expires_at => session_data.expires_at.format("%Y-%m-%d %H:%M:%S UTC").to_string(),
                 api_key => user.api_key.to_string(),
                 total_heartbeats => total_heartbeats,
-                formatted_time => human_readable_duration(dashboard_stats.total_time).human_readable,
+                formatted_time => human_readable_duration(dashboard_stats.total_time, true).human_readable,
                 top_projects => dashboard_stats.top_projects,
                 top_editors => dashboard_stats.top_editors,
                 top_os => dashboard_stats.top_oses,

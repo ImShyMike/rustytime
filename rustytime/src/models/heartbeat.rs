@@ -95,16 +95,22 @@ pub struct DurationResult {
 pub enum HeartbeatInput {
     Single(Box<HeartbeatRequest>),
     Multiple(Vec<HeartbeatRequest>),
+    Wrapped(WrappedHeartbeatRequest),
 }
 
 pub struct DurationInput {
     pub user_id: Option<i32>,
-    pub start_date: Option<DateTime<Utc>>,
-    pub end_date: Option<DateTime<Utc>>,
+    pub start_date: Option<i64>,
+    pub end_date: Option<i64>,
     pub project: Option<String>,
     pub language: Option<String>,
     pub entity: Option<String>,
     pub type_filter: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct WrappedHeartbeatRequest {
+    pub heartbeats: Vec<HeartbeatRequest>,
 }
 
 impl HeartbeatInput {
@@ -112,6 +118,7 @@ impl HeartbeatInput {
         match self {
             HeartbeatInput::Single(heartbeat) => vec![*heartbeat],
             HeartbeatInput::Multiple(heartbeats) => heartbeats,
+            HeartbeatInput::Wrapped(wrapped) => wrapped.heartbeats,
         }
     }
 }
@@ -121,8 +128,8 @@ pub struct HeartbeatRequest {
     pub entity: String,
     #[serde(rename = "type")]
     pub type_: String,
-    pub category: Option<String>,
     pub time: f64,
+    pub category: Option<String>,
     pub project: Option<String>,
     pub project_root_count: Option<i32>,
     pub branch: Option<String>,
@@ -140,7 +147,7 @@ pub struct HeartbeatRequest {
 #[serde(untagged)]
 pub enum HeartbeatApiResponseVariant {
     Single(HeartbeatApiResponse),
-    Multiple(HeartbeatsApiResponse),
+    Multiple(Vec<HeartbeatResponse>),
 }
 
 #[derive(Serialize, Debug)]
@@ -157,16 +164,12 @@ pub struct HeartbeatApiResponse {
     pub data: HeartbeatResponse,
 }
 
-#[derive(Serialize, Debug)]
-pub struct HeartbeatsApiResponse {
-    pub data: Vec<HeartbeatResponse>,
-}
-
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
 #[diesel(table_name = heartbeats)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct Heartbeat {
     pub id: i32,
+    pub time: i64,
     pub created_at: DateTime<Utc>,
     pub user_id: i32,
     pub entity: String,
@@ -193,8 +196,8 @@ pub struct Heartbeat {
 #[derive(Insertable, Deserialize, Debug)]
 #[diesel(table_name = heartbeats)]
 pub struct NewHeartbeat {
-    pub created_at: DateTime<Utc>,
     pub user_id: i32,
+    pub time: i64,
     pub entity: String,
     pub type_: String,
     pub ip_address: IpNetwork,
@@ -218,14 +221,14 @@ pub struct NewHeartbeat {
 
 impl NewHeartbeat {
     pub fn new(
-        created_at: DateTime<Utc>,
+        time: i64, // Unix timestamp
         user_id: i32,
         entity: String,
         type_: String,
         ip_address: IpNetwork,
     ) -> Self {
         Self {
-            created_at,
+            time,
             user_id,
             entity: truncate_string(entity, MAX_ENTITY_LENGTH),
             type_: truncate_string(type_, MAX_TYPE_LENGTH),
@@ -255,11 +258,7 @@ impl NewHeartbeat {
         ip_address: IpNetwork,
         headers: &HeaderMap,
     ) -> Self {
-        let created_at = DateTime::from_timestamp(
-            request.time as i64,
-            (request.time.fract() * 1_000_000_000.0) as u32,
-        )
-        .unwrap_or_else(Utc::now);
+        let time = request.time as i64;
 
         // extract user agent from headers
         let user_agent = headers
@@ -318,7 +317,7 @@ impl NewHeartbeat {
         };
 
         Self {
-            created_at,
+            time,
             user_id,
             entity: truncate_string(request.entity, MAX_ENTITY_LENGTH),
             type_: truncate_string(type_, MAX_TYPE_LENGTH),
@@ -346,8 +345,7 @@ impl NewHeartbeat {
 impl From<Heartbeat> for HeartbeatResponse {
     fn from(heartbeat: Heartbeat) -> Self {
         let id = heartbeat.id.to_string();
-        let time = heartbeat.created_at.timestamp() as f64
-            + heartbeat.created_at.timestamp_subsec_nanos() as f64 / 1_000_000_000.0;
+        let time = heartbeat.time as f64;
 
         Self {
             id,
@@ -364,21 +362,19 @@ impl Heartbeat {
     }
 
     pub fn count_heartbeats_last_24h(conn: &mut PgConnection) -> QueryResult<i64> {
-        use chrono::Duration;
-        let twenty_four_hours_ago = Utc::now() - Duration::hours(24);
+        let twenty_four_hours_ago = chrono::Utc::now().timestamp() - 24 * 60 * 60;
 
         heartbeats::table
-            .filter(heartbeats::created_at.gt(twenty_four_hours_ago))
+            .filter(heartbeats::time.gt(twenty_four_hours_ago))
             .count()
             .get_result(conn)
     }
 
     pub fn count_heartbeats_last_hour(conn: &mut PgConnection) -> QueryResult<i64> {
-        use chrono::Duration;
-        let one_hour_ago = Utc::now() - Duration::hours(1);
+        let one_hour_ago = chrono::Utc::now().timestamp() - 60 * 60;
 
         heartbeats::table
-            .filter(heartbeats::created_at.gt(one_hour_ago))
+            .filter(heartbeats::time.gt(one_hour_ago))
             .count()
             .get_result(conn)
     }
@@ -416,10 +412,10 @@ impl Heartbeat {
         conn: &mut PgConnection,
     ) -> QueryResult<Vec<DailyActivity>> {
         diesel::sql_query(
-            "SELECT DATE(created_at) as date, COUNT(*) as count 
+            "SELECT DATE(to_timestamp(time)) as date, COUNT(*) as count 
              FROM heartbeats 
-             WHERE created_at >= NOW() - INTERVAL '7 days' 
-             GROUP BY DATE(created_at) 
+             WHERE time >= EXTRACT(EPOCH FROM (NOW() - INTERVAL '7 days'))
+             GROUP BY DATE(to_timestamp(time))
              ORDER BY date",
         )
         .load::<DailyActivity>(conn)
@@ -431,41 +427,32 @@ impl Heartbeat {
         duration_input: DurationInput,
     ) -> QueryResult<i64> {
         let base_query = r#"
-            WITH ordered_heartbeats AS (
-                SELECT created_at
+            WITH capped_diffs AS (
+                SELECT CASE
+                    WHEN LAG(time) OVER (ORDER BY time) IS NULL THEN 0
+                    ELSE LEAST(EXTRACT(EPOCH FROM (to_timestamp(time) - to_timestamp(LAG(time) OVER (ORDER BY time)))), $8)
+                END as diff
                 FROM heartbeats
                 WHERE ($1::int IS NULL OR user_id = $1)
-                  AND ($2::timestamptz IS NULL OR created_at >= $2)
-                  AND ($3::timestamptz IS NULL OR created_at <= $3)
+                  AND ($2::bigint IS NULL OR time >= $2)
+                  AND ($3::bigint IS NULL OR time <= $3)
                   AND ($4::text IS NULL OR project = $4)
                   AND ($5::text IS NULL OR language = $5)
                   AND ($6::text IS NULL OR entity = $6)
-                  AND ($7::text IS NULL OR type_ = $7)
-                ORDER BY created_at ASC
-            ),
-            time_diffs AS (
-                SELECT 
-                    EXTRACT(EPOCH FROM (
-                        LEAD(created_at) OVER (ORDER BY created_at) - created_at
-                    ))::integer AS diff_seconds
-                FROM ordered_heartbeats
+                  AND ($7::text IS NULL OR type = $7)
+                  AND time IS NOT NULL
+                ORDER BY time ASC
             )
-            SELECT COALESCE(SUM(
-                CASE 
-                    WHEN diff_seconds IS NULL OR diff_seconds < 0 THEN 0
-                    WHEN diff_seconds > $8 THEN $8
-                    ELSE diff_seconds
-                END
-            ), 0) AS total_seconds
-            FROM time_diffs
+            SELECT COALESCE(SUM(diff), 0)::bigint AS total_seconds
+            FROM capped_diffs
             "#;
 
         let result = diesel::sql_query(base_query)
             .bind::<diesel::sql_types::Nullable<diesel::sql_types::Int4>, _>(duration_input.user_id)
-            .bind::<diesel::sql_types::Nullable<diesel::sql_types::Timestamptz>, _>(
+            .bind::<diesel::sql_types::Nullable<diesel::sql_types::BigInt>, _>(
                 duration_input.start_date,
             )
-            .bind::<diesel::sql_types::Nullable<diesel::sql_types::Timestamptz>, _>(
+            .bind::<diesel::sql_types::Nullable<diesel::sql_types::BigInt>, _>(
                 duration_input.end_date,
             )
             .bind::<diesel::sql_types::Nullable<diesel::sql_types::Text>, _>(
@@ -491,36 +478,26 @@ impl Heartbeat {
         conn: &mut PgConnection,
         user_id: i32,
     ) -> QueryResult<i64> {
-        let result = diesel::sql_query(
-            r#"
-            WITH ordered_heartbeats AS (
-                SELECT created_at
-                FROM heartbeats
-                WHERE user_id = $1
-                ORDER BY created_at ASC
-            ),
-            time_diffs AS (
-                SELECT 
-                    EXTRACT(EPOCH FROM (
-                        LEAD(created_at) OVER (ORDER BY created_at) - created_at
-                    ))::integer AS diff_seconds
-                FROM ordered_heartbeats
-            )
-            SELECT COALESCE(SUM(
-                CASE 
-                    WHEN diff_seconds IS NULL OR diff_seconds < 0 THEN 0
-                    WHEN diff_seconds > $2 THEN $2
-                    ELSE diff_seconds
-                END
-            ), 0) AS total_seconds
-            FROM time_diffs
-            "#,
-        )
-        .bind::<diesel::sql_types::Int4, _>(user_id)
-        .bind::<diesel::sql_types::Int4, _>(TIMEOUT_SECONDS)
-        .get_result::<DurationResult>(conn)?;
+        let result = Self::get_user_duration_seconds(
+            conn,
+            DurationInput {
+                user_id: Some(user_id),
+                start_date: None,
+                end_date: None,
+                project: None,
+                language: None,
+                entity: None,
+                type_filter: None,
+            },
+        );
 
-        Ok(result.total_seconds)
+        match result {
+            Ok(total_seconds) => Ok(total_seconds),
+            Err(err) => {
+                eprintln!("❌ Error calculating total duration: {}", err);
+                Err(err)
+            }
+        }
     }
 
     /// Get the count of heartbeats for a user
@@ -540,36 +517,23 @@ impl Heartbeat {
         let mut get_stats = |field: &str| -> QueryResult<Vec<UsageStat>> {
             let sql = format!(
                 r#"
-                WITH ordered AS (
-                    SELECT {field}, created_at
+                WITH capped_diffs AS (
+                    SELECT
+                        {field} as name,
+                        CASE
+                            WHEN LAG(time) OVER (PARTITION BY {field} ORDER BY time) IS NULL THEN 0
+                            ELSE LEAST(EXTRACT(EPOCH FROM (time - LAG(time) OVER (PARTITION BY {field} ORDER BY time))), $2)
+                        END as diff
                     FROM heartbeats
                     WHERE {field} IS NOT NULL
                     AND user_id = $1
-                    ORDER BY created_at ASC
-                ),
-                grouped AS (
-                    SELECT
-                        {field} as name,
-                        created_at,
-                        LEAD(created_at) OVER (PARTITION BY {field} ORDER BY created_at) as next_created_at
-                    FROM ordered
-                ),
-                diffs AS (
-                    SELECT
-                        name,
-                        EXTRACT(EPOCH FROM (COALESCE(next_created_at, created_at) - created_at))::integer as diff_seconds
-                    FROM grouped
+                    AND time IS NOT NULL
+                    ORDER BY time ASC
                 )
                 SELECT
                     name,
-                    SUM(
-                        CASE
-                            WHEN diff_seconds IS NULL OR diff_seconds < 0 THEN 0
-                            WHEN diff_seconds > $2 THEN $2
-                            ELSE diff_seconds
-                        END
-                    ) as total_seconds
-                FROM diffs
+                    COALESCE(SUM(diff), 0)::bigint as total_seconds
+                FROM capped_diffs
                 GROUP BY name
                 ORDER BY total_seconds DESC
                 LIMIT 10

@@ -17,6 +17,7 @@ CREATE TABLE users (
 -- Create heartbeats table
 CREATE TABLE IF NOT EXISTS heartbeats (
   id                SERIAL         NOT NULL,
+  time              BIGINT         NOT NULL DEFAULT EXTRACT(EPOCH FROM now()),
   created_at        TIMESTAMPTZ    NOT NULL DEFAULT now(),
   user_id           INTEGER        NOT NULL
                        REFERENCES users(id) ON DELETE CASCADE,

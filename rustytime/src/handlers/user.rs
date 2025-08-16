@@ -15,6 +15,8 @@ use crate::state::AppState;
 use crate::utils::auth::{get_user_id_from_api_key, get_valid_api_key};
 use crate::utils::time::human_readable_duration;
 
+const MAX_HEARTBEATS_PER_REQUEST: usize = 25;
+
 /// Process heartbeat request and store in the database
 async fn process_heartbeat_request(
     pool: &DbPool,
@@ -29,7 +31,7 @@ async fn process_heartbeat_request(
     }
 
     let heartbeat_requests = heartbeat_input.into_vec();
-    if heartbeat_requests.len() > 25 {
+    if heartbeat_requests.len() > MAX_HEARTBEATS_PER_REQUEST {
         return Err((StatusCode::BAD_REQUEST, "Bad request").into_response());
     }
 
@@ -61,11 +63,8 @@ async fn process_heartbeat_request(
                     let response = HeartbeatApiResponse {
                         data: heartbeat.into(),
                     };
-                    Ok((
-                        StatusCode::CREATED,
-                        Json(HeartbeatApiResponseVariant::Single(response)),
-                    )
-                        .into_response())
+                    let response_data = Json(HeartbeatApiResponseVariant::Single(response));
+                    Ok((StatusCode::CREATED, response_data).into_response())
                 } else {
                     Err((StatusCode::INTERNAL_SERVER_ERROR, "Internal server error")
                         .into_response())
@@ -85,21 +84,13 @@ async fn process_heartbeat_request(
         match store_heartbeats_in_db(pool, new_heartbeats).await {
             Ok(heartbeats) => {
                 if heartbeats.is_empty() {
-                    let response = HeartbeatsApiResponse { data: vec![] };
-                    Ok((
-                        StatusCode::CREATED,
-                        Json(HeartbeatApiResponseVariant::Multiple(response)),
-                    )
-                        .into_response())
+                    let response_data = Json(HeartbeatApiResponseVariant::Multiple(vec![]));
+                    Ok((StatusCode::CREATED, response_data).into_response())
                 } else {
-                    let response = HeartbeatsApiResponse {
-                        data: heartbeats.into_iter().map(|h| h.into()).collect(),
-                    };
-                    Ok((
-                        StatusCode::CREATED,
-                        Json(HeartbeatApiResponseVariant::Multiple(response)),
-                    )
-                        .into_response())
+                    let response_data = Json(HeartbeatApiResponseVariant::Multiple(
+                        heartbeats.into_iter().map(|h| h.into()).collect(),
+                    ));
+                    Ok((StatusCode::CREATED, response_data).into_response())
                 }
             }
             Err(e) => {
@@ -150,16 +141,17 @@ pub async fn get_statusbar_today(
 
     // calculate today's date range
     let today = Utc::now().date_naive();
-    let start_of_day = today.and_hms_opt(0, 0, 0).unwrap().and_utc();
+    let start_of_day = today.and_hms_opt(0, 0, 0).unwrap().and_utc().timestamp();
     let end_of_day = today
         .succ_opt()
         .unwrap_or(today)
         .and_hms_opt(0, 0, 0)
         .unwrap()
-        .and_utc();
+        .and_utc()
+        .timestamp();
 
     let mut conn = app_state.db_pool.get().map_err(|err| {
-        eprintln!("Database connection error: {}", err);
+        eprintln!("❌ Database connection error: {}", err);
         (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
     })?;
 
@@ -176,7 +168,7 @@ pub async fn get_statusbar_today(
         },
     ) {
         Ok(total_seconds) => {
-            let time_obj = human_readable_duration(total_seconds);
+            let time_obj = human_readable_duration(total_seconds, true);
 
             Ok(Json(json!({
                 "data": {
@@ -191,7 +183,10 @@ pub async fn get_statusbar_today(
                 }
             })))
         }
-        Err(_) => Err((StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()),
+        Err(err) => {
+            eprintln!("❌ Error calculating duration: {}", err);
+            Err((StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response())
+        }
     }
 }
 
