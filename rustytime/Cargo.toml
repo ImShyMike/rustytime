@@ -1,7 +1,9 @@
 [package]
 name = "rustytime"
-version = "0.2.0"
+description = "🕒 blazingly fast time tracking for developers"
+version = "0.2.1"
 edition = "2024"
+authors = ["ImShyMike"]
 
 [profile.release-lto]
 inherits = "release"
