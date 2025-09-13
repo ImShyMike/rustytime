@@ -17,15 +17,15 @@ debug = false
 [dependencies]
 axum =  { version = "0.8.4", features = ["json", "query", "http1", "tokio"], default-features = false }
 diesel = { version = "2.2.12", features = ["32-column-tables", "chrono", "postgres", "uuid", "r2d2", "network-address"], default-features = false }
-diesel_migrations = { version = "2.2.0", default-features = false }
+diesel_migrations = { version = "2.3.0", default-features = false }
 tokio = { version = "1.47.1", features = ["signal", "rt-multi-thread"], default-features = false }
-tower-http = { version = "0.6.6", features = ["trace"], default-features = false }
+tower-http = { version = "0.6.6", features = ["limit", "timeout", "trace", "cors", "compression-gzip", "decompression-gzip"], default-features = false }
 tracing = { version = "0.1.41", default-features = false }
 tracing-subscriber = { version = "0.3.20", features = ["fmt", "env-filter"], default-features = false }
 dotenvy = { version = "0.15.7", default-features = false }
 serde = { version = "1.0.219", features = ["derive"], default-features = false }
 uuid = { version = "1.18.1", features = ["serde", "v4"], default-features = false }
-chrono = { version = "0.4.41", default-features = false }
+chrono = { version = "0.4.42", default-features = false }
 serde_json = { version = "1.0.143", default-features = false }
 base64 = { version = "0.22.1", default-features = false }
 ipnetwork = { version = "0.21.1", features = ["serde"], default-features = false }

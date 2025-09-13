@@ -1,13 +1,15 @@
 use axum::{
     extract::{Request, State},
-    http::StatusCode,
+    http::{HeaderValue, StatusCode},
     middleware::Next,
     response::{IntoResponse, Redirect, Response},
 };
+use reqwest::Method;
 use tower_cookies::Cookies;
 
 use crate::state::AppState;
 use crate::utils::session::SessionManager;
+use tower_http::cors::CorsLayer;
 
 /// Middleware to require authentication
 pub async fn require_auth(
@@ -98,4 +100,27 @@ pub async fn track_metrics(
     app_state.metrics.record_request();
 
     next.run(request).await
+}
+
+/// Layer to add CORS
+pub fn cors_layer() -> CorsLayer {
+    CorsLayer::new()
+        .allow_origin([
+            "http://localhost:5173".parse::<HeaderValue>().unwrap(), // SvelteKit dev
+            "http://localhost:4173".parse::<HeaderValue>().unwrap(), // SvelteKit preview
+            "https://blahaj.placeholder".parse::<HeaderValue>().unwrap(), // Production
+        ])
+        .allow_methods([
+            Method::GET,
+            Method::POST,
+            Method::PUT,
+            Method::DELETE,
+            Method::OPTIONS,
+        ])
+        .allow_headers([
+            axum::http::header::AUTHORIZATION,
+            axum::http::header::CONTENT_TYPE,
+            axum::http::header::ACCEPT,
+        ])
+        .allow_credentials(true)
 }
