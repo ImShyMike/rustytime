@@ -9,7 +9,7 @@ static USER_AGENT_PATTERN: Lazy<Regex> = Lazy::new(|| {
 /// Parse user agent into OS and editor
 /// Based on https://github.com/muety/wakapi/blob/master/utils/http.go#L89-L127
 pub fn parse_user_agent(ua: String) -> Result<(String, String), String> {
-    // Try parse wakatime client user agents first
+    // try to parse wakatime client user agents first
     if let Some(groups) = USER_AGENT_PATTERN.captures(&ua) {
         if groups.len() == 4 {
             // extract OS
