@@ -1,9 +1,9 @@
 #[macro_export]
 macro_rules! db_query {
     ($expr:expr) => {
-        $expr.map_err(|e| {
+        $expr.map_err(|_e| {
             #[cfg(debug_assertions)]
-            eprintln!("Database error: {:?}", e);
+            eprintln!("Database error: {:?}", _e);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "An unknown database error has occured",
@@ -12,9 +12,9 @@ macro_rules! db_query {
         })?
     };
     ($expr:expr, $msg:expr) => {
-        $expr.map_err(|e| {
+        $expr.map_err(|_e| {
             #[cfg(debug_assertions)]
-            eprintln!("Database error: {:?}", e);
+            eprintln!("Database error: {:?}", _e);
             (StatusCode::INTERNAL_SERVER_ERROR, $msg).into_response()
         })?
     };
@@ -23,9 +23,9 @@ macro_rules! db_query {
 #[macro_export]
 macro_rules! get_db_conn {
     ($state:expr) => {
-        $state.db_pool.get().map_err(|e| {
+        $state.db_pool.get().map_err(|_e| {
             #[cfg(debug_assertions)]
-            eprintln!("Failed to connect to the database: {:?}", e);
+            eprintln!("Failed to connect to the database: {:?}", _e);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Failed to connect to the database",
