@@ -14,7 +14,7 @@ use serde::Deserialize;
 use std::env;
 use tower_cookies::Cookies;
 
-use crate::models::session::Session;
+use crate::{get_db_conn, models::session::Session};
 use crate::models::user::User;
 use crate::state::AppState;
 use crate::utils::session::SessionManager;
@@ -111,10 +111,7 @@ pub async fn callback(
         })?;
 
     // get database connection
-    let mut conn = app_state.db_pool.get().map_err(|err| {
-        eprintln!("Database connection error: {}", err);
-        (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
-    })?;
+    let mut conn = get_db_conn!(app_state);
 
     // create or update user in database
     let user = User::create_or_update(
@@ -166,10 +163,7 @@ pub async fn logout(
     // get session from cookie
     if let Some(session_id) = SessionManager::get_session_from_cookies(&cookies) {
         // delete session from database
-        let mut conn = app_state.db_pool.get().map_err(|err| {
-            eprintln!("Database connection error: {}", err);
-            (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
-        })?;
+        let mut conn = get_db_conn!(app_state);
 
         diesel::delete(
             crate::schema::sessions::table.filter(crate::schema::sessions::id.eq(session_id)),

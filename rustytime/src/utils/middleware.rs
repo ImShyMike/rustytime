@@ -91,6 +91,7 @@ fn redirect_to_login(request: Request) -> Redirect {
 }
 
 /// Middleware to track request metrics
+#[inline(always)]
 pub async fn track_metrics(
     State(app_state): State<AppState>,
     request: Request,

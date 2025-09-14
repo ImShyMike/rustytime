@@ -8,6 +8,7 @@ use serde_json::json;
 use std::net::SocketAddr;
 
 use crate::db::DbPool;
+use crate::get_db_conn;
 use crate::models::heartbeat::Heartbeat;
 use crate::models::heartbeat::*;
 use crate::schema::heartbeats;
@@ -150,10 +151,7 @@ pub async fn get_statusbar_today(
         .and_utc()
         .timestamp();
 
-    let mut conn = app_state.db_pool.get().map_err(|err| {
-        eprintln!("❌ Database connection error: {}", err);
-        (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
-    })?;
+    let mut conn = get_db_conn!(app_state);
 
     match Heartbeat::get_user_duration_seconds(
         &mut conn,

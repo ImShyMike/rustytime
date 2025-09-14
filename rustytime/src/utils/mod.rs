@@ -6,3 +6,4 @@ pub mod middleware;
 pub mod session;
 pub mod templates;
 pub mod time;
+pub mod macros;

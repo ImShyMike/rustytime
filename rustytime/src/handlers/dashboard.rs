@@ -1,4 +1,4 @@
-use crate::models::heartbeat::Heartbeat;
+use crate::{get_db_conn, models::heartbeat::Heartbeat};
 use crate::models::user::User;
 use crate::state::AppState;
 use crate::utils::session::SessionManager;
@@ -39,10 +39,7 @@ pub async fn dashboard(
         })?
         .expect("Session should be valid since middleware validated authentication");
 
-    let mut conn = app_state.db_pool.get().map_err(|err| {
-        eprintln!("Database connection error: {}", err);
-        (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
-    })?;
+    let mut conn = get_db_conn!(app_state);
 
     // get heartbeat count
     let total_heartbeats = Heartbeat::get_user_heartbeat_count(&mut conn, session_data.user_id)

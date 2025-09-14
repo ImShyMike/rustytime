@@ -58,6 +58,7 @@ impl MetricsTracker {
     }
 
     /// Get current requests per second
+    #[inline(always)]
     pub fn get_metrics(&self) -> RequestMetrics {
         let recent_requests = self.recent_requests.lock().unwrap();
         RequestMetrics {

@@ -24,6 +24,7 @@ pub struct SessionManager;
 
 impl SessionManager {
     /// Create a new session cookie
+    #[inline(always)]
     pub fn create_session_cookie(session_id: Uuid) -> Cookie<'static> {
         let expires = Utc::now() + Duration::days(SESSION_DURATION_DAYS);
 
@@ -31,12 +32,13 @@ impl SessionManager {
             .path("/")
             .expires(time::OffsetDateTime::from_unix_timestamp(expires.timestamp()).unwrap())
             .http_only(true)
-            .secure(std::env::var("ENVIRONMENT").unwrap_or_default() == "production")
+            .secure(true)
             .same_site(SameSite::Lax)
             .build()
     }
 
     /// Get session from cookie
+    #[inline(always)]
     pub fn get_session_from_cookies(cookies: &Cookies) -> Option<Uuid> {
         cookies
             .get(SESSION_COOKIE_NAME)
@@ -66,6 +68,7 @@ impl SessionManager {
     }
 
     /// Remove the session cookie
+    #[inline(always)]
     pub fn remove_session_cookie() -> Cookie<'static> {
         Cookie::build((SESSION_COOKIE_NAME, ""))
             .path("/")
@@ -76,6 +79,7 @@ impl SessionManager {
 
     /// Check if user is authenticated
     #[allow(dead_code)]
+    #[inline(always)]
     pub async fn is_authenticated(cookies: &Cookies, pool: &DbPool) -> bool {
         if let Some(session_id) = Self::get_session_from_cookies(cookies) {
             if let Ok(Some(_)) = Self::validate_session(pool, session_id).await {

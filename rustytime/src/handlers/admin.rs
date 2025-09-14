@@ -1,3 +1,4 @@
+use crate::{db_query, get_db_conn};
 use crate::models::heartbeat::{Heartbeat, LanguageCount, ProjectCount};
 use crate::models::user::User;
 use crate::state::AppState;
@@ -38,6 +39,7 @@ pub struct AdminStats {
     pub daily_activity: Vec<FormattedDailyActivity>,
     pub all_users: Vec<FormattedUser>,
     pub admin_users: Vec<FormattedUser>,
+    pub requests_per_second: String,
 }
 
 pub async fn admin_dashboard(
@@ -50,25 +52,16 @@ pub async fn admin_dashboard(
         .0;
 
     if !current_user.is_admin() {
-        return Err((StatusCode::FORBIDDEN, "Access denied - admin required").into_response());
+        return Err((StatusCode::FORBIDDEN, "No permission").into_response());
     }
 
     // get database connection
-    let mut conn = app_state.db_pool.get().map_err(|_| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Database connection error",
-        )
-            .into_response()
-    })?;
+    let mut conn = get_db_conn!(app_state);
 
     // fetch raw data
-    let raw_daily_activity = Heartbeat::get_daily_activity_last_week(&mut conn)
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Database error").into_response())?;
-    let raw_all_users = User::list_all_users(&mut conn)
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Database error").into_response())?;
-    let raw_admin_users = User::list_admins(&mut conn)
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Database error").into_response())?;
+    let raw_daily_activity = db_query!(Heartbeat::get_daily_activity_last_week(&mut conn), "Failed to fetch daily activity");
+    let raw_all_users = db_query!(User::list_all_users(&mut conn), "Failed to fetch users");
+    let raw_admin_users = db_query!(User::list_admins(&mut conn), "Failed to fetch admin users");
 
     // convert to formatted versions
     let daily_activity: Vec<FormattedDailyActivity> = raw_daily_activity
@@ -107,24 +100,17 @@ pub async fn admin_dashboard(
 
     // fetch all statistics
     let stats = AdminStats {
-        total_users: User::count_total_users(&mut conn)
-            .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Database error").into_response())?,
-        total_heartbeats: Heartbeat::count_total_heartbeats(&mut conn)
-            .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Database error").into_response())?,
-        heartbeats_last_hour: Heartbeat::count_heartbeats_last_hour(&mut conn)
-            .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Database error").into_response())?,
-        heartbeats_last_24h: Heartbeat::count_heartbeats_last_24h(&mut conn)
-            .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Database error").into_response())?,
-        top_languages: Heartbeat::get_top_languages(&mut conn, 10)
-            .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Database error").into_response())?,
-        top_projects: Heartbeat::get_top_projects(&mut conn, 10)
-            .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Database error").into_response())?,
+        total_users: db_query!(User::count_total_users(&mut conn)),
+        total_heartbeats: db_query!(Heartbeat::count_total_heartbeats(&mut conn)),
+        heartbeats_last_hour: db_query!(Heartbeat::count_heartbeats_last_hour(&mut conn)),
+        heartbeats_last_24h: db_query!(Heartbeat::count_heartbeats_last_24h(&mut conn)),
+        top_languages: db_query!(Heartbeat::get_top_languages(&mut conn, 10)),
+        top_projects: db_query!(Heartbeat::get_top_projects(&mut conn, 10)),
         daily_activity,
         all_users,
         admin_users,
+        requests_per_second: format!("{:.3}", app_state.metrics.get_metrics().requests_per_second)
     };
-
-    let metrics = app_state.metrics.get_metrics();
 
     let rendered = app_state
         .template_engine
@@ -133,7 +119,6 @@ pub async fn admin_dashboard(
             context! {
                 stats => stats,
                 current_user => current_user,
-                requests_per_second => format!("{:.3}", metrics.requests_per_second),
             },
         )
         .map_err(|err| {
