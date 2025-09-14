@@ -1,7 +1,7 @@
-use crate::{db_query, get_db_conn};
 use crate::models::heartbeat::{Heartbeat, LanguageCount, ProjectCount};
 use crate::models::user::User;
 use crate::state::AppState;
+use crate::{db_query, get_db_conn};
 use axum::{
     Extension,
     extract::State,
@@ -59,7 +59,10 @@ pub async fn admin_dashboard(
     let mut conn = get_db_conn!(app_state);
 
     // fetch raw data
-    let raw_daily_activity = db_query!(Heartbeat::get_daily_activity_last_week(&mut conn), "Failed to fetch daily activity");
+    let raw_daily_activity = db_query!(
+        Heartbeat::get_daily_activity_last_week(&mut conn),
+        "Failed to fetch daily activity"
+    );
     let raw_all_users = db_query!(User::list_all_users(&mut conn), "Failed to fetch users");
     let raw_admin_users = db_query!(User::list_admins(&mut conn), "Failed to fetch admin users");
 
@@ -109,7 +112,7 @@ pub async fn admin_dashboard(
         daily_activity,
         all_users,
         admin_users,
-        requests_per_second: format!("{:.3}", app_state.metrics.get_metrics().requests_per_second)
+        requests_per_second: format!("{:.3}", app_state.metrics.get_metrics().requests_per_second),
     };
 
     let rendered = app_state

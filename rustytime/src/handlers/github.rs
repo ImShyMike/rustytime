@@ -14,10 +14,10 @@ use serde::Deserialize;
 use std::env;
 use tower_cookies::Cookies;
 
-use crate::{get_db_conn, models::session::Session};
 use crate::models::user::User;
 use crate::state::AppState;
 use crate::utils::session::SessionManager;
+use crate::{get_db_conn, models::session::Session};
 
 #[derive(Deserialize)]
 pub struct AuthRequest {

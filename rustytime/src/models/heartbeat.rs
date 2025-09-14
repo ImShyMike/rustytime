@@ -24,6 +24,7 @@ const MAX_MACHINE_LENGTH: usize = 100;
 const MAX_USER_AGENT_LENGTH: usize = 255;
 
 /// Truncate a string to the specified maximum length, respecting UTF-8 boundaries
+#[inline(always)]
 fn truncate_string(s: String, max_length: usize) -> String {
     if s.chars().count() <= max_length {
         s
@@ -33,6 +34,7 @@ fn truncate_string(s: String, max_length: usize) -> String {
 }
 
 /// Truncate an optional string to the specified maximum length
+#[inline(always)]
 fn truncate_optional_string(s: Option<String>, max_length: usize) -> Option<String> {
     s.map(|s| truncate_string(s, max_length))
 }
@@ -522,7 +524,7 @@ impl Heartbeat {
                         {field} as name,
                         CASE
                             WHEN LAG(time) OVER (PARTITION BY {field} ORDER BY time) IS NULL THEN 0
-                            ELSE LEAST(EXTRACT(EPOCH FROM (time - LAG(time) OVER (PARTITION BY {field} ORDER BY time))), $2)
+                            ELSE LEAST(EXTRACT(EPOCH FROM (to_timestamp(time) - to_timestamp(LAG(time) OVER (PARTITION BY {field} ORDER BY time)))), $2)
                         END as diff
                     FROM heartbeats
                     WHERE {field} IS NOT NULL
