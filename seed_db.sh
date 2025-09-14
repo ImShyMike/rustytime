@@ -5,8 +5,7 @@ if [ -z "$API_KEY" ]; then
   exit 1
 fi
 
-read -p "Host (default='http://localhost:3000'): " HOST
-HOST=HOST | "http://localhost:3000"
+HOST="http://localhost:3000"
 USER_AGENT="wakatime/v1.115.2 (linux-6.14.1) go1.24.2 vscode/1.100.0 vscode-wakatime/25.0.3"
 
 PROJECTS=("Alpha" "Beta" "Gamma" "Delta")
