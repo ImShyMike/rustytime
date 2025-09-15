@@ -2,7 +2,7 @@ use crate::models::heartbeat::UsageStat;
 use crate::models::user::User;
 use crate::state::AppState;
 use crate::utils::session::SessionManager;
-use crate::utils::time::human_readable_duration;
+use crate::utils::time::{human_readable_duration, TimeFormat};
 use crate::{db_query, get_db_conn, models::heartbeat::Heartbeat};
 use axum::{
     Extension,
@@ -16,19 +16,20 @@ use tower_cookies::Cookies;
 #[derive(Serialize)]
 pub struct DashboardResponse {
     avatar_url: String,
-    user_name: String,
+    username: String,
+    user_id: i32,
     github_id: i64,
     created_at: String,
     expires_at: String,
     api_key: String,
     total_heartbeats: i64,
-    formatted_time: String,
-    top_projects: Vec<UsageStat>,
-    top_editors: Vec<UsageStat>,
-    top_os: Vec<UsageStat>,
-    top_languages: Vec<UsageStat>,
+    human_readable_total: String,
     is_admin: bool,
     dev_mode: bool,
+    projects: Vec<UsageStat>,
+    editors: Vec<UsageStat>,
+    operating_systems: Vec<UsageStat>,
+    languages: Vec<UsageStat>,
 }
 
 /// Handler for the dashboard page (will likely be done using svelteKit later)
@@ -78,7 +79,8 @@ pub async fn dashboard(
 
     Ok(Json(DashboardResponse {
         avatar_url: user.avatar_url.as_deref().unwrap_or("").to_string(),
-        user_name: user.name.as_deref().unwrap_or("Unknown").to_string(),
+        username: user.name.as_deref().unwrap_or("Unknown").to_string(),
+        user_id: user.id,
         github_id: session_data.github_user_id,
         created_at: user.created_at.format("%Y-%m-%d %H:%M:%S UTC").to_string(),
         expires_at: session_data
@@ -87,12 +89,12 @@ pub async fn dashboard(
             .to_string(),
         api_key: user.api_key.to_string(),
         total_heartbeats: total_heartbeats,
-        formatted_time: human_readable_duration(dashboard_stats.total_time, true).human_readable,
-        top_projects: dashboard_stats.top_projects,
-        top_editors: dashboard_stats.top_editors,
-        top_os: dashboard_stats.top_oses,
-        top_languages: dashboard_stats.top_languages,
+        human_readable_total: human_readable_duration(dashboard_stats.total_time, TimeFormat::NoDays).human_readable,
         is_admin: user.is_admin,
         dev_mode: cfg!(debug_assertions),
+        projects: dashboard_stats.top_projects,
+        editors: dashboard_stats.top_editors,
+        operating_systems: dashboard_stats.top_oses,
+        languages: dashboard_stats.top_languages,
     }))
 }

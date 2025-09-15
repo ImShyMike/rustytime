@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::schema::heartbeats;
 use crate::utils::http::parse_user_agent;
+use crate::utils::time::{human_readable_duration, TimeFormat};
 
 const TIMEOUT_SECONDS: i32 = 120; // 2 minutes in seconds
 
@@ -51,6 +52,8 @@ struct Row {
 pub struct UsageStat {
     pub name: String,
     pub total_seconds: i64,
+    pub text: String,
+    pub percent: f32,
 }
 
 #[derive(Debug, Serialize)]
@@ -515,6 +518,9 @@ impl Heartbeat {
         conn: &mut PgConnection,
         user_id: i32,
     ) -> QueryResult<DashboardStats> {
+        // get total time for percentage calculations
+        let total_time = Self::get_user_total_duration_seconds(conn, user_id)?;
+
         // helper closure to run the SQL for a given field
         let mut get_stats = |field: &str| -> QueryResult<Vec<UsageStat>> {
             let sql = format!(
@@ -553,6 +559,12 @@ impl Heartbeat {
                 .map(|row| UsageStat {
                     name: row.name.unwrap_or_else(|| "Unknown".to_string()),
                     total_seconds: row.total_seconds,
+                    text: human_readable_duration(row.total_seconds, TimeFormat::HourMinute).human_readable,
+                    percent: if total_time > 0 {
+                        ((row.total_seconds as f32 / total_time as f32) * 10000.0).round() / 100.0
+                    } else {
+                        0.0
+                    },
                 })
                 .collect())
         };
@@ -561,8 +573,6 @@ impl Heartbeat {
         let top_editors = get_stats("editor")?;
         let top_oses = get_stats("operating_system")?;
         let top_languages = get_stats("language")?;
-
-        let total_time = Self::get_user_total_duration_seconds(conn, user_id)?;
 
         Ok(DashboardStats {
             total_time,

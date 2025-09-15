@@ -20,32 +20,67 @@ impl Time {
     }
 }
 
-pub fn human_readable_duration(seconds: i64, just_hours: bool) -> Time {
+#[allow(dead_code)]
+pub enum TimeFormat {
+    NoDays,
+    HourMinute,
+    Full,
+}
+
+pub fn human_readable_duration(seconds: i64, format: TimeFormat) -> Time {
     let minutes = seconds / 60;
     let hours = minutes / 60;
     let days = hours / 24;
 
-    let human_readable = if !just_hours && days > 0 {
-        format!(
-            "{}d {}h {}m {}s",
-            days,
-            hours % 24,
-            minutes % 60,
-            seconds % 60
-        )
-    } else if hours > 0 {
-        format!("{}h {}m {}s", hours, minutes % 60, seconds % 60)
-    } else if minutes > 0 {
-        format!("{}m {}s", minutes, seconds % 60)
-    } else {
-        format!("{}s", seconds)
+    let human_readable = match format {
+        TimeFormat::Full => {
+            if days > 0 {
+                format!(
+                    "{}d {}h {}m {}s",
+                    days,
+                    hours % 24,
+                    minutes % 60,
+                    seconds % 60
+                )
+            } else if hours > 0 {
+                format!("{}h {}m {}s", hours, minutes % 60, seconds % 60)
+            } else if minutes > 0 {
+                format!("{}m {}s", minutes, seconds % 60)
+            } else {
+                format!("{}s", seconds)
+            }
+        }
+        TimeFormat::NoDays => {
+            if hours > 0 {
+                format!("{}h {}m {}s", hours, minutes % 60, seconds % 60)
+            } else if minutes > 0 {
+                format!("{}m {}s", minutes, seconds % 60)
+            } else {
+                format!("{}s", seconds)
+            }
+        }
+        TimeFormat::HourMinute => {
+            if hours > 0 {
+                format!("{}h {}m", hours, minutes % 60)
+            } else if minutes > 0 {
+                format!("{}m", minutes)
+            } else {
+                format!("{}s", seconds)
+            }
+        }
     };
 
     Time::new(
         human_readable,
         seconds % 60,
         minutes % 60,
-        if just_hours { hours } else { hours % 24 },
-        if just_hours { 0 } else { days },
+        match format {
+            TimeFormat::NoDays => hours,
+            _ => hours % 24,
+        },
+        match format {
+            TimeFormat::NoDays => 0,
+            _ => days,
+        },
     )
 }

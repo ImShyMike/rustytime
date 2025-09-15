@@ -6,7 +6,7 @@ use crate::handlers;
 use crate::handlers::homepage::home_page;
 use crate::state::AppState;
 use crate::utils::middleware;
-use axum::{Router, middleware as axum_middleware, routing::get};
+use axum::{Router, middleware as axum_middleware, routing::get, http::StatusCode, response::IntoResponse};
 
 /// Create the main application router
 pub fn create_app_router(app_state: AppState) -> Router {
@@ -23,6 +23,8 @@ pub fn create_app_router(app_state: AppState) -> Router {
         .merge(create_admin_routes(app_state.clone()))
         // API routes
         .nest("/api/v1", api::create_api_router())
+        // catch-all fallback for unmatched routes (must be last)
+        .fallback(not_found)
         // inject application state
         .with_state(app_state.clone())
         // add metrics tracking middleware
@@ -30,6 +32,11 @@ pub fn create_app_router(app_state: AppState) -> Router {
             app_state,
             middleware::track_metrics,
         ))
+}
+
+/// Handler for unmatched routes
+async fn not_found() -> impl IntoResponse {
+    (StatusCode::NOT_FOUND, "Not Found")
 }
 
 /// Public routes that don't require authentication

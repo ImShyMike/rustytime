@@ -14,7 +14,7 @@ use crate::models::heartbeat::*;
 use crate::schema::heartbeats;
 use crate::state::AppState;
 use crate::utils::auth::{get_user_id_from_api_key, get_valid_api_key};
-use crate::utils::time::human_readable_duration;
+use crate::utils::time::{human_readable_duration, TimeFormat};
 
 const MAX_HEARTBEATS_PER_REQUEST: usize = 25;
 
@@ -166,7 +166,7 @@ pub async fn get_statusbar_today(
         },
     ) {
         Ok(total_seconds) => {
-            let time_obj = human_readable_duration(total_seconds, true);
+            let time_obj = human_readable_duration(total_seconds, TimeFormat::HourMinute);
 
             Ok(Json(json!({
                 "data": {
