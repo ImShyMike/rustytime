@@ -34,12 +34,11 @@ pub struct AdminStats {
     pub total_heartbeats: i64,
     pub heartbeats_last_hour: i64,
     pub heartbeats_last_24h: i64,
+    pub requests_per_second: f64,
     pub top_languages: Vec<LanguageCount>,
     pub top_projects: Vec<ProjectCount>,
     pub daily_activity: Vec<FormattedDailyActivity>,
     pub all_users: Vec<FormattedUser>,
-    pub admin_users: Vec<FormattedUser>,
-    pub requests_per_second: String,
 }
 
 #[derive(Serialize)]
@@ -70,7 +69,6 @@ pub async fn admin_dashboard(
         "Failed to fetch daily activity"
     );
     let raw_all_users = db_query!(User::list_all_users(&mut conn), "Failed to fetch users");
-    let raw_admin_users = db_query!(User::list_admins(&mut conn), "Failed to fetch admin users");
 
     // convert to formatted versions
     let daily_activity: Vec<FormattedDailyActivity> = raw_daily_activity
@@ -94,31 +92,17 @@ pub async fn admin_dashboard(
         })
         .collect();
 
-    let admin_users: Vec<FormattedUser> = raw_admin_users
-        .into_iter()
-        .map(|user| FormattedUser {
-            id: user.id,
-            name: user.name,
-            avatar_url: user.avatar_url,
-            created_at: user.created_at.format("%Y-%m-%d").to_string(),
-            api_key: user.api_key.to_string(),
-            github_id: user.github_id,
-            is_admin: user.is_admin,
-        })
-        .collect();
-
     // fetch all statistics
     let stats = AdminStats {
         total_users: db_query!(User::count_total_users(&mut conn)),
         total_heartbeats: db_query!(Heartbeat::count_total_heartbeats(&mut conn)),
         heartbeats_last_hour: db_query!(Heartbeat::count_heartbeats_last_hour(&mut conn)),
         heartbeats_last_24h: db_query!(Heartbeat::count_heartbeats_last_24h(&mut conn)),
+        requests_per_second: (app_state.metrics.get_metrics().requests_per_second * 1000.0).round() / 1000.0,
         top_languages: db_query!(Heartbeat::get_top_languages(&mut conn, 10)),
         top_projects: db_query!(Heartbeat::get_top_projects(&mut conn, 10)),
         daily_activity,
         all_users,
-        admin_users,
-        requests_per_second: format!("{:.3}", app_state.metrics.get_metrics().requests_per_second),
     };
 
     Ok(Json(AdminDashboardResponse {

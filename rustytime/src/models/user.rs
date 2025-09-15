@@ -80,6 +80,7 @@ impl User {
         users::table.load::<User>(conn)
     }
 
+    #[allow(dead_code)]
     pub fn list_admins(conn: &mut PgConnection) -> QueryResult<Vec<User>> {
         users::table
             .filter(users::is_admin.eq(true))
