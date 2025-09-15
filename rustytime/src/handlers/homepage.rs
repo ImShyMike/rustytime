@@ -1,37 +1,25 @@
-use axum::{
-    Extension,
-    extract::State,
-    http::StatusCode,
-    response::{Html, IntoResponse, Response},
-};
-use minijinja::context;
-
 use crate::models::user::User;
 use crate::state::AppState;
+use axum::{Extension, Json, extract::State, response::Response};
+use serde::Serialize;
 
-/// Handler for the homepage (will likely be done using SvelteKit later)
+#[derive(Serialize)]
+pub struct HomePageResponse {
+    is_authenticated: bool,
+    user: Option<User>,
+}
+
+/// Handler for the homepage
 pub async fn home_page(
-    State(app_state): State<AppState>,
+    State(_app_state): State<AppState>,
     user: Option<Extension<User>>,
-) -> Result<Html<String>, Response> {
+) -> Result<Json<HomePageResponse>, Response> {
     // check if user is authenticated
     let is_authenticated = user.is_some();
+    let user = user.map(|ext| ext.0);
 
-    let is_admin = user.as_ref().is_some_and(|u| u.is_admin());
-
-    let rendered = app_state
-        .template_engine
-        .render(
-            "home.html",
-            context! {
-                is_authenticated => is_authenticated,
-                is_admin => is_admin
-            },
-        )
-        .map_err(|err| {
-            eprintln!("Template rendering error: {}", err);
-            (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
-        })?;
-
-    Ok(Html(rendered))
+    Ok(Json(HomePageResponse {
+        is_authenticated,
+        user,
+    }))
 }

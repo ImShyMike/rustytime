@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::schema::heartbeats;
 use crate::utils::http::parse_user_agent;
-use crate::utils::time::{human_readable_duration, TimeFormat};
+use crate::utils::time::{TimeFormat, human_readable_duration};
 
 const TIMEOUT_SECONDS: i32 = 120; // 2 minutes in seconds
 
@@ -559,7 +559,8 @@ impl Heartbeat {
                 .map(|row| UsageStat {
                     name: row.name.unwrap_or_else(|| "Unknown".to_string()),
                     total_seconds: row.total_seconds,
-                    text: human_readable_duration(row.total_seconds, TimeFormat::HourMinute).human_readable,
+                    text: human_readable_duration(row.total_seconds, TimeFormat::HourMinute)
+                        .human_readable,
                     percent: if total_time > 0 {
                         ((row.total_seconds as f32 / total_time as f32) * 10000.0).round() / 100.0
                     } else {

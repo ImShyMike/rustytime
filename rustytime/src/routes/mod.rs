@@ -6,7 +6,9 @@ use crate::handlers;
 use crate::handlers::homepage::home_page;
 use crate::state::AppState;
 use crate::utils::middleware;
-use axum::{Router, middleware as axum_middleware, routing::get, http::StatusCode, response::IntoResponse};
+use axum::{
+    Router, http::StatusCode, middleware as axum_middleware, response::IntoResponse, routing::get,
+};
 
 /// Create the main application router
 pub fn create_app_router(app_state: AppState) -> Router {

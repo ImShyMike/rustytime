@@ -2,7 +2,7 @@ use crate::models::heartbeat::UsageStat;
 use crate::models::user::User;
 use crate::state::AppState;
 use crate::utils::session::SessionManager;
-use crate::utils::time::{human_readable_duration, TimeFormat};
+use crate::utils::time::{TimeFormat, human_readable_duration};
 use crate::{db_query, get_db_conn, models::heartbeat::Heartbeat};
 use axum::{
     Extension,
@@ -89,7 +89,11 @@ pub async fn dashboard(
             .to_string(),
         api_key: user.api_key.to_string(),
         total_heartbeats: total_heartbeats,
-        human_readable_total: human_readable_duration(dashboard_stats.total_time, TimeFormat::NoDays).human_readable,
+        human_readable_total: human_readable_duration(
+            dashboard_stats.total_time,
+            TimeFormat::NoDays,
+        )
+        .human_readable,
         is_admin: user.is_admin,
         dev_mode: cfg!(debug_assertions),
         projects: dashboard_stats.top_projects,

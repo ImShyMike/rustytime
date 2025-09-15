@@ -2,16 +2,16 @@ use crate::models::heartbeat::{Heartbeat, LanguageCount, ProjectCount};
 use crate::models::user::User;
 use crate::state::AppState;
 use crate::{db_query, get_db_conn};
+use axum::Json;
 use axum::{
     Extension,
     extract::State,
     http::StatusCode,
-    response::{Html, IntoResponse, Response},
+    response::{IntoResponse, Response},
 };
-use minijinja::context;
 use serde::Serialize;
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize)]
 pub struct FormattedUser {
     pub id: i32,
     pub name: Option<String>,
@@ -22,13 +22,13 @@ pub struct FormattedUser {
     pub is_admin: bool,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize)]
 pub struct FormattedDailyActivity {
     pub date: String,
     pub count: i64,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize)]
 pub struct AdminStats {
     pub total_users: i64,
     pub total_heartbeats: i64,
@@ -42,10 +42,16 @@ pub struct AdminStats {
     pub requests_per_second: String,
 }
 
+#[derive(Serialize)]
+pub struct AdminDashboardResponse {
+    pub stats: AdminStats,
+    pub current_user: User,
+}
+
 pub async fn admin_dashboard(
     State(app_state): State<AppState>,
     user: Option<Extension<User>>,
-) -> Result<Html<String>, Response> {
+) -> Result<Json<AdminDashboardResponse>, Response> {
     // check if user is an admin
     let current_user = user
         .expect("User should be authenticated since middleware validated authentication")
@@ -115,19 +121,8 @@ pub async fn admin_dashboard(
         requests_per_second: format!("{:.3}", app_state.metrics.get_metrics().requests_per_second),
     };
 
-    let rendered = app_state
-        .template_engine
-        .render(
-            "admin_dashboard.html",
-            context! {
-                stats => stats,
-                current_user => current_user,
-            },
-        )
-        .map_err(|err| {
-            eprintln!("Template rendering error: {}", err);
-            (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
-        })?;
-
-    Ok(Html(rendered))
+    Ok(Json(AdminDashboardResponse {
+        stats,
+        current_user,
+    }))
 }

@@ -14,7 +14,7 @@ use crate::models::heartbeat::*;
 use crate::schema::heartbeats;
 use crate::state::AppState;
 use crate::utils::auth::{get_user_id_from_api_key, get_valid_api_key};
-use crate::utils::time::{human_readable_duration, TimeFormat};
+use crate::utils::time::{TimeFormat, human_readable_duration};
 
 const MAX_HEARTBEATS_PER_REQUEST: usize = 25;
 

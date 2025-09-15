@@ -13,15 +13,15 @@ pub fn parse_user_agent(ua: String) -> Result<(String, String), String> {
     if let Some(groups) = USER_AGENT_PATTERN.captures(&ua) {
         if groups.len() == 4 {
             // extract OS
-            let os = groups.get(1).map_or("", |m| m.as_str()).to_string();
+            let os = groups.get(1).map_or("", |m| m.as_str()).to_lowercase();
 
             // parse editor
-            let mut editor = groups.get(2).map_or("", |m| m.as_str()).to_string();
+            let mut editor = groups.get(2).map_or("", |m| m.as_str()).to_lowercase();
             if editor.is_empty() {
-                editor = groups.get(3).map_or("", |m| m.as_str()).to_string();
+                editor = groups.get(3).map_or("", |m| m.as_str()).to_lowercase();
             }
 
-            return Ok((categorize_os(&os), categorize_editor(&editor)));
+            return Ok((os, editor));
         }
     }
 
@@ -30,41 +30,18 @@ pub fn parse_user_agent(ua: String) -> Result<(String, String), String> {
     if let Some(result) = parser.parse(&ua) {
         if !result.name.is_empty() {
             let os = if !result.os.is_empty() {
-                result.os.to_string()
-            } else if ua.to_lowercase().contains("windows") {
-                "Windows".to_string()
+                if ua.to_lowercase().contains("windows") {
+                    "windows".to_string()
+                } else {
+                    result.os.to_lowercase()
+                }
             } else {
                 return Err("failed to parse user agent string".to_string());
             };
 
-            return Ok((categorize_os(&os), categorize_editor(result.name)));
+            return Ok((os, result.name.to_lowercase()));
         }
     }
 
     Err("failed to parse user agent string".to_string())
-}
-
-fn capitalize(s: &str) -> String {
-    if s.is_empty() {
-        return String::new();
-    }
-    let mut chars: Vec<char> = s.chars().collect();
-    chars[0] = chars[0].to_uppercase().next().unwrap_or(chars[0]);
-    chars.into_iter().collect()
-}
-
-fn categorize_os(os: &str) -> String {
-    match os.to_lowercase().as_str() {
-        "win" => "Windows".to_string(),
-        "darwin" => "macOS".to_string(),
-        _ => capitalize(os),
-    }
-}
-
-fn categorize_editor(editor: &str) -> String {
-    match editor.to_lowercase().as_str() {
-        "vscode" => "VSCode".to_string(),
-        "ktexteditor" => "Kate".to_string(),
-        _ => capitalize(editor),
-    }
 }
