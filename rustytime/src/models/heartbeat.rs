@@ -308,9 +308,9 @@ impl NewHeartbeat {
                 .and_then(|s| s.to_str())
                 .unwrap_or("");
             if !ext.is_empty() {
-                Language::from_extension(ext).map(|lang| lang.name().to_string())
+                Language::from_extension(ext).map(|lang| lang.name().to_ascii_lowercase())
             } else {
-                Some("Unknown".to_string())
+                Some("unknown".to_string())
             }
         };
 
