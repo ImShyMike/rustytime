@@ -1,10 +1,8 @@
 use axum::{
     extract::{Query, State},
     http::StatusCode,
-    response::Redirect,
     response::{IntoResponse, Response},
 };
-use base64::{Engine as _, engine::general_purpose};
 use diesel::prelude::*;
 use oauth2::{
     AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EndpointNotSet, EndpointSet,
@@ -18,6 +16,7 @@ use crate::models::user::User;
 use crate::state::AppState;
 use crate::utils::session::SessionManager;
 use crate::{get_db_conn, models::session::Session};
+use axum::Json;
 
 #[derive(Deserialize)]
 pub struct AuthRequest {
@@ -58,27 +57,26 @@ pub fn create_github_client()
 }
 
 /// Handler to initiate GitHub OAuth login
-pub async fn login(
-    State(app_state): State<AppState>,
-    Query(redirect_params): Query<std::collections::HashMap<String, String>>,
-) -> Redirect {
-    // get the redirect URL from query parameters, default to dashboard
-    let redirect_to = redirect_params
-        .get("redirect")
-        .cloned()
-        .unwrap_or_else(|| "/dashboard".to_string());
-
-    // use the redirect URL as the state parameter (base64 encoded for safety)
-    let state = general_purpose::STANDARD.encode(&redirect_to);
-    let csrf_token = CsrfToken::new(state);
-
-    let (auth_url, _csrf_token) = app_state
+pub async fn login(State(app_state): State<AppState>, cookies: Cookies) -> Json<serde_json::Value> {
+    let csrf_token = CsrfToken::new_random();
+    let csrf_token_secret = csrf_token.secret().clone();
+    let (auth_url, _) = app_state
         .github_client
         .authorize_url(|| csrf_token)
         .add_scope(Scope::new("read:user".to_string()))
         .url();
 
-    Redirect::to(auth_url.as_ref())
+    let mut cookie = tower_cookies::Cookie::build(("rustytime_oauth_state", csrf_token_secret))
+        .path("/")
+        .http_only(true)
+        .secure(true)
+        .same_site(tower_cookies::cookie::SameSite::Lax)
+        .build();
+
+    cookie.set_expires(time::OffsetDateTime::now_utc() + time::Duration::minutes(10));
+    cookies.add(cookie);
+
+    Json(serde_json::json!({ "auth_url": auth_url.as_ref() }))
 }
 
 /// Handler for GitHub OAuth callback
@@ -86,8 +84,14 @@ pub async fn callback(
     State(app_state): State<AppState>,
     cookies: Cookies,
     Query(params): Query<AuthRequest>,
-) -> Result<Redirect, Response> {
-    let code = AuthorizationCode::new(params.code);
+) -> Result<Json<serde_json::Value>, Response> {
+    // validate state parameter against cookie
+    let state_cookie = cookies.get("rustytime_oauth_state");
+    if state_cookie.is_none() || state_cookie.unwrap().value() != params.state {
+        return Err((StatusCode::UNAUTHORIZED, "Invalid OAuth state").into_response());
+    }
+
+    let code = AuthorizationCode::new(params.code.clone());
 
     // exchange code for access token
     let token_response = app_state
@@ -136,30 +140,23 @@ pub async fn callback(
     let session_cookie = SessionManager::create_session_cookie(session.id);
     cookies.add(session_cookie);
 
-    // decode the redirect URL from the state parameter
-    let redirect_to = match general_purpose::STANDARD.decode(&params.state) {
-        Ok(decoded_bytes) => match String::from_utf8(decoded_bytes) {
-            Ok(decoded_string) => {
-                // validate that the redirect URL is safe (starts with / for relative paths)
-                if decoded_string.starts_with('/') {
-                    decoded_string
-                } else {
-                    "/dashboard".to_string()
-                }
-            }
-            Err(_) => "/dashboard".to_string(),
-        },
-        Err(_) => "/dashboard".to_string(),
-    };
-
-    Ok(axum::response::Redirect::to(&redirect_to))
+    Ok(Json(serde_json::json!({
+        "access_token": access_token,
+        "session_id": session.id,
+        "user": {
+            "id": user.id,
+            "github_id": user_info.id,
+            "username": user_info.login,
+            "avatar_url": user_info.avatar_url
+        }
+    })))
 }
 
 /// Handler to log out the user
 pub async fn logout(
     State(app_state): State<AppState>,
     cookies: Cookies,
-) -> Result<Redirect, Response> {
+) -> Result<Response, Response> {
     // get session from cookie
     if let Some(session_id) = SessionManager::get_session_from_cookies(&cookies) {
         // delete session from database
@@ -179,7 +176,7 @@ pub async fn logout(
     let remove_cookie = SessionManager::remove_session_cookie();
     cookies.add(remove_cookie);
 
-    Ok(Redirect::to("/"))
+    Ok(StatusCode::OK.into_response())
 }
 
 /// Fetch GitHub user information using the access token

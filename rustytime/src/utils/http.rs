@@ -13,12 +13,21 @@ pub fn parse_user_agent(ua: String) -> Result<(String, String), String> {
     if let Some(groups) = USER_AGENT_PATTERN.captures(&ua) {
         if groups.len() == 4 {
             // extract OS
-            let os = groups.get(1).map_or("", |m| m.as_str()).to_ascii_lowercase();
+            let os = groups
+                .get(1)
+                .map_or("", |m| m.as_str())
+                .to_ascii_lowercase();
 
             // parse editor
-            let mut editor = groups.get(2).map_or("", |m| m.as_str()).to_ascii_lowercase();
+            let mut editor = groups
+                .get(2)
+                .map_or("", |m| m.as_str())
+                .to_ascii_lowercase();
             if editor.is_empty() {
-                editor = groups.get(3).map_or("", |m| m.as_str()).to_ascii_lowercase();
+                editor = groups
+                    .get(3)
+                    .map_or("", |m| m.as_str())
+                    .to_ascii_lowercase();
             }
 
             return Ok((os, editor));

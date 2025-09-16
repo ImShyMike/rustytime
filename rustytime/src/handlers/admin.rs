@@ -98,7 +98,8 @@ pub async fn admin_dashboard(
         total_heartbeats: db_query!(Heartbeat::count_total_heartbeats(&mut conn)),
         heartbeats_last_hour: db_query!(Heartbeat::count_heartbeats_last_hour(&mut conn)),
         heartbeats_last_24h: db_query!(Heartbeat::count_heartbeats_last_24h(&mut conn)),
-        requests_per_second: (app_state.metrics.get_metrics().requests_per_second * 1000.0).round() / 1000.0,
+        requests_per_second: (app_state.metrics.get_metrics().requests_per_second * 1000.0).round()
+            / 1000.0,
         top_languages: db_query!(Heartbeat::get_top_languages(&mut conn, 10)),
         top_projects: db_query!(Heartbeat::get_top_projects(&mut conn, 10)),
         daily_activity,
