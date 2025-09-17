@@ -105,12 +105,20 @@ pub async fn track_metrics(
 
 /// Layer to add CORS
 pub fn cors_layer() -> CorsLayer {
+    let mut allowed_origins = vec![
+        "http://localhost:5173".parse::<HeaderValue>().unwrap(), // SvelteKit dev
+        "http://localhost:4173".parse::<HeaderValue>().unwrap(), // SvelteKit preview
+    ];
+
+    // add production domain from environment variable
+    if let Ok(prod_origin) = std::env::var("FRONTEND_URL") {
+        if let Ok(origin) = prod_origin.parse::<HeaderValue>() {
+            allowed_origins.push(origin);
+        }
+    }
+
     CorsLayer::new()
-        .allow_origin([
-            "http://localhost:5173".parse::<HeaderValue>().unwrap(), // SvelteKit dev
-            "http://localhost:4173".parse::<HeaderValue>().unwrap(), // SvelteKit preview
-            "https://blahaj.placeholder".parse::<HeaderValue>().unwrap(), // Production
-        ])
+        .allow_origin(allowed_origins)
         .allow_methods([
             Method::GET,
             Method::POST,

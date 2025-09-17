@@ -1,7 +1,7 @@
 use axum::{
     extract::{Query, State},
     http::StatusCode,
-    response::{IntoResponse, Response},
+    response::{IntoResponse, Redirect, Response},
 };
 use diesel::prelude::*;
 use oauth2::{
@@ -29,7 +29,6 @@ pub struct GitHubUser {
     pub login: String,
     pub id: u64,
     pub avatar_url: String,
-    // pub html_url: String,
 }
 
 /// Create a new GitHub OAuth client
@@ -84,72 +83,135 @@ pub async fn callback(
     State(app_state): State<AppState>,
     cookies: Cookies,
     Query(params): Query<AuthRequest>,
-) -> Result<Json<serde_json::Value>, Response> {
+) -> Result<Redirect, Response> {
+    // get frontend URL from environment variable
+    let frontend_url =
+        env::var("FRONTEND_URL").unwrap_or_else(|_| "http://localhost:5173".to_string());
+
     // validate state parameter against cookie
     let state_cookie = cookies.get("rustytime_oauth_state");
     if state_cookie.is_none() || state_cookie.unwrap().value() != params.state {
-        return Err((StatusCode::UNAUTHORIZED, "Invalid OAuth state").into_response());
+        return Ok(Redirect::to(&format!(
+            "{}/?error=invalid_state",
+            frontend_url
+        )));
     }
 
     let code = AuthorizationCode::new(params.code.clone());
 
     // exchange code for access token
-    let token_response = app_state
+    let token_response = match app_state
         .github_client
         .exchange_code(code)
         .request_async(&app_state.http_client)
         .await
-        .map_err(|err| {
-            eprintln!("Token exchange error: {}", err);
-            (StatusCode::UNAUTHORIZED, "Unauthorized").into_response()
-        })?;
+    {
+        Ok(response) => response,
+        Err(_) => {
+            return Ok(Redirect::to(&format!(
+                "{}/?error=token_exchange",
+                frontend_url
+            )));
+        }
+    };
 
     let access_token = token_response.access_token().secret();
 
     // fetch user info from GitHub
-    let user_info = fetch_github_user(&app_state.http_client, access_token)
-        .await
-        .map_err(|err| {
-            eprintln!("GitHub API error: {}", err);
-            (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
-        })?;
+    let user_info = match fetch_github_user(&app_state.http_client, access_token).await {
+        Ok(info) => info,
+        Err(_) => return Ok(Redirect::to(&format!("{}/?error=github_api", frontend_url))),
+    };
 
     // get database connection
     let mut conn = get_db_conn!(app_state);
 
     // create or update user in database
-    let user = User::create_or_update(
+    let user = match User::create_or_update(
         &mut conn,
         user_info.id as i32,
         &user_info.login,
         &user_info.avatar_url,
-    )
-    .map_err(|err| {
-        eprintln!("Database error creating/updating user: {}", err);
-        (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
-    })?;
+    ) {
+        Ok(user) => user,
+        Err(_) => return Ok(Redirect::to(&format!("{}/?error=database", frontend_url))),
+    };
 
     // create or update session for authentication
-    let session = Session::create_or_update(&mut conn, user.id, access_token, user_info.id as i64)
-        .map_err(|err| {
-            eprintln!("Database error creating/updating session: {}", err);
-            (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
-        })?;
+    let session =
+        match Session::create_or_update(&mut conn, user.id, access_token, user_info.id as i64) {
+            Ok(session) => session,
+            Err(_) => return Ok(Redirect::to(&format!("{}/?error=session", frontend_url))),
+        };
 
     // set session cookie
     let session_cookie = SessionManager::create_session_cookie(session.id);
     cookies.add(session_cookie);
 
-    Ok(Json(serde_json::json!({
-        "access_token": access_token,
-        "session_id": session.id,
-        "user": {
-            "id": user.id,
-            "github_id": user_info.id,
-            "username": user_info.login,
-            "avatar_url": user_info.avatar_url
+    // create JSON response
+    let user_data = serde_json::json!({
+        "id": user.id,
+        "github_id": user_info.id,
+        "name": user_info.login,
+        "avatar_url": user_info.avatar_url,
+        "is_admin": user.is_admin(),
+    });
+
+    let user_string = user_data.to_string();
+    let user_encoded = urlencoding::encode(&user_string);
+
+    Ok(Redirect::to(&format!(
+        "{}/?session_id={}&user={}",
+        frontend_url, session.id, user_encoded
+    )))
+}
+
+/// Handler to verify a session token
+pub async fn verify_session(
+    State(app_state): State<AppState>,
+    Query(params): Query<serde_json::Value>,
+) -> Result<Json<serde_json::Value>, Response> {
+    let session_id = params
+        .get("session_id")
+        .and_then(|v| v.as_str())
+        .and_then(|s| uuid::Uuid::parse_str(s).ok())
+        .ok_or_else(|| {
+            (StatusCode::BAD_REQUEST, "Missing or invalid session_id").into_response()
+        })?;
+
+    match SessionManager::validate_session(&app_state.db_pool, session_id).await {
+        Ok(Some(session_data)) => {
+            // get user details
+            let mut conn = get_db_conn!(app_state);
+            let user = crate::schema::users::table
+                .find(session_data.user_id)
+                .first::<User>(&mut conn)
+                .map_err(|err| {
+                    eprintln!("Database error fetching user: {}", err);
+                    (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
+                })?;
+
+            Ok(Json(serde_json::json!({
+                "valid": true,
+                "user": {
+                    "id": user.id,
+                    "github_id": user.github_id,
+                    "username": user.name,
+                    "avatar_url": user.avatar_url,
+                    "is_admin": user.is_admin
+                },
+                "expires_at": session_data.expires_at
+            })))
         }
-    })))
+        Ok(None) => Ok(Json(serde_json::json!({
+            "valid": false,
+            "message": "Session not found or expired"
+        }))),
+        Err(err) => {
+            eprintln!("Database error validating session: {}", err);
+            Err((StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response())
+        }
+    }
 }
 
 /// Handler to log out the user
