@@ -19,6 +19,12 @@ export class ApiError extends Error {
 	}
 }
 
+let globalErrorCallback: ((error: ApiError) => void) | null = null;
+
+export function setGlobalErrorCallback(callback: (error: ApiError) => void) {
+	globalErrorCallback = callback;
+}
+
 class ApiClient {
 	private baseUrl: string;
 
@@ -53,10 +59,18 @@ class ApiClient {
 
 			return response.text() as unknown as T;
 		} catch (error) {
+			let apiError: ApiError;
 			if (error instanceof ApiError) {
-				throw error;
+				apiError = error;
+			} else {
+				apiError = new ApiError(`Network error: ${error}`, 0);
 			}
-			throw new ApiError(`Network error: ${error}`, 0);
+
+			if (globalErrorCallback) {
+				globalErrorCallback(apiError);
+			}
+			
+			throw apiError;
 		}
 	}
 
