@@ -1,12 +1,10 @@
 <script lang="ts">
 	import { auth } from '$lib/services/auth';
-	import { api } from '$lib/utils/api';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { createDataLoader } from '$lib/utils/dataLoader';
 
-	let dashboardData = $state<DashboardResponse | null>(null);
-	let loading = $state(false);
-	let error = $state<string | null>(null);
+	const { data: dashboardData, loading, error, loadData } = createDataLoader<DashboardResponse>('/dashboard');
 
 	interface UsageStat {
 		name: string;
@@ -32,19 +30,6 @@
 		languages: UsageStat[];
 	}
 
-	async function loadDashboard() {
-		try {
-			loading = true;
-			error = null;
-			const response = await api.get<DashboardResponse>('/dashboard');
-			dashboardData = response;
-		} catch (err) {
-			console.error('Failed to fetch dashboard data:', err);
-			error = 'Failed to load dashboard data';
-		} finally {
-			loading = false;
-		}
-	}
 
 	$effect(() => {
 		if (typeof window === 'undefined') return;
@@ -53,8 +38,8 @@
 			goto(resolve('/'));
 			return;
 		}
-		if (!dashboardData && !loading && !error) {
-			loadDashboard();
+		if (!$dashboardData && !$loading && !$error) {
+			loadData();
 		}
 	});
 
@@ -64,7 +49,7 @@
 	};
 </script>
 
-{#if loading}
+{#if $loading}
 	<div class="min-h-screen flex items-center justify-center">
 		<span class="text-gray-500">Loading dashboard...</span>
 	</div>
@@ -72,11 +57,11 @@
 	<div class="min-h-screen flex items-center justify-center">
 		<span class="text-gray-500">Authenticating...</span>
 	</div>
-{:else if error}
+{:else if $error}
 	<div class="min-h-screen flex items-center justify-center">
 		<div class="text-center">
 			<h1 class="text-2xl font-bold text-red-600 mb-4">Error</h1>
-			<p class="text-gray-600 mb-4">{error}</p>
+			<p class="text-gray-600 mb-4">{$error}</p>
 			<button
 				onclick={() => window.location.reload()}
 				class="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
@@ -84,7 +69,7 @@
 			>
 		</div>
 	</div>
-{:else if $auth.isAuthenticated && $auth.user && dashboardData}
+{:else if $auth.isAuthenticated && $auth.user && $dashboardData}
 	<div class="min-h-screen bg-gray-50">
 		<div class="max-w-4xl mx-auto py-12">
 			<h1 class="text-3xl font-bold text-green-600 mb-6 flex items-center gap-2">
@@ -95,9 +80,9 @@
 			<div class="bg-white rounded-xl shadow p-8 mb-8">
 				<h2 class="text-xl font-semibold text-gray-800 mb-4">User Information</h2>
 				<div class="flex items-center gap-4 mb-4">
-					{#if dashboardData.avatar_url}
+					{#if $dashboardData.avatar_url}
 						<img
-							src={dashboardData.avatar_url}
+							src={$dashboardData.avatar_url}
 							alt="Avatar"
 							width="80"
 							height="80"
@@ -105,10 +90,10 @@
 						/>
 					{/if}
 					<div>
-						<p class="font-bold text-lg text-gray-900">{dashboardData.username}</p>
-						<p class="text-gray-600">GitHub ID: {dashboardData.github_id}</p>
-						<p class="text-gray-600">Member since: {dashboardData.created_at}</p>
-						{#if dashboardData.is_admin}
+						<p class="font-bold text-lg text-gray-900">{$dashboardData.username}</p>
+						<p class="text-gray-600">GitHub ID: {$dashboardData.github_id}</p>
+						<p class="text-gray-600">Member since: {$dashboardData.created_at}</p>
+						{#if $dashboardData.is_admin}
 							<span
 								class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 mt-1"
 							>
@@ -131,11 +116,11 @@
 								id="api-key"
 								type="text"
 								readonly
-								value={dashboardData.api_key}
+								value={$dashboardData.api_key}
 								class="block w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm font-mono"
 							/>
 							<button
-								onclick={() => navigator.clipboard.writeText(dashboardData!.api_key)}
+								onclick={() => navigator.clipboard.writeText($dashboardData!.api_key)}
 								class="cursor-pointer px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
 							>
 								Copy
@@ -145,11 +130,11 @@
 					<div class="grid grid-cols-2 gap-4 text-sm text-gray-700">
 						<div>
 							<span class="font-semibold">Total Heartbeats:</span>
-							{dashboardData.total_heartbeats.toLocaleString()}
+							{$dashboardData.total_heartbeats.toLocaleString()}
 						</div>
 						<div>
 							<span class="font-semibold">Total Time:</span>
-							{dashboardData.human_readable_total}
+							{$dashboardData.human_readable_total}
 						</div>
 					</div>
 				</div>
@@ -162,9 +147,9 @@
 					<!-- Top Languages -->
 					<div>
 						<h3 class="text-lg font-medium text-gray-700 mb-4">Top Languages</h3>
-						{#if dashboardData.languages.length > 0}
+						{#if $dashboardData.languages.length > 0}
 							<div class="space-y-3">
-								{#each dashboardData.languages.slice(0, 5) as lang (lang.name)}
+								{#each $dashboardData.languages.slice(0, 5) as lang (lang.name)}
 									<div class="flex items-center justify-between">
 										<span class="text-gray-700">{lang.name}</span>
 										<div class="flex items-center gap-2">
@@ -189,9 +174,9 @@
 					<!-- Top Projects -->
 					<div>
 						<h3 class="text-lg font-medium text-gray-700 mb-4">Top Projects</h3>
-						{#if dashboardData.projects.length > 0}
+						{#if $dashboardData.projects.length > 0}
 							<div class="space-y-3">
-								{#each dashboardData.projects.slice(0, 5) as project (project.name)}
+								{#each $dashboardData.projects.slice(0, 5) as project (project.name)}
 									<div class="flex items-center justify-between">
 										<span class="text-gray-700 truncate">{project.name}</span>
 										<div class="flex items-center gap-2">
@@ -216,9 +201,9 @@
 					<!-- Top Editors -->
 					<div>
 						<h3 class="text-lg font-medium text-gray-700 mb-4">Top Editors</h3>
-						{#if dashboardData.editors.length > 0}
+						{#if $dashboardData.editors.length > 0}
 							<div class="space-y-3">
-								{#each dashboardData.editors.slice(0, 5) as editor (editor.name)}
+								{#each $dashboardData.editors.slice(0, 5) as editor (editor.name)}
 									<div class="flex items-center justify-between">
 										<span class="text-gray-700">{editor.name}</span>
 										<div class="flex items-center gap-2">
@@ -243,9 +228,9 @@
 					<!-- Top Operating Systems -->
 					<div>
 						<h3 class="text-lg font-medium text-gray-700 mb-4">Top Operating Systems</h3>
-						{#if dashboardData.operating_systems.length > 0}
+						{#if $dashboardData.operating_systems.length > 0}
 							<div class="space-y-3">
-								{#each dashboardData.operating_systems.slice(0, 5) as os (os.name)}
+								{#each $dashboardData.operating_systems.slice(0, 5) as os (os.name)}
 									<div class="flex items-center justify-between">
 										<span class="text-gray-700">{os.name}</span>
 										<div class="flex items-center gap-2">
@@ -274,7 +259,7 @@
 					>Back</a
 				>
 				<div class="space-x-4">
-					{#if dashboardData.is_admin}
+					{#if $dashboardData.is_admin}
 						<a
 							href={resolve('/admin')}
 							class="bg-red-600 hover:bg-red-700 text-white py-2 px-6 rounded">Admin</a

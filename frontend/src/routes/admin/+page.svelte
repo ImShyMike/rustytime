@@ -1,12 +1,10 @@
 <script lang="ts">
 	import { auth, type User } from '$lib/services/auth';
-	import { api } from '$lib/utils/api';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { createDataLoader } from '$lib/utils/dataLoader';
 
-	let adminData = $state<AdminResponse | null>(null);
-	let loading = $state(false);
-	let error = $state<string | null>(null);
+	const { data: adminData, loading, error, loadData } = createDataLoader<AdminResponse>('/admin');
 
 	interface AdminStats {
 		total_users: number;
@@ -33,19 +31,6 @@
 		current_user: User;
 	}
 
-	async function loadAdminData() {
-		try {
-			loading = true;
-			error = null;
-			const response = await api.get<AdminResponse>('/admin');
-			adminData = response;
-		} catch (err) {
-			console.error('Failed to fetch admin data:', err);
-			error = 'Failed to load admin data';
-		} finally {
-			loading = false;
-		}
-	}
 
 	$effect(() => {
 		if (typeof window === 'undefined') return;
@@ -58,8 +43,8 @@
 			goto(resolve('/dashboard'));
 			return;
 		}
-		if (!loading && !adminData && !error) {
-			loadAdminData();
+		if (!$loading && !$adminData && !$error) {
+			loadData();
 		}
 	});
 
@@ -69,7 +54,7 @@
 	};
 </script>
 
-{#if loading}
+{#if $loading}
 	<div class="min-h-screen flex items-center justify-center">
 		<span>Loading admin data...</span>
 	</div>
@@ -77,11 +62,11 @@
 	<div class="min-h-screen flex items-center justify-center">
 		<span>Authenticating...</span>
 	</div>
-{:else if error}
+{:else if $error}
 	<div class="min-h-screen flex items-center justify-center">
 		<div class="text-center">
 			<h1 class="text-2xl font-bold text-red-600 mb-4">Error</h1>
-			<p class="text-gray-600 mb-4">{error}</p>
+			<p class="text-gray-600 mb-4">{$error}</p>
 			<button
 				onclick={() => window.location.reload()}
 				class="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
@@ -89,7 +74,7 @@
 			>
 		</div>
 	</div>
-{:else if $auth.isAuthenticated && $auth.user && $auth.user.is_admin && adminData}
+{:else if $auth.isAuthenticated && $auth.user && $auth.user.is_admin && $adminData}
 	<div class="min-h-screen bg-gray-50">
 		<div class="max-w-6xl mx-auto py-12">
 			<h1 class="text-3xl font-bold text-red-600 mb-6 flex items-center gap-2">
@@ -100,23 +85,23 @@
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
 				<div class="bg-white rounded-xl shadow p-6">
 					<h3 class="text-lg font-semibold text-gray-800 mb-2">Total Users</h3>
-					<p class="text-3xl font-bold text-blue-600">{adminData.stats.total_users}</p>
+					<p class="text-3xl font-bold text-blue-600">{$adminData.stats.total_users}</p>
 				</div>
 				<div class="bg-white rounded-xl shadow p-6">
 					<h3 class="text-lg font-semibold text-gray-800 mb-2">Total Heartbeats</h3>
 					<p class="text-3xl font-bold text-green-600">
-						{adminData.stats.total_heartbeats.toLocaleString()}
+						{$adminData.stats.total_heartbeats.toLocaleString()}
 					</p>
 				</div>
 				<div class="bg-white rounded-xl shadow p-6">
 					<h3 class="text-lg font-semibold text-gray-800 mb-2">Last 24h</h3>
 					<p class="text-3xl font-bold text-purple-600">
-						{adminData.stats.heartbeats_last_24h.toLocaleString()}
+						{$adminData.stats.heartbeats_last_24h.toLocaleString()}
 					</p>
 				</div>
 				<div class="bg-white rounded-xl shadow p-6">
 					<h3 class="text-lg font-semibold text-gray-800 mb-2">Requests/sec</h3>
-					<p class="text-3xl font-bold text-orange-600">{adminData.stats.requests_per_second}</p>
+					<p class="text-3xl font-bold text-orange-600">{$adminData.stats.requests_per_second}</p>
 				</div>
 			</div>
 
@@ -125,9 +110,9 @@
 				<!-- Top Languages -->
 				<div class="bg-white rounded-xl shadow p-6">
 					<h3 class="text-xl font-semibold text-gray-800 mb-4">Top Languages</h3>
-					{#if adminData.stats.top_languages.length > 0}
+					{#if $adminData.stats.top_languages.length > 0}
 						<div class="space-y-2">
-							{#each adminData.stats.top_languages.slice(0, 5) as lang (lang.language)}
+							{#each $adminData.stats.top_languages.slice(0, 5) as lang (lang.language)}
 								<div class="flex justify-between items-center">
 									<span class="text-gray-700">{lang.language}</span>
 									<span class="text-gray-600 font-mono">{lang.count}</span>
@@ -142,9 +127,9 @@
 				<!-- Top Projects -->
 				<div class="bg-white rounded-xl shadow p-6">
 					<h3 class="text-xl font-semibold text-gray-800 mb-4">Top Projects</h3>
-					{#if adminData.stats.top_projects.length > 0}
+					{#if $adminData.stats.top_projects.length > 0}
 						<div class="space-y-2">
-							{#each adminData.stats.top_projects.slice(0, 5) as project (project.project)}
+							{#each $adminData.stats.top_projects.slice(0, 5) as project (project.project)}
 								<div class="flex justify-between items-center">
 									<span class="text-gray-700 truncate">{project.project}</span>
 									<span class="text-gray-600 font-mono">{project.count}</span>
@@ -160,16 +145,16 @@
 			<!-- Daily Activity Chart -->
 			<div class="bg-white rounded-xl shadow p-6 mb-8">
 				<h3 class="text-xl font-semibold text-gray-800 mb-4">Daily Activity (Last Week)</h3>
-				{#if adminData.stats.daily_activity.length > 0}
+				{#if $adminData.stats.daily_activity.length > 0}
 					<div class="flex items-end justify-between gap-2 h-40">
-						{#each adminData.stats.daily_activity as day (day.date)}
+						{#each $adminData.stats.daily_activity as day (day.date)}
 							<div class="flex flex-col items-center flex-1">
 								<div
 									class="bg-blue-500 w-full rounded-t flex"
 									style="height: {Math.max(
 										(day.count /
 											Math.max(
-												...adminData.stats.daily_activity.map(
+												...$adminData.stats.daily_activity.map(
 													(d: { date: string; count: number }) => d.count
 												)
 											)) *
@@ -190,7 +175,7 @@
 			<!-- User Management -->
 			<div class="bg-white rounded-xl shadow p-6">
 				<h3 class="text-xl font-semibold text-gray-800 mb-4">All Users</h3>
-				{#if adminData.stats.all_users.length > 0}
+				{#if $adminData.stats.all_users.length > 0}
 					<div class="overflow-x-auto">
 						<table class="min-w-full divide-y divide-gray-200">
 							<thead class="bg-gray-50">
@@ -213,7 +198,7 @@
 								</tr>
 							</thead>
 							<tbody class="bg-white divide-y divide-gray-200">
-								{#each adminData.stats.all_users as user (user.github_id)}
+								{#each $adminData.stats.all_users as user (user.github_id)}
 									<tr>
 										<td class="px-6 py-4 whitespace-nowrap">
 											<div class="flex items-center">
