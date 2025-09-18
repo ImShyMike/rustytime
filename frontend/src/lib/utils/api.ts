@@ -69,7 +69,7 @@ class ApiClient {
 			if (globalErrorCallback) {
 				globalErrorCallback(apiError);
 			}
-			
+
 			throw apiError;
 		}
 	}

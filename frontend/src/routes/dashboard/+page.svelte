@@ -5,7 +5,12 @@
 	import { createDataLoader } from '$lib/utils/dataLoader';
 	import { handleAuthEffect } from '$lib/utils/authEffect';
 
-	const { data: dashboardData, loading, error, loadData } = createDataLoader<DashboardResponse>('/dashboard');
+	const {
+		data: dashboardData,
+		loading,
+		error,
+		loadData
+	} = createDataLoader<DashboardResponse>('/dashboard');
 
 	interface UsageStat {
 		name: string;
@@ -30,7 +35,6 @@
 		operating_systems: UsageStat[];
 		languages: UsageStat[];
 	}
-
 
 	$effect(() => {
 		handleAuthEffect({

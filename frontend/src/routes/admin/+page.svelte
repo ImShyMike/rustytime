@@ -32,7 +32,6 @@
 		current_user: User;
 	}
 
-
 	$effect(() => {
 		handleAuthEffect({
 			isAuthLoading: $auth.isLoading,

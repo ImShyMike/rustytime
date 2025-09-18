@@ -15,16 +15,16 @@ interface AuthEffectParams<T = unknown> {
 }
 
 export function handleAuthEffect<T = unknown>(params: AuthEffectParams<T>) {
-	const { 
-		isAuthLoading, 
-		isAuthenticated, 
-		user, 
-		data, 
-		loading, 
-		error, 
-		loadData, 
-		requireAdmin = false, 
-		redirectTo = '/' 
+	const {
+		isAuthLoading,
+		isAuthenticated,
+		user,
+		data,
+		loading,
+		error,
+		loadData,
+		requireAdmin = false,
+		redirectTo = '/'
 	} = params;
 
 	if (typeof window === 'undefined') return;

@@ -52,7 +52,10 @@ const createAuthStore = () => {
 	const classifyError = (error: unknown): AuthError => {
 		if (error instanceof ApiError) {
 			if (error.status === 0) {
-				return createAuthError('network', 'Unable to connect to server. Please check your connection.');
+				return createAuthError(
+					'network',
+					'Unable to connect to server. Please check your connection.'
+				);
 			} else if (error.status === 401 || error.status === 403) {
 				return createAuthError('unauthorized', `Authentication failed: ${error.message}`);
 			} else if (error.status >= 500) {
@@ -66,7 +69,10 @@ const createAuthStore = () => {
 				error.message.toLowerCase().includes('fetch') ||
 				error.message.toLowerCase().includes('failed to fetch')
 			) {
-				return createAuthError('network', 'Unable to connect to server. Please check your connection.');
+				return createAuthError(
+					'network',
+					'Unable to connect to server. Please check your connection.'
+				);
 			} else {
 				return createAuthError('unknown', `Unexpected error: ${error.message}`);
 			}
@@ -219,7 +225,7 @@ const createAuthStore = () => {
 		retryVerification: async () => {
 			update((state) => ({ ...state, isLoading: true, error: null }));
 			await auth.verifySession();
-		},
+		}
 	};
 };
 
@@ -233,10 +239,19 @@ if (browser) {
 			auth.update((state) => {
 				// Don't overwrite existing errors
 				if (!state.error) {
-					const authError = error.status === 0 
-						? { type: 'network' as const, message: 'Unable to connect to server. Please check your connection.', timestamp: new Date() }
-						: { type: 'server' as const, message: `Server error: ${error.message}`, timestamp: new Date() };
-					
+					const authError =
+						error.status === 0
+							? {
+									type: 'network' as const,
+									message: 'Unable to connect to server. Please check your connection.',
+									timestamp: new Date()
+								}
+							: {
+									type: 'server' as const,
+									message: `Server error: ${error.message}`,
+									timestamp: new Date()
+								};
+
 					return { ...state, error: authError };
 				}
 				return state;

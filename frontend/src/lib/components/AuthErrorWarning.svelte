@@ -82,7 +82,9 @@
 {#if authState.error}
 	<div class="fixed top-4 right-4 z-50 w-full max-w-sm">
 		<div
-			class="relative rounded-lg border p-4 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/60 text-foreground {getVariantClasses(getErrorVariant(authState.error))}"
+			class="relative rounded-lg border p-4 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/60 text-foreground {getVariantClasses(
+				getErrorVariant(authState.error)
+			)}"
 			role="alert"
 			aria-live="assertive"
 		>
