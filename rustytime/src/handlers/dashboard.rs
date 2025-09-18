@@ -78,8 +78,8 @@ pub async fn dashboard(
     );
 
     Ok(Json(DashboardResponse {
-        avatar_url: user.avatar_url.as_deref().unwrap_or("").to_string(),
-        username: user.name.as_deref().unwrap_or("Unknown").to_string(),
+        avatar_url: user.avatar_url,
+        username: user.name,
         user_id: user.id,
         github_id: session_data.github_user_id,
         created_at: user.created_at.format("%Y-%m-%d %H:%M:%S UTC").to_string(),

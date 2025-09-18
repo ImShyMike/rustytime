@@ -44,14 +44,16 @@ diesel::table! {
 diesel::table! {
     users (id) {
         id -> Int4,
+        github_id -> Int8,
         #[max_length = 100]
-        name -> Nullable<Varchar>,
+        name -> Varchar,
         #[max_length = 200]
-        avatar_url -> Nullable<Varchar>,
+        avatar_url -> Varchar,
         created_at -> Timestamptz,
         api_key -> Uuid,
-        github_id -> Int4,
         is_admin -> Bool,
+        is_banned -> Bool,
+        updated_at -> Timestamptz,
     }
 }
 

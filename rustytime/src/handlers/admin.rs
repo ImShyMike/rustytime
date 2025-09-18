@@ -12,17 +12,6 @@ use axum::{
 use serde::Serialize;
 
 #[derive(Serialize)]
-pub struct FormattedUser {
-    pub id: i32,
-    pub name: Option<String>,
-    pub avatar_url: Option<String>,
-    pub created_at: String,
-    pub api_key: String,
-    pub github_id: i32,
-    pub is_admin: bool,
-}
-
-#[derive(Serialize)]
 pub struct FormattedDailyActivity {
     pub date: String,
     pub count: i64,
@@ -38,7 +27,7 @@ pub struct AdminStats {
     pub top_languages: Vec<LanguageCount>,
     pub top_projects: Vec<ProjectCount>,
     pub daily_activity: Vec<FormattedDailyActivity>,
-    pub all_users: Vec<FormattedUser>,
+    pub all_users: Vec<User>,
 }
 
 #[derive(Serialize)]
@@ -68,7 +57,7 @@ pub async fn admin_dashboard(
         Heartbeat::get_daily_activity_last_week(&mut conn),
         "Failed to fetch daily activity"
     );
-    let raw_all_users = db_query!(User::list_all_users(&mut conn), "Failed to fetch users");
+    let all_users = db_query!(User::list_all_users(&mut conn), "Failed to fetch users");
 
     // convert to formatted versions
     let daily_activity: Vec<FormattedDailyActivity> = raw_daily_activity
@@ -76,19 +65,6 @@ pub async fn admin_dashboard(
         .map(|activity| FormattedDailyActivity {
             date: activity.date.format("%m-%d").to_string(),
             count: activity.count,
-        })
-        .collect();
-
-    let all_users: Vec<FormattedUser> = raw_all_users
-        .into_iter()
-        .map(|user| FormattedUser {
-            id: user.id,
-            name: user.name,
-            avatar_url: user.avatar_url,
-            created_at: user.created_at.format("%Y-%m-%d").to_string(),
-            api_key: user.api_key.to_string(),
-            github_id: user.github_id,
-            is_admin: user.is_admin,
         })
         .collect();
 

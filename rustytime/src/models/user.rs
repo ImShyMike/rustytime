@@ -9,25 +9,28 @@ use crate::schema::users;
 #[diesel(table_name = users)]
 pub struct User {
     pub id: i32,
-    pub name: Option<String>,
-    pub avatar_url: Option<String>,
+    pub github_id: i64,
+    pub name: String,
+    pub avatar_url: String,
     pub created_at: DateTime<Utc>,
     pub api_key: Uuid,
-    pub github_id: i32,
     pub is_admin: bool,
+    pub is_banned: bool,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Insertable, Deserialize, Debug)]
 #[diesel(table_name = users)]
 pub struct NewUser {
-    pub name: Option<String>,
-    pub avatar_url: Option<String>,
-    pub github_id: i32,
+    pub github_id: i64,
+    pub name: String,
+    pub avatar_url: String,
     pub is_admin: bool,
+    pub is_banned: bool,
 }
 
 impl User {
-    pub fn find_by_github_id(conn: &mut PgConnection, github_id: i32) -> QueryResult<Option<User>> {
+    pub fn find_by_github_id(conn: &mut PgConnection, github_id: i64) -> QueryResult<Option<User>> {
         users::table
             .filter(users::github_id.eq(github_id))
             .first::<User>(conn)
@@ -42,16 +45,14 @@ impl User {
 
     pub fn create_or_update(
         conn: &mut PgConnection,
-        github_id: i32,
+        github_id: i64,
         username: &str,
         avatar_url: &str,
     ) -> QueryResult<User> {
         // first, try to find existing user by github_id
         if let Some(existing_user) = Self::find_by_github_id(conn, github_id)? {
             // update user info if it has changed
-            if existing_user.avatar_url.as_deref() != Some(avatar_url)
-                || existing_user.name.as_deref() != Some(username)
-            {
+            if existing_user.avatar_url != avatar_url || existing_user.name != username {
                 diesel::update(users::table.find(existing_user.id))
                     .set((users::avatar_url.eq(avatar_url), users::name.eq(username)))
                     .get_result(conn)
@@ -64,9 +65,10 @@ impl User {
             // create new user
             let new_user = NewUser {
                 github_id,
-                name: Some(username.to_string()),
-                avatar_url: Some(avatar_url.to_string()),
+                name: username.to_string(),
+                avatar_url: avatar_url.to_string(),
                 is_admin: total_users == 0, // make the first user an admin
+                is_banned: false,
             };
             Self::create(conn, &new_user)
         }
