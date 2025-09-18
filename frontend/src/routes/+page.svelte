@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { auth } from '$lib/services/auth';
+	import { auth } from '$lib/stores/auth';
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
 

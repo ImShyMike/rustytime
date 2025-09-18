@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { auth } from '../services/auth.js';
-	import type { AuthError } from '../services/auth.js';
+	import { auth } from '../stores/auth.js';
+	import type { AuthError } from '../stores/auth.js';
 
 	import MaterialSymbolsWarningRounded from '~icons/material-symbols/warning-rounded';
 	import MaterialSymbolsErrorRounded from '~icons/material-symbols/error-rounded';

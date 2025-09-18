@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { auth } from '$lib/services/auth';
+	import { auth } from '$lib/stores/auth';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { createDataLoader } from '$lib/utils/dataLoader';
+	import { handleAuthEffect } from '$lib/utils/authEffect';
 
 	const { data: dashboardData, loading, error, loadData } = createDataLoader<DashboardResponse>('/dashboard');
 
@@ -32,15 +33,17 @@
 
 
 	$effect(() => {
-		if (typeof window === 'undefined') return;
-		if ($auth.isLoading) return;
-		if (!$auth.isAuthenticated) {
-			goto(resolve('/'));
-			return;
-		}
-		if (!$dashboardData && !$loading && !$error) {
-			loadData();
-		}
+		handleAuthEffect({
+			isAuthLoading: $auth.isLoading,
+			isAuthenticated: $auth.isAuthenticated,
+			user: $auth.user,
+			data: $dashboardData,
+			loading: $loading,
+			error: $error,
+			loadData,
+			requireAdmin: false,
+			redirectTo: '/'
+		});
 	});
 
 	const handleLogout = () => {

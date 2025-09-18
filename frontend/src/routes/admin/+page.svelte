@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { auth, type User } from '$lib/services/auth';
+	import { auth, type User } from '$lib/stores/auth';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { createDataLoader } from '$lib/utils/dataLoader';
+	import { handleAuthEffect } from '$lib/utils/authEffect';
 
 	const { data: adminData, loading, error, loadData } = createDataLoader<AdminResponse>('/admin');
 
@@ -33,19 +34,17 @@
 
 
 	$effect(() => {
-		if (typeof window === 'undefined') return;
-		if ($auth.isLoading) return;
-		if (!$auth.isAuthenticated) {
-			goto(resolve('/'));
-			return;
-		}
-		if ($auth.user && !$auth.user.is_admin) {
-			goto(resolve('/dashboard'));
-			return;
-		}
-		if (!$loading && !$adminData && !$error) {
-			loadData();
-		}
+		handleAuthEffect({
+			isAuthLoading: $auth.isLoading,
+			isAuthenticated: $auth.isAuthenticated,
+			user: $auth.user,
+			data: $adminData,
+			loading: $loading,
+			error: $error,
+			loadData,
+			requireAdmin: true,
+			redirectTo: '/'
+		});
 	});
 
 	const handleLogout = () => {
