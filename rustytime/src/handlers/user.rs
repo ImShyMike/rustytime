@@ -142,14 +142,13 @@ pub async fn get_statusbar_today(
 
     // calculate today's date range
     let today = Utc::now().date_naive();
-    let start_of_day = today.and_hms_opt(0, 0, 0).unwrap().and_utc().timestamp();
+    let start_of_day = today.and_hms_opt(0, 0, 0).unwrap().and_utc();
     let end_of_day = today
         .succ_opt()
         .unwrap_or(today)
         .and_hms_opt(0, 0, 0)
         .unwrap()
-        .and_utc()
-        .timestamp();
+        .and_utc();
 
     let mut conn = get_db_conn!(app_state);
 

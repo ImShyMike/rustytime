@@ -12,10 +12,10 @@ pub struct User {
     pub github_id: i64,
     pub name: String,
     pub avatar_url: String,
-    pub created_at: DateTime<Utc>,
     pub api_key: Uuid,
     pub is_admin: bool,
     pub is_banned: bool,
+    pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
 

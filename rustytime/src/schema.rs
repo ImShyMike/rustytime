@@ -1,9 +1,9 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    heartbeats (user_id, created_at) {
+    heartbeats (user_id, time) {
         id -> Int4,
-        time -> Int8,
+        time -> Timestamptz,
         created_at -> Timestamptz,
         user_id -> Int4,
         entity -> Text,
@@ -33,8 +33,8 @@ diesel::table! {
     sessions (id) {
         id -> Uuid,
         user_id -> Int4,
-        github_access_token -> Text,
         github_user_id -> Int8,
+        github_access_token -> Text,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
         expires_at -> Timestamptz,
@@ -49,10 +49,10 @@ diesel::table! {
         name -> Varchar,
         #[max_length = 200]
         avatar_url -> Varchar,
-        created_at -> Timestamptz,
         api_key -> Uuid,
         is_admin -> Bool,
         is_banned -> Bool,
+        created_at -> Timestamptz,
         updated_at -> Timestamptz,
     }
 }

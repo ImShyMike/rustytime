@@ -10,39 +10,43 @@ CREATE TABLE users (
   github_id   BIGINT        NOT NULL UNIQUE,
   name        VARCHAR(100)  NOT NULL,
   avatar_url  VARCHAR(200)  NOT NULL,
-  created_at  TIMESTAMPTZ   NOT NULL DEFAULT now(),
   api_key     UUID          NOT NULL UNIQUE DEFAULT gen_random_uuid(),
   is_admin    BOOLEAN       NOT NULL DEFAULT FALSE,
   is_banned   BOOLEAN       NOT NULL DEFAULT FALSE,
+  created_at  TIMESTAMPTZ   NOT NULL DEFAULT now(),
   updated_at  TIMESTAMPTZ   NOT NULL DEFAULT now()
 );
+
+-- Users table indexes for auth lookups
+CREATE INDEX idx_users_github_id ON users(github_id);
+CREATE INDEX idx_users_api_key ON users(api_key);
 
 -- Auto manage updated_at column
 SELECT diesel_manage_updated_at('users');
 
 -- Create sessions table
 CREATE TABLE sessions (
-    id UUID             PRIMARY KEY  DEFAULT gen_random_uuid(),
-    user_id             INTEGER      NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    github_access_token TEXT         NOT NULL,
-    github_user_id      BIGINT       NOT NULL,
-    created_at          TIMESTAMPTZ  NOT NULL DEFAULT now(),
-    updated_at          TIMESTAMPTZ  NOT NULL DEFAULT now(),
-    expires_at          TIMESTAMPTZ  NOT NULL DEFAULT (now() + interval '7 days')
+    id                  UUID        PRIMARY KEY  DEFAULT gen_random_uuid(),
+    user_id             INTEGER     NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    github_user_id      BIGINT      NOT NULL,
+    github_access_token TEXT        NOT NULL,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    expires_at          TIMESTAMPTZ NOT NULL DEFAULT (now() + interval '7 days')
 );
 
--- Auto manage updated_at column
-SELECT diesel_manage_updated_at('sessions');
-
--- Create index for efficient lookups
+-- Create indexes for session lookups
 CREATE INDEX idx_sessions_user_id ON sessions(user_id);
 CREATE INDEX idx_sessions_github_user_id ON sessions(github_user_id);
 CREATE INDEX idx_sessions_expires_at ON sessions(expires_at);
 
+-- Auto manage updated_at column
+SELECT diesel_manage_updated_at('sessions');
+
 -- Create heartbeats table
 CREATE TABLE IF NOT EXISTS heartbeats (
   id                SERIAL NOT NULL,
-  time              BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM now()),
+  time              TIMESTAMPTZ NOT NULL DEFAULT now(),
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
   user_id           INTEGER NOT NULL REFERENCES users(id),
   entity            TEXT NOT NULL,
@@ -64,13 +68,13 @@ CREATE TABLE IF NOT EXISTS heartbeats (
   line_deletions    INTEGER,
   lineno            INTEGER,
   cursorpos         INTEGER,
-  PRIMARY KEY (user_id, created_at)
+  PRIMARY KEY (user_id, time)
 );
 
 -- Transform to hypertable
 SELECT create_hypertable(
   'heartbeats',
-  'created_at',
+  'time',
   chunk_time_interval => INTERVAL '1 day',
   if_not_exists      => TRUE
 );
@@ -80,11 +84,17 @@ ALTER TABLE heartbeats
   SET (
     timescaledb.compress            = true,
     timescaledb.compress_segmentby  = 'user_id',
-    timescaledb.compress_orderby    = 'created_at'
+    timescaledb.compress_orderby    = 'time'
   );
 
 -- Add a compression policy (compress chunks older than 1 day)
 SELECT add_compression_policy('heartbeats', INTERVAL '1 day');
 
 -- Recent activity index
-CREATE INDEX ON heartbeats (user_id, created_at DESC);
+CREATE INDEX ON heartbeats (user_id, time DESC);
+
+-- Heartbeats indexes for common queries
+CREATE INDEX idx_heartbeats_project ON heartbeats(user_id, project, time DESC) WHERE project IS NOT NULL;
+CREATE INDEX idx_heartbeats_language ON heartbeats(user_id, language, time DESC) WHERE language IS NOT NULL;
+CREATE INDEX idx_heartbeats_editor ON heartbeats(user_id, editor, time DESC) WHERE editor IS NOT NULL;
+CREATE INDEX idx_heartbeats_operating_system ON heartbeats(user_id, operating_system, time DESC) WHERE operating_system IS NOT NULL;

@@ -105,8 +105,8 @@ pub enum HeartbeatInput {
 
 pub struct DurationInput {
     pub user_id: Option<i32>,
-    pub start_date: Option<i64>,
-    pub end_date: Option<i64>,
+    pub start_date: Option<DateTime<Utc>>,
+    pub end_date: Option<DateTime<Utc>>,
     pub project: Option<String>,
     pub language: Option<String>,
     pub entity: Option<String>,
@@ -174,7 +174,7 @@ pub struct HeartbeatApiResponse {
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct Heartbeat {
     pub id: i32,
-    pub time: i64,
+    pub time: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
     pub user_id: i32,
     pub entity: String,
@@ -202,7 +202,7 @@ pub struct Heartbeat {
 #[diesel(table_name = heartbeats)]
 pub struct NewHeartbeat {
     pub user_id: i32,
-    pub time: i64,
+    pub time: DateTime<Utc>,
     pub entity: String,
     pub type_: String,
     pub ip_address: IpNetwork,
@@ -226,7 +226,7 @@ pub struct NewHeartbeat {
 
 impl NewHeartbeat {
     pub fn new(
-        time: i64, // Unix timestamp
+        time: DateTime<Utc>,
         user_id: i32,
         entity: String,
         type_: String,
@@ -263,7 +263,8 @@ impl NewHeartbeat {
         ip_address: IpNetwork,
         headers: &HeaderMap,
     ) -> Self {
-        let time = request.time as i64;
+        // convert timestamp (seconds since epoch) to DateTime<Utc>
+        let time = DateTime::from_timestamp(request.time as i64, 0).unwrap_or_else(|| Utc::now());
 
         // extract user agent from headers
         let user_agent = headers
@@ -350,7 +351,8 @@ impl NewHeartbeat {
 impl From<Heartbeat> for HeartbeatResponse {
     fn from(heartbeat: Heartbeat) -> Self {
         let id = heartbeat.id.to_string();
-        let time = heartbeat.time as f64;
+        // Convert DateTime<Utc> to timestamp (seconds since epoch)
+        let time = heartbeat.time.timestamp() as f64;
 
         Self {
             id,
@@ -367,7 +369,7 @@ impl Heartbeat {
     }
 
     pub fn count_heartbeats_last_24h(conn: &mut PgConnection) -> QueryResult<i64> {
-        let twenty_four_hours_ago = chrono::Utc::now().timestamp() - 24 * 60 * 60;
+        let twenty_four_hours_ago = chrono::Utc::now() - chrono::Duration::hours(24);
 
         heartbeats::table
             .filter(heartbeats::time.gt(twenty_four_hours_ago))
@@ -376,7 +378,7 @@ impl Heartbeat {
     }
 
     pub fn count_heartbeats_last_hour(conn: &mut PgConnection) -> QueryResult<i64> {
-        let one_hour_ago = chrono::Utc::now().timestamp() - 60 * 60;
+        let one_hour_ago = chrono::Utc::now() - chrono::Duration::hours(1);
 
         heartbeats::table
             .filter(heartbeats::time.gt(one_hour_ago))
@@ -417,10 +419,10 @@ impl Heartbeat {
         conn: &mut PgConnection,
     ) -> QueryResult<Vec<DailyActivity>> {
         diesel::sql_query(
-            "SELECT DATE(to_timestamp(time)) as date, COUNT(*) as count 
+            "SELECT DATE(time) as date, COUNT(*) as count 
              FROM heartbeats 
-             WHERE time >= EXTRACT(EPOCH FROM (NOW() - INTERVAL '7 days'))
-             GROUP BY DATE(to_timestamp(time))
+             WHERE time >= NOW() - INTERVAL '7 days'
+             GROUP BY DATE(time)
              ORDER BY date",
         )
         .load::<DailyActivity>(conn)
@@ -435,12 +437,12 @@ impl Heartbeat {
             WITH capped_diffs AS (
                 SELECT CASE
                     WHEN LAG(time) OVER (ORDER BY time) IS NULL THEN 0
-                    ELSE LEAST(EXTRACT(EPOCH FROM (to_timestamp(time) - to_timestamp(LAG(time) OVER (ORDER BY time)))), $8)
+                    ELSE LEAST(EXTRACT(EPOCH FROM (time - LAG(time) OVER (ORDER BY time))), $8)
                 END as diff
                 FROM heartbeats
                 WHERE ($1::int IS NULL OR user_id = $1)
-                  AND ($2::bigint IS NULL OR time >= $2)
-                  AND ($3::bigint IS NULL OR time <= $3)
+                  AND ($2::timestamptz IS NULL OR time >= $2)
+                  AND ($3::timestamptz IS NULL OR time <= $3)
                   AND ($4::text IS NULL OR project = $4)
                   AND ($5::text IS NULL OR language = $5)
                   AND ($6::text IS NULL OR entity = $6)
@@ -454,10 +456,10 @@ impl Heartbeat {
 
         let result = diesel::sql_query(base_query)
             .bind::<diesel::sql_types::Nullable<diesel::sql_types::Int4>, _>(duration_input.user_id)
-            .bind::<diesel::sql_types::Nullable<diesel::sql_types::BigInt>, _>(
+            .bind::<diesel::sql_types::Nullable<diesel::sql_types::Timestamptz>, _>(
                 duration_input.start_date,
             )
-            .bind::<diesel::sql_types::Nullable<diesel::sql_types::BigInt>, _>(
+            .bind::<diesel::sql_types::Nullable<diesel::sql_types::Timestamptz>, _>(
                 duration_input.end_date,
             )
             .bind::<diesel::sql_types::Nullable<diesel::sql_types::Text>, _>(
@@ -530,7 +532,7 @@ impl Heartbeat {
                         {field} as name,
                         CASE
                             WHEN LAG(time) OVER (PARTITION BY {field} ORDER BY time) IS NULL THEN 0
-                            ELSE LEAST(EXTRACT(EPOCH FROM (to_timestamp(time) - to_timestamp(LAG(time) OVER (PARTITION BY {field} ORDER BY time)))), $2)
+                            ELSE LEAST(EXTRACT(EPOCH FROM (time - LAG(time) OVER (PARTITION BY {field} ORDER BY time))), $2)
                         END as diff
                     FROM heartbeats
                     WHERE {field} IS NOT NULL

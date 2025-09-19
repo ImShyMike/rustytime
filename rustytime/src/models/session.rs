@@ -12,8 +12,8 @@ use crate::schema::sessions::dsl;
 pub struct Session {
     pub id: Uuid,
     pub user_id: i32,
-    pub github_access_token: String,
     pub github_user_id: i64,
+    pub github_access_token: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub expires_at: DateTime<Utc>,
