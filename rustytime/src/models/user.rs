@@ -60,14 +60,14 @@ impl User {
                 Ok(existing_user)
             }
         } else {
-            let total_users = Self::count_total_users(conn)?;
+            let total_users = Self::count_total_users(conn, true)?;
 
             // create new user
             let new_user = NewUser {
                 github_id,
                 name: username.to_string(),
                 avatar_url: avatar_url.to_string(),
-                is_admin: total_users == 0, // make the first user an admin
+                is_admin: total_users == 0, // make the first real user an admin
                 is_banned: false,
             };
             Self::create(conn, &new_user)
@@ -89,7 +89,14 @@ impl User {
             .load::<User>(conn)
     }
 
-    pub fn count_total_users(conn: &mut PgConnection) -> QueryResult<i64> {
-        users::table.count().get_result(conn)
+    pub fn count_total_users(conn: &mut PgConnection, only_real: bool) -> QueryResult<i64> {
+        if only_real {
+            users::table
+                .count()
+                .filter(users::github_id.gt(0))
+                .get_result(conn)
+        } else {
+            users::table.count().get_result(conn)
+        }
     }
 }

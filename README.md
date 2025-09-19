@@ -56,7 +56,13 @@ docker compose up
 
 Simply run the docker compose and open the website at [http://localhost:3000](http://localhost:3000)
 
-> The database seeding script is only compatible with Linux at the moment D:
+### Seeding the DB
+
+A feature can be enabled in the build that seeds the database with a single user and 10000 heartbeats.
+
+```bash
+cargo run --features seed
+```
 
 ## WakaTime
 

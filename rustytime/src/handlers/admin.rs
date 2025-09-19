@@ -70,7 +70,7 @@ pub async fn admin_dashboard(
 
     // fetch all statistics
     let stats = AdminStats {
-        total_users: db_query!(User::count_total_users(&mut conn)),
+        total_users: db_query!(User::count_total_users(&mut conn, false)),
         total_heartbeats: db_query!(Heartbeat::count_total_heartbeats(&mut conn)),
         heartbeats_last_hour: db_query!(Heartbeat::count_heartbeats_last_hour(&mut conn)),
         heartbeats_last_24h: db_query!(Heartbeat::count_heartbeats_last_24h(&mut conn)),

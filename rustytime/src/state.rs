@@ -1,4 +1,4 @@
-use crate::db::DbPool;
+use crate::db::connection::DbPool;
 use crate::utils::metrics::MetricsTracker;
 use oauth2::{EndpointNotSet, EndpointSet, basic::BasicClient};
 use reqwest::Client;

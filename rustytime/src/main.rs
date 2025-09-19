@@ -19,7 +19,7 @@ use tower_http::{
 
 use tracing::{error, info};
 
-use db::create_pool;
+use db::connection::create_pool;
 use state::AppState;
 use utils::logging::init_tracing;
 use utils::middleware::cors_layer;
@@ -45,9 +45,23 @@ async fn main() {
     info!("✅ Database connection pool created");
 
     // run database migrations
-    if let Err(e) = db::run_migrations(&pool) {
+    if let Err(e) = db::migrations::run_migrations(&pool) {
         error!("Failed to run migrations: {}", e);
         std::process::exit(1);
+    }
+
+    // seed database if enabled
+    #[cfg(feature = "seed")]
+    {
+        let mut conn = pool.get().expect("Failed to get DB connection for seeding");
+        let result = db::seed::seed_database(&mut conn);
+        match result {
+            Ok(_) => info!("✅ Database seeding completed"),
+            Err(e) => {
+                error!("❌ Database seeding failed: {}", e);
+                std::process::exit(1);
+            }
+        }
     }
 
     // create GitHub OAuth client

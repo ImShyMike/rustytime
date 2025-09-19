@@ -3,7 +3,7 @@ use base64::prelude::*;
 use diesel::prelude::*;
 use serde::Deserialize;
 
-use crate::db::DbPool;
+use crate::db::connection::DbPool;
 use crate::schema::users::dsl;
 
 /// Try to get API key from the "Authorization" header

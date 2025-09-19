@@ -185,7 +185,7 @@
 										>GitHub ID</th
 									>
 									<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
-										>Created</th
+										>Created (UTC)</th
 									>
 									<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
 										>Admin</th
@@ -216,7 +216,7 @@
 											>{user.github_id}</td
 										>
 										<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-											>{user.created_at}</td
+											>{new Date(user.created_at).toLocaleString('en-US', { timeZone: 'UTC' })}</td
 										>
 										<td class="px-6 py-4 whitespace-nowrap">
 											<span
@@ -227,9 +227,15 @@
 												{user.is_admin ? 'Admin' : 'User'}
 											</span>
 										</td>
-										<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono"
-											>{user.api_key.substring(0, 16)}...</td
-										>
+										<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
+											<button
+												onclick={() => navigator.clipboard.writeText(user.api_key)}
+												class="cursor-pointer hover:bg-gray-100 px-2 py-1 rounded transition-colors"
+												title="Click to copy full API key"
+											>
+												{user.api_key.substring(0, 16)}...
+											</button>
+										</td>
 									</tr>
 								{/each}
 							</tbody>

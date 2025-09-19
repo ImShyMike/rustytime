@@ -1,4 +1,4 @@
-use crate::db::DbPool;
+use crate::db::connection::DbPool;
 use crate::models::session::Session;
 use chrono::{DateTime, Duration, Utc};
 use diesel::prelude::*;

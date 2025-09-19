@@ -2,13 +2,35 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"label": "Run rustytime server",
+			"label": "Run rustytime backend",
 			"type": "shell",
-			"command": "cd rustytime && cargo run",
+			"command": "cargo",
+			"args": ["run", "--release"],
+			"options": {
+				"cwd": "${workspaceFolder}/rustytime"
+			},
 			"group": "build",
 			"isBackground": true,
-			"problemMatcher": [
-				"$rustc"
+			"problemMatcher": "$rustc"
+		},
+		{
+			"label": "Run frontend",
+			"type": "shell",
+			"command": "npm",
+			"args": ["run", "dev"],
+			"options": {
+				"cwd": "${workspaceFolder}/frontend"
+			},
+			"group": "build",
+			"isBackground": true,
+			"problemMatcher": "$eslint-stylish"
+		},
+		{
+			"label": "Run rustytime",
+			"dependsOrder": "parallel",
+			"dependsOn": [
+				"Run rustytime backend",
+				"Run frontend"
 			]
 		}
 	]

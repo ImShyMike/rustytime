@@ -7,7 +7,7 @@ use ipnetwork::IpNetwork;
 use serde_json::json;
 use std::net::SocketAddr;
 
-use crate::db::DbPool;
+use crate::db::connection::DbPool;
 use crate::get_db_conn;
 use crate::models::heartbeat::Heartbeat;
 use crate::models::heartbeat::*;
