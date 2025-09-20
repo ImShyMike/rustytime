@@ -101,14 +101,18 @@ async fn main() {
         );
 
     // bind to address
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
+    let port = std::env::var("PORT")
+        .unwrap_or_else(|_| "3000".to_string())
+        .parse::<u16>()
+        .unwrap_or(3000);
+    let listener = tokio::net::TcpListener::bind(SocketAddr::from(([0, 0, 0, 0], port)))
         .await
         .unwrap_or_else(|err| {
             error!("❌ Failed to bind address: {}", err);
             std::process::exit(1);
         });
 
-    info!("✅ Server running on http://localhost:3000");
+    info!("✅ Server running on http://localhost:{}", port);
 
     // run the server
     axum::serve(

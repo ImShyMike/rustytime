@@ -12,7 +12,10 @@ services:
       - timescaledb_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER:-username}", "-d", "${POSTGRES_DB:-rustytime}"]
+      test: [
+          "CMD-SHELL",
+          "pg_isready -U username -d rustytime -h localhost"
+        ]
       interval: 5s
       timeout: 2s
       retries: 5
