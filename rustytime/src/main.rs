@@ -36,24 +36,23 @@ async fn main() {
 
     info!("🚀 Starting the rustytime server...");
 
-    // tell the user if running in development mode
-    #[cfg(debug_assertions)]
-    info!("🔧 Running in development mode! File watching enabled.");
-
     // create database connection pool
     let pool = create_pool();
-    info!("✅ Database connection pool created");
 
     // run database migrations
     if let Err(e) = db::migrations::run_migrations(&pool) {
-        error!("Failed to run migrations: {}", e);
+        error!("❌ Failed to run migrations: {}", e);
         std::process::exit(1);
     }
 
     // seed database if enabled
     #[cfg(feature = "seed")]
     {
-        let mut conn = pool.get().expect("Failed to get DB connection for seeding");
+        let mut conn = pool.get().unwrap_or_else(|e| {
+            error!("❌ Failed to get database connection for seeding: {}", e);
+            std::process::exit(1);
+        });
+
         let result = db::seed::seed_database(&mut conn);
         match result {
             Ok(_) => info!("✅ Database seeding completed"),
@@ -104,8 +103,8 @@ async fn main() {
     // bind to address
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
         .await
-        .unwrap_or_else(|_| {
-            error!("{}", "Failed to bind address!");
+        .unwrap_or_else(|err| {
+            error!("❌ Failed to bind address: {}", err);
             std::process::exit(1);
         });
 
@@ -117,9 +116,10 @@ async fn main() {
         app.into_make_service_with_connect_info::<SocketAddr>(),
     )
     .with_graceful_shutdown(async {
-        tokio::signal::ctrl_c()
-            .await
-            .expect("failed to install Ctrl+C handler");
+        tokio::signal::ctrl_c().await.unwrap_or_else(|err| {
+            error!("❌ Failed to install Ctrl+C handler: {}", err);
+            std::process::exit(1);
+        })
     })
     .await
     .unwrap();

@@ -9,7 +9,7 @@ use ipnetwork::{IpNetwork, Ipv4Network};
 use rand::Rng;
 use rand::prelude::IndexedRandom;
 use std::net::Ipv4Addr;
-use tracing::info;
+use tracing::{info, warn};
 
 const TOTAL_HEARTBEATS: usize = 10000;
 const BATCH_SIZE: usize = 1000;
@@ -21,20 +21,20 @@ const USER_AGENT: &str =
     "wakatime/v1.115.2 (linux-6.14.1) go1.24.2 vscode/1.100.0 vscode-wakatime/25.0.3";
 
 pub fn seed_database(conn: &mut PgConnection) -> Result<(), Box<dyn std::error::Error>> {
-    info!("Starting database seeding...");
+    info!("🔄 Starting database seeding...");
 
     let Ok(user) = create_dummy_user(conn) else {
-        info!("Dummy user already exists, skipping seeding.");
+        warn!("⚠️  Dummy user already exists, skipping seeding.");
         return Ok(());
     };
     info!(
-        "Created dummy user: {} (API Key: {})",
+        "✅ Created dummy user: {} (API Key: {})",
         user.name, user.api_key
     );
 
     generate_random_heartbeats(conn, user.id, TOTAL_HEARTBEATS)?;
 
-    info!("Database seeding completed successfully!");
+    info!("✅ Database seeding completed successfully!");
     Ok(())
 }
 
@@ -61,7 +61,7 @@ fn generate_random_heartbeats(
     let mut rng = rand::rng();
     let ip_address = IpNetwork::V4(Ipv4Network::new(Ipv4Addr::new(127, 0, 0, 1), 32)?);
 
-    info!("Generating {} random heartbeats...", count);
+    info!("🔄 Generating {} random heartbeats...", count);
 
     let mut heartbeats = Vec::with_capacity(count);
     for _ in 0..count {
