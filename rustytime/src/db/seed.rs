@@ -17,6 +17,8 @@ const PROJECTS: [&str; 4] = ["Alpha", "Beta", "Gamma", "Delta"];
 const LANGUAGES: [&str; 5] = ["python", "javascript", "go", "rust", "c++"];
 const FILE_EXTENSIONS: [&str; 5] = [".py", ".js", ".go", ".rs", ".cpp"];
 const BRANCHES: [&str; 4] = ["main", "dev", "feature/x", "bugfix/y"];
+const USER_AGENT: &str =
+    "wakatime/v1.115.2 (linux-6.14.1) go1.24.2 vscode/1.100.0 vscode-wakatime/25.0.3";
 
 pub fn seed_database(conn: &mut PgConnection) -> Result<(), Box<dyn std::error::Error>> {
     info!("Starting database seeding...");
@@ -57,10 +59,7 @@ fn generate_random_heartbeats(
     count: usize,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut rng = rand::rng();
-
     let ip_address = IpNetwork::V4(Ipv4Network::new(Ipv4Addr::new(127, 0, 0, 1), 32)?);
-    let user_agent =
-        "wakatime/v1.115.2 (linux-6.14.1) go1.24.2 vscode/1.100.0 vscode-wakatime/25.0.3";
 
     info!("Generating {} random heartbeats...", count);
 
@@ -74,7 +73,7 @@ fn generate_random_heartbeats(
             &FILE_EXTENSIONS,
             &BRANCHES,
             ip_address,
-            user_agent,
+            &USER_AGENT,
         );
         heartbeats.push(heartbeat);
     }
