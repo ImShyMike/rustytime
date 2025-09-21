@@ -58,10 +58,18 @@ Simply run the docker compose and open the website at [http://localhost:3000](ht
 
 ### Seeding the DB
 
-A feature can be enabled in the build that seeds the database with a single user and 10000 heartbeats.
+The `seed` feature can be enabled in the build that seeds the database with a single user and 10000 heartbeats.
 
 ```bash
 cargo run --features seed
+```
+
+### Using cloudflare
+
+To get the actual client IP's when behind cloudflare, enable the `cloudflare` feature.
+
+```bash
+cargo run --features cloudflare
 ```
 
 ## WakaTime
