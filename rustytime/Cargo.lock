@@ -923,6 +923,7 @@ version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2ed4238d2efb7cbd6fa938a1f8f3361aa9b418396230840a813ac59c088638b2"
 dependencies = [
+ "regex",
  "serde",
  "serde_yaml",
 ]
@@ -1466,7 +1467,7 @@ checksum = "8a0d197bd2c9dc6e53b84da9556a69ba4cdfab8619eb41a8bd1cc2027a0f6b1d"
 
 [[package]]
 name = "rustytime"
-version = "0.3.1"
+version = "0.3.2"
 dependencies = [
  "axum",
  "axum-client-ip",
