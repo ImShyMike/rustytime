@@ -1,10 +1,18 @@
-use axum::extract::{ConnectInfo, Json, Path, State};
+use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use chrono::Utc;
 use diesel::prelude::*;
 use ipnetwork::IpNetwork;
 use serde_json::json;
+use std::net::IpAddr;
+
+#[cfg(feature = "cloudflare")]
+use axum_client_ip::CfConnectingIp;
+
+#[cfg(not(feature = "cloudflare"))]
+use axum::extract::ConnectInfo;
+#[cfg(not(feature = "cloudflare"))]
 use std::net::SocketAddr;
 
 use crate::db::connection::DbPool;
@@ -20,9 +28,9 @@ const MAX_HEARTBEATS_PER_REQUEST: usize = 25;
 
 /// Process heartbeat request and store in the database
 async fn process_heartbeat_request(
-    pool: &DbPool,
+    app_state: &AppState,
     id: String,
-    addr: SocketAddr,
+    client_ip: IpAddr,
     headers: axum::http::HeaderMap,
     uri: axum::http::Uri,
     heartbeat_input: HeartbeatInput,
@@ -42,13 +50,13 @@ async fn process_heartbeat_request(
         None => return Err((StatusCode::UNAUTHORIZED, "Unauthorized").into_response()),
     };
 
-    let user_result = get_user_id_from_api_key(pool, &api_key).await;
+    let user_result = get_user_id_from_api_key(&app_state.db_pool, &api_key).await;
     let user_id: i32 = match user_result {
         Some(id) => id,
         None => return Err((StatusCode::UNAUTHORIZED, "Unauthorized").into_response()),
     };
 
-    let ip_network = IpNetwork::from(addr.ip());
+    let ip_network = IpNetwork::from(client_ip);
 
     if heartbeat_requests.len() == 1 {
         let new_heartbeat = NewHeartbeat::from_request(
@@ -56,9 +64,10 @@ async fn process_heartbeat_request(
             user_id,
             ip_network,
             &headers,
+            &app_state.language_container,
         );
 
-        match store_heartbeats_in_db(pool, vec![new_heartbeat]).await {
+        match store_heartbeats_in_db(&app_state.db_pool, vec![new_heartbeat]).await {
             Ok(mut heartbeats) => {
                 if let Some(heartbeat) = heartbeats.pop() {
                     let response = HeartbeatApiResponse {
@@ -79,10 +88,18 @@ async fn process_heartbeat_request(
     } else {
         let new_heartbeats: Vec<NewHeartbeat> = heartbeat_requests
             .into_iter()
-            .map(|req| NewHeartbeat::from_request(req, user_id, ip_network, &headers))
+            .map(|req| {
+                NewHeartbeat::from_request(
+                    req,
+                    user_id,
+                    ip_network,
+                    &headers,
+                    &app_state.language_container,
+                )
+            })
             .collect();
 
-        match store_heartbeats_in_db(pool, new_heartbeats).await {
+        match store_heartbeats_in_db(&app_state.db_pool, new_heartbeats).await {
             Ok(heartbeats) => {
                 if heartbeats.is_empty() {
                     let response_data = Json(HeartbeatApiResponseVariant::Multiple(vec![]));
@@ -102,7 +119,21 @@ async fn process_heartbeat_request(
     }
 }
 
-/// Handler to create heartbeats
+/// Handler to create heartbeats (Cloudflare version)
+#[cfg(feature = "cloudflare")]
+pub async fn create_heartbeats(
+    State(app_state): State<AppState>,
+    Path(id): Path<String>,
+    CfConnectingIp(client_ip): CfConnectingIp,
+    headers: axum::http::HeaderMap,
+    uri: axum::http::Uri,
+    Json(heartbeat_input): Json<HeartbeatInput>,
+) -> Result<Response, Response> {
+    process_heartbeat_request(&app_state, id, client_ip, headers, uri, heartbeat_input).await
+}
+
+/// Handler to create heartbeats (Regular socket version)
+#[cfg(not(feature = "cloudflare"))]
 pub async fn create_heartbeats(
     State(app_state): State<AppState>,
     Path(id): Path<String>,
@@ -111,7 +142,7 @@ pub async fn create_heartbeats(
     uri: axum::http::Uri,
     Json(heartbeat_input): Json<HeartbeatInput>,
 ) -> Result<Response, Response> {
-    process_heartbeat_request(&app_state.db_pool, id, addr, headers, uri, heartbeat_input).await
+    process_heartbeat_request(&app_state, id, addr.ip(), headers, uri, heartbeat_input).await
 }
 
 /// Handler to get today's status bar data

@@ -3,7 +3,7 @@ use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use diesel::sql_types::{BigInt, Date, Nullable, Text};
 use ipnetwork::IpNetwork;
-use lang_types::Language;
+use linguist::{container::InMemoryLanguageContainer, resolver::resolve_languages_by_extension};
 use serde::{Deserialize, Serialize};
 
 use crate::schema::heartbeats;
@@ -23,6 +23,8 @@ const MAX_EDITOR_LENGTH: usize = 50;
 const MAX_OS_LENGTH: usize = 100;
 const MAX_MACHINE_LENGTH: usize = 100;
 const MAX_USER_AGENT_LENGTH: usize = 255;
+const MAX_DEPENDENCIES: usize = 50;
+const MAX_DEPENDENCY_LENGTH: usize = 254;
 
 /// Truncate a string to the specified maximum length, respecting UTF-8 boundaries
 #[inline(always)]
@@ -262,6 +264,7 @@ impl NewHeartbeat {
         user_id: i32,
         ip_address: IpNetwork,
         headers: &HeaderMap,
+        language_container: &InMemoryLanguageContainer,
     ) -> Self {
         // convert timestamp (seconds since epoch) to DateTime<Utc>
         let time = DateTime::from_timestamp(request.time as i64, 0).unwrap_or_else(|| Utc::now());
@@ -290,10 +293,10 @@ impl NewHeartbeat {
         // and limit them to max 50 items and max 254 chars each
         let dependencies = request.dependencies.map(|deps| {
             deps.into_iter()
-                .take(50)
+                .take(MAX_DEPENDENCIES)
                 .map(|dep| {
-                    let truncated = if dep.len() > 254 {
-                        dep.chars().take(254).collect::<String>()
+                    let truncated = if dep.len() > MAX_DEPENDENCY_LENGTH {
+                        dep.chars().take(MAX_DEPENDENCY_LENGTH).collect::<String>()
                     } else {
                         dep
                     };
@@ -304,12 +307,14 @@ impl NewHeartbeat {
 
         // guess language from entity
         let language = {
-            let ext = std::path::Path::new(&request.entity)
-                .extension()
-                .and_then(|s| s.to_str())
-                .unwrap_or("");
-            if !ext.is_empty() {
-                Language::from_extension(ext).map(|lang| lang.name().to_ascii_lowercase())
+            let path = std::path::Path::new(&request.entity);
+
+            if let Ok(languages) = resolve_languages_by_extension(path, language_container) {
+                if let Some(first_lang) = languages.first() {
+                    Some(first_lang.name.to_ascii_lowercase())
+                } else {
+                    Some("unknown".to_string())
+                }
             } else {
                 Some("unknown".to_string())
             }

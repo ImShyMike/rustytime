@@ -1,7 +1,7 @@
 [package]
 name = "rustytime"
 description = "🕒 blazingly fast time tracking for developers"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2024"
 authors = ["ImShyMike"]
 
@@ -16,6 +16,7 @@ debug = false
 [features]
 default = []
 seed = ["rand"]
+cloudflare = ["axum-client-ip"]
 
 [dependencies]
 axum =  { version = "0.8.4", features = ["json", "query", "http1", "http2", "tokio"], default-features = false }
@@ -42,5 +43,6 @@ urlencoding = { version = "2.1.3", default-features = false }
 regex = { version = "1.11.2", default-features = false }
 once_cell = { version = "1.21.3", default-features = false }
 woothee = { version = "0.13.0", default-features = false }
-lang-types = { version = "0.1.0", default-features = false }
 rand = { version = "0.9.2", features = ["std", "thread_rng"], default-features = false, optional = true }
+axum-client-ip = { version = "1.1.3", default-features = false, optional = true }
+linguist-rs = { version = "1.1.0", features = ["github-linguist-yaml"], default-features = false }
