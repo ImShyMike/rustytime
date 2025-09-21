@@ -1,5 +1,5 @@
 [package]
-name = "rustytime"
+name = "rustytime-server"
 description = "🕒 blazingly fast time tracking for developers"
 version = "0.3.2"
 edition = "2024"
@@ -8,6 +8,10 @@ readme = "../README.md"
 license = "GPL-3.0"
 homepage = "https://rustytime.shymike.dev"
 repository = "https://github.com/ImShyMike/rustytime"
+
+[[bin]]
+name = "rustytime"
+path = "src/main.rs"
 
 [profile.release]
 lto = true
