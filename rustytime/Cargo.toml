@@ -4,6 +4,10 @@ description = "🕒 blazingly fast time tracking for developers"
 version = "0.3.1"
 edition = "2024"
 authors = ["ImShyMike"]
+readme = "../README.md"
+license = "GPL-3.0"
+homepage = "https://rustytime.shymike.dev"
+repository = "https://github.com/ImShyMike/rustytime"
 
 [profile.release]
 lto = true

@@ -74,7 +74,7 @@ cargo run --features cloudflare
 
 ## WakaTime
 
-When using a WakaTime client, point your requests to `http://localhost:3000/api/v1` (or `https://rustytime.shymike.dev/api/v1` if using the deployed version)
+When using a WakaTime client, point your requests to `http://localhost:3000/api/v1` (or `https://api-rustytime.shymike.dev/api/v1` if using the deployed version)
 
 ## License
 
