@@ -34,7 +34,8 @@ async fn main() {
     // logging stuff
     init_tracing();
 
-    info!("🚀 Starting the rustytime server...");
+    let version = env!("CARGO_PKG_VERSION");
+    info!("🚀 Starting the rustytime (v{}) server...", version);
 
     // create database connection pool
     let pool = create_pool();
