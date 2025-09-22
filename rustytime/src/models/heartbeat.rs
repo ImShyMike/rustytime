@@ -3,7 +3,6 @@ use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use diesel::sql_types::{BigInt, Date, Nullable, Text};
 use ipnetwork::IpNetwork;
-use linguist::container::{Container, InMemoryLanguageContainer};
 use serde::{Deserialize, Serialize};
 
 use crate::schema::heartbeats;
@@ -40,6 +39,12 @@ fn truncate_string(s: String, max_length: usize) -> String {
 #[inline(always)]
 fn truncate_optional_string(s: Option<String>, max_length: usize) -> Option<String> {
     s.map(|s| truncate_string(s, max_length))
+}
+
+struct SourceType;
+
+impl SourceType {
+    const DIRECT_ENTRY: &'static str = "direct_entry";
 }
 
 #[derive(QueryableByName)]
@@ -198,6 +203,7 @@ pub struct Heartbeat {
     pub line_deletions: Option<i32>,
     pub lineno: Option<i32>,
     pub cursorpos: Option<i32>,
+    pub source_type: Option<String>,
 }
 
 #[derive(Insertable, Deserialize, Debug)]
@@ -224,6 +230,137 @@ pub struct NewHeartbeat {
     pub line_deletions: Option<i32>,
     pub lineno: Option<i32>,
     pub cursorpos: Option<i32>,
+    pub source_type: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct SanitizedHeartbeatRequest {
+    pub entity: String,
+    #[serde(rename = "type")]
+    pub type_: String,
+    pub time: DateTime<Utc>,
+    pub category: Option<String>,
+    pub project: Option<String>,
+    pub project_root_count: Option<i32>,
+    pub branch: Option<String>,
+    pub language: Option<String>,
+    pub dependencies: Option<Vec<String>>,
+    pub lines: Option<i32>,
+    pub line_additions: Option<i32>,
+    pub line_deletions: Option<i32>,
+    pub lineno: Option<i32>,
+    pub cursorpos: Option<i32>,
+    pub is_write: Option<bool>,
+}
+
+impl SanitizedHeartbeatRequest {
+    pub fn from_request(request: HeartbeatRequest) -> Self {
+        // Convert timestamp (seconds since epoch) to DateTime<Utc>
+        let time = DateTime::from_timestamp(request.time as i64, 0).unwrap_or_else(Utc::now);
+
+        // Handle test heartbeats
+        let type_ = if request.entity == "test.txt" {
+            "test".to_string()
+        } else {
+            request.type_
+        };
+
+        // Fallback to "coding" category
+        let category = if let Some(cat) = request.category {
+            Some(cat)
+        } else {
+            Some("coding".to_string())
+        };
+
+        // Convert dependencies and apply limits
+        let dependencies = request.dependencies.map(|deps| {
+            deps.into_iter()
+                .take(MAX_DEPENDENCIES)
+                .map(|dep| {
+                    if dep.len() > MAX_DEPENDENCY_LENGTH {
+                        dep.chars().take(MAX_DEPENDENCY_LENGTH).collect::<String>()
+                    } else {
+                        dep
+                    }
+                })
+                .collect()
+        });
+
+        Self {
+            entity: truncate_string(request.entity, MAX_ENTITY_LENGTH),
+            type_: truncate_string(type_, MAX_TYPE_LENGTH),
+            time,
+            category: truncate_optional_string(category, MAX_CATEGORY_LENGTH),
+            project: truncate_optional_string(request.project, MAX_PROJECT_LENGTH),
+            project_root_count: request.project_root_count,
+            branch: truncate_optional_string(request.branch, MAX_BRANCH_LENGTH),
+            language: truncate_optional_string(request.language, MAX_LANGUAGE_LENGTH),
+            dependencies,
+            lines: request.lines,
+            line_additions: request.line_additions,
+            line_deletions: request.line_deletions,
+            lineno: request.lineno,
+            cursorpos: request.cursorpos,
+            is_write: request.is_write,
+        }
+    }
+
+    pub fn to_new_heartbeat(
+        self,
+        user_id: i32,
+        ip_address: IpNetwork,
+        headers: &HeaderMap,
+    ) -> NewHeartbeat {
+        // Extract user agent from headers
+        let user_agent = headers
+            .get("user-agent")
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or("")
+            .to_string();
+
+        // Extract machine name from headers
+        let machine = headers
+            .get("x-machine-name")
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or("")
+            .to_string();
+
+        // Parse user agent to get OS and editor info
+        let (operating_system, editor) = match parse_user_agent(user_agent.clone()) {
+            Ok((os, ed)) => (Some(os), Some(ed)),
+            Err(_) => (None, None),
+        };
+
+        // Convert dependencies Vec<String> to Vec<Option<String>> if present
+        let dependencies = self
+            .dependencies
+            .map(|deps| deps.into_iter().map(Some).collect());
+
+        NewHeartbeat {
+            time: self.time,
+            user_id,
+            entity: self.entity,
+            type_: self.type_,
+            ip_address,
+            project: self.project,
+            branch: self.branch,
+            language: self.language,
+            category: self.category,
+            is_write: self.is_write,
+            editor: truncate_optional_string(editor, MAX_EDITOR_LENGTH),
+            operating_system: truncate_optional_string(operating_system, MAX_OS_LENGTH),
+            machine: truncate_string(machine, MAX_MACHINE_LENGTH),
+            user_agent: truncate_string(user_agent, MAX_USER_AGENT_LENGTH),
+            lines: self.lines,
+            project_root_count: self.project_root_count,
+            dependencies,
+            line_additions: self.line_additions,
+            line_deletions: self.line_deletions,
+            lineno: self.lineno,
+            cursorpos: self.cursorpos,
+            source_type: SourceType::DIRECT_ENTRY.to_string().into(),
+        }
+    }
 }
 
 impl NewHeartbeat {
@@ -256,6 +393,7 @@ impl NewHeartbeat {
             line_deletions: None,
             lineno: None,
             cursorpos: None,
+            source_type: None,
         }
     }
 
@@ -264,92 +402,9 @@ impl NewHeartbeat {
         user_id: i32,
         ip_address: IpNetwork,
         headers: &HeaderMap,
-        language_container: &InMemoryLanguageContainer,
     ) -> Self {
-        // convert timestamp (seconds since epoch) to DateTime<Utc>
-        let time = DateTime::from_timestamp(request.time as i64, 0).unwrap_or_else(Utc::now);
-
-        // extract user agent from headers
-        let user_agent = headers
-            .get("user-agent")
-            .and_then(|value| value.to_str().ok())
-            .unwrap_or("")
-            .to_string();
-
-        // extract machine name from headers
-        let machine = headers
-            .get("x-machine-name")
-            .and_then(|value| value.to_str().ok())
-            .unwrap_or("")
-            .to_string();
-
-        // parse user agent to get OS and editor info
-        let (operating_system, editor) = match parse_user_agent(user_agent.clone()) {
-            Ok((os, ed)) => (Some(os), Some(ed)),
-            Err(_) => (None, None),
-        };
-
-        // convert dependencies Vec<String> to Vec<Option<String>> if present
-        // and limit them to max 50 items and max 254 chars each
-        let dependencies = request.dependencies.map(|deps| {
-            deps.into_iter()
-                .take(MAX_DEPENDENCIES)
-                .map(|dep| {
-                    let truncated = if dep.len() > MAX_DEPENDENCY_LENGTH {
-                        dep.chars().take(MAX_DEPENDENCY_LENGTH).collect::<String>()
-                    } else {
-                        dep
-                    };
-                    Some(truncated)
-                })
-                .collect()
-        });
-
-        // guess language from entity
-        let language = {
-            let path = std::path::Path::new(&request.entity);
-
-            if let Some(languages) = language_container.get_languages_by_extension(path) {
-                if let Some(first_lang) = languages.first() {
-                    Some(first_lang.name.to_ascii_lowercase())
-                } else {
-                    Some("unknown".to_string())
-                }
-            } else {
-                Some("unknown".to_string())
-            }
-        };
-
-        // handle test heartbeats
-        let type_ = if request.entity == "test.txt" {
-            "test".to_string()
-        } else {
-            request.type_
-        };
-
-        Self {
-            time,
-            user_id,
-            entity: truncate_string(request.entity, MAX_ENTITY_LENGTH),
-            type_: truncate_string(type_, MAX_TYPE_LENGTH),
-            ip_address,
-            project: truncate_optional_string(request.project, MAX_PROJECT_LENGTH),
-            branch: truncate_optional_string(request.branch, MAX_BRANCH_LENGTH),
-            language: truncate_optional_string(language, MAX_LANGUAGE_LENGTH),
-            category: truncate_optional_string(request.category, MAX_CATEGORY_LENGTH),
-            is_write: request.is_write,
-            editor: truncate_optional_string(editor, MAX_EDITOR_LENGTH),
-            operating_system: truncate_optional_string(operating_system, MAX_OS_LENGTH),
-            machine: truncate_string(machine, MAX_MACHINE_LENGTH),
-            user_agent: truncate_string(user_agent, MAX_USER_AGENT_LENGTH),
-            lines: request.lines,
-            project_root_count: request.project_root_count,
-            dependencies,
-            line_additions: request.line_additions,
-            line_deletions: request.line_deletions,
-            lineno: request.lineno,
-            cursorpos: request.cursorpos,
-        }
+        let sanitized = SanitizedHeartbeatRequest::from_request(request);
+        sanitized.to_new_heartbeat(user_id, ip_address, headers)
     }
 }
 

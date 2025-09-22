@@ -26,6 +26,7 @@ diesel::table! {
         line_deletions -> Nullable<Int4>,
         lineno -> Nullable<Int4>,
         cursorpos -> Nullable<Int4>,
+        source_type -> Nullable<Text>,
     }
 }
 

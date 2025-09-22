@@ -68,6 +68,7 @@ CREATE TABLE IF NOT EXISTS heartbeats (
   line_deletions    INTEGER,
   lineno            INTEGER,
   cursorpos         INTEGER,
+  source_type       TEXT,
   PRIMARY KEY (user_id, time)
 );
 
@@ -93,8 +94,19 @@ SELECT add_compression_policy('heartbeats', INTERVAL '1 day');
 -- Recent activity index
 CREATE INDEX ON heartbeats (user_id, time DESC);
 
--- Heartbeats indexes for common queries
+-- For common queries
 CREATE INDEX idx_heartbeats_project ON heartbeats(user_id, project, time DESC) WHERE project IS NOT NULL;
 CREATE INDEX idx_heartbeats_language ON heartbeats(user_id, language, time DESC) WHERE language IS NOT NULL;
 CREATE INDEX idx_heartbeats_editor ON heartbeats(user_id, editor, time DESC) WHERE editor IS NOT NULL;
 CREATE INDEX idx_heartbeats_operating_system ON heartbeats(user_id, operating_system, time DESC) WHERE operating_system IS NOT NULL;
+CREATE INDEX idx_heartbeats_project_user ON heartbeats(time, project, user_id) WHERE project IS NOT NULL;
+
+-- For global recent activity (last 24h, last hour, etc...)
+CREATE INDEX idx_heartbeats_time_desc ON heartbeats(time DESC);
+
+-- For daily activity analysis
+CREATE INDEX idx_heartbeats_date_user ON heartbeats(DATE(time), user_id);
+
+-- For LAG queries and window functions
+CREATE INDEX idx_heartbeats_window_operations ON heartbeats(user_id, time) 
+INCLUDE (project, language, editor, operating_system, entity, type);

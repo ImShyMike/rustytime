@@ -64,7 +64,6 @@ async fn process_heartbeat_request(
             user_id,
             ip_network,
             &headers,
-            &app_state.language_container,
         );
 
         match store_heartbeats_in_db(&app_state.db_pool, vec![new_heartbeat]).await {
@@ -88,15 +87,7 @@ async fn process_heartbeat_request(
     } else {
         let new_heartbeats: Vec<NewHeartbeat> = heartbeat_requests
             .into_iter()
-            .map(|req| {
-                NewHeartbeat::from_request(
-                    req,
-                    user_id,
-                    ip_network,
-                    &headers,
-                    &app_state.language_container,
-                )
-            })
+            .map(|req| NewHeartbeat::from_request(req, user_id, ip_network, &headers))
             .collect();
 
         match store_heartbeats_in_db(&app_state.db_pool, new_heartbeats).await {
