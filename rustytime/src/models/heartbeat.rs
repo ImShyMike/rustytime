@@ -3,8 +3,7 @@ use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use diesel::sql_types::{BigInt, Date, Nullable, Text};
 use ipnetwork::IpNetwork;
-use linguist::container::Container;
-use linguist::{container::InMemoryLanguageContainer, resolver::resolve_languages_by_extension};
+use linguist::container::{Container, InMemoryLanguageContainer};
 use serde::{Deserialize, Serialize};
 
 use crate::schema::heartbeats;
@@ -268,7 +267,7 @@ impl NewHeartbeat {
         language_container: &InMemoryLanguageContainer,
     ) -> Self {
         // convert timestamp (seconds since epoch) to DateTime<Utc>
-        let time = DateTime::from_timestamp(request.time as i64, 0).unwrap_or_else(|| Utc::now());
+        let time = DateTime::from_timestamp(request.time as i64, 0).unwrap_or_else(Utc::now);
 
         // extract user agent from headers
         let user_agent = headers

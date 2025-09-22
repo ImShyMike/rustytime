@@ -88,7 +88,7 @@ pub async fn dashboard(
             .format("%Y-%m-%d %H:%M:%S UTC")
             .to_string(),
         api_key: user.api_key.to_string(),
-        total_heartbeats: total_heartbeats,
+        total_heartbeats,
         human_readable_total: human_readable_duration(
             dashboard_stats.total_time,
             TimeFormat::NoDays,
