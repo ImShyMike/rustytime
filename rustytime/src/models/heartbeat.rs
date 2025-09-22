@@ -41,10 +41,12 @@ fn truncate_optional_string(s: Option<String>, max_length: usize) -> Option<Stri
     s.map(|s| truncate_string(s, max_length))
 }
 
-struct SourceType;
+pub struct SourceType;
 
 impl SourceType {
-    const DIRECT_ENTRY: &'static str = "direct_entry";
+    pub const DIRECT_ENTRY: &'static str = "direct_entry";
+    #[allow(dead_code)]
+    pub const SEEDING: &'static str = "seeding";
 }
 
 #[derive(QueryableByName)]

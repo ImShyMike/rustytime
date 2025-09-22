@@ -1,3 +1,4 @@
+use axum::extract::ConnectInfo;
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
@@ -6,14 +7,10 @@ use diesel::prelude::*;
 use ipnetwork::IpNetwork;
 use serde_json::json;
 use std::net::IpAddr;
+use std::net::SocketAddr;
 
 #[cfg(feature = "cloudflare")]
-use axum_client_ip::CfConnectingIp;
-
-#[cfg(not(feature = "cloudflare"))]
-use axum::extract::ConnectInfo;
-#[cfg(not(feature = "cloudflare"))]
-use std::net::SocketAddr;
+use crate::utils::http::extract_client_ip_cloudflare;
 
 use crate::db::connection::DbPool;
 use crate::get_db_conn;
@@ -115,11 +112,12 @@ async fn process_heartbeat_request(
 pub async fn create_heartbeats(
     State(app_state): State<AppState>,
     Path(id): Path<String>,
-    CfConnectingIp(client_ip): CfConnectingIp,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     headers: axum::http::HeaderMap,
     uri: axum::http::Uri,
     Json(heartbeat_input): Json<HeartbeatInput>,
 ) -> Result<Response, Response> {
+    let client_ip = extract_client_ip_cloudflare(&headers).unwrap_or(addr.ip());
     process_heartbeat_request(&app_state, id, client_ip, headers, uri, heartbeat_input).await
 }
 

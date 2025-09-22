@@ -21,6 +21,7 @@ use tracing::{error, info};
 
 use db::connection::create_pool;
 use state::AppState;
+use utils::http::extract_client_ip;
 use utils::logging::init_tracing;
 use utils::middleware::cors_layer;
 
@@ -83,8 +84,10 @@ async fn main() {
             // add request logging
             TraceLayer::new_for_http()
                 .make_span_with(|request: &Request<Body>| {
+                    let client_ip = extract_client_ip(request);
                     tracing::info_span!(
                         "http",
+                        ip = %client_ip,
                         method = %request.method(),
                         uri = %request.uri().path(),
                     )

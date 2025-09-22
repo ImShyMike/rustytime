@@ -1,6 +1,13 @@
+use axum::extract::ConnectInfo;
+use axum::{body::Body, extract::Request};
 use once_cell::sync::Lazy;
 use regex::Regex;
+use std::net::IpAddr;
+use std::net::SocketAddr;
 use woothee::parser::Parser;
+
+#[cfg(feature = "cloudflare")]
+use axum::http::HeaderMap;
 
 static USER_AGENT_PATTERN: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"(?iU)^(?:(?:wakatime|chrome|firefox|edge)\/(?:v?[\d+.]+|unset)?\s)(?:\(?(\w+)[-_].*\)?.+\s)?(?:([^\/\s]+)\/[\w\d\.]+\s)?([^\/\s]+)-wakatime\/.+$").unwrap()
@@ -53,4 +60,34 @@ pub fn parse_user_agent(ua: String) -> Result<(String, String), String> {
     }
 
     Err("failed to parse user agent string".to_string())
+}
+
+/// Extract client IP from request headers or connection info
+pub fn extract_client_ip(request: &Request<Body>) -> IpAddr {
+    #[cfg(feature = "cloudflare")]
+    return extract_client_ip_cloudflare(request.headers())
+        .unwrap_or_else(|| extract_direct_client_ip(request));
+
+    #[cfg(not(feature = "cloudflare"))]
+    extract_direct_client_ip(request)
+}
+
+/// Extract direct client IP from connection info
+fn extract_direct_client_ip(request: &Request<Body>) -> IpAddr {
+    if let Some(ConnectInfo(addr)) = request.extensions().get::<ConnectInfo<SocketAddr>>() {
+        addr.ip()
+    } else {
+        IpAddr::from([0, 0, 0, 0])
+    }
+}
+
+/// Extract client ip from cloudflare header
+#[cfg(feature = "cloudflare")]
+pub fn extract_client_ip_cloudflare(headers: &HeaderMap) -> Option<IpAddr> {
+    if let Some(cf_ip) = headers.get("cf-connecting-ip") {
+        if let Ok(ip_str) = cf_ip.to_str() {
+            return ip_str.parse().ok();
+        }
+    }
+    None
 }

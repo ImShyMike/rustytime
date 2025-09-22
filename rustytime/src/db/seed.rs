@@ -1,6 +1,6 @@
 #![cfg(feature = "seed")]
 
-use crate::models::heartbeat::NewHeartbeat;
+use crate::models::heartbeat::{NewHeartbeat, SourceType};
 use crate::models::user::User;
 use crate::schema::heartbeats;
 use chrono::Utc;
@@ -19,6 +19,15 @@ const FILE_EXTENSIONS: [&str; 5] = [".py", ".js", ".go", ".rs", ".cpp"];
 const BRANCHES: [&str; 4] = ["main", "dev", "feature/x", "bugfix/y"];
 const USER_AGENT: &str =
     "wakatime/v1.115.2 (linux-6.14.1) go1.24.2 vscode/1.100.0 vscode-wakatime/25.0.3";
+
+struct HeartbeatParams<'a> {
+    projects: &'a [&'a str],
+    languages: &'a [&'a str],
+    file_extensions: &'a [&'a str],
+    branches: &'a [&'a str],
+    ip_address: IpNetwork,
+    user_agent: &'a str,
+}
 
 pub fn seed_database(conn: &mut PgConnection) -> Result<(), Box<dyn std::error::Error>> {
     info!("🔄 Starting database seeding...");
@@ -63,18 +72,18 @@ fn generate_random_heartbeats(
 
     info!("🔄 Generating {} random heartbeats...", count);
 
+    let params = HeartbeatParams {
+        projects: &PROJECTS,
+        languages: &LANGUAGES,
+        file_extensions: &FILE_EXTENSIONS,
+        branches: &BRANCHES,
+        ip_address,
+        user_agent: USER_AGENT,
+    };
+
     let mut heartbeats = Vec::with_capacity(count);
     for _ in 0..count {
-        let heartbeat = generate_random_heartbeat(
-            &mut rng,
-            user_id,
-            &PROJECTS,
-            &LANGUAGES,
-            &FILE_EXTENSIONS,
-            &BRANCHES,
-            ip_address,
-            &USER_AGENT,
-        );
+        let heartbeat = generate_random_heartbeat(&mut rng, user_id, &params);
         heartbeats.push(heartbeat);
     }
 
@@ -90,17 +99,12 @@ fn generate_random_heartbeats(
 fn generate_random_heartbeat<R: Rng>(
     rng: &mut R,
     user_id: i32,
-    projects: &[&str],
-    languages: &[&str],
-    file_extensions: &[&str],
-    branches: &[&str],
-    ip_address: IpNetwork,
-    user_agent: &str,
+    params: &HeartbeatParams,
 ) -> NewHeartbeat {
-    let project = projects.choose(rng).unwrap();
-    let language = languages.choose(rng).unwrap();
-    let extension = file_extensions.choose(rng).unwrap();
-    let branch = branches.choose(rng).unwrap();
+    let project = params.projects.choose(rng).unwrap();
+    let language = params.languages.choose(rng).unwrap();
+    let extension = params.file_extensions.choose(rng).unwrap();
+    let branch = params.branches.choose(rng).unwrap();
 
     // generate random filename
     let filename: String = (0..8)
@@ -125,7 +129,7 @@ fn generate_random_heartbeat<R: Rng>(
         time,
         entity,
         type_: "file".to_string(),
-        ip_address,
+        ip_address: params.ip_address,
         project: Some(project.to_string()),
         branch: Some(branch.to_string()),
         language: Some(language.to_string()),
@@ -134,7 +138,7 @@ fn generate_random_heartbeat<R: Rng>(
         editor: Some("vscode".to_string()),
         operating_system: Some("linux".to_string()),
         machine: "test-machine".to_string(),
-        user_agent: user_agent.to_string(),
+        user_agent: params.user_agent.to_string(),
         lines: Some(rng.random_range(1..=1000)),
         project_root_count: None,
         dependencies: None,
@@ -142,5 +146,6 @@ fn generate_random_heartbeat<R: Rng>(
         line_deletions: None,
         lineno: Some(rng.random_range(1..=100)),
         cursorpos: Some(rng.random_range(0..500)),
+        source_type: SourceType::SEEDING.to_string().into(),
     }
 }
