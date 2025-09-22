@@ -105,7 +105,7 @@ CREATE INDEX idx_heartbeats_project_user ON heartbeats(time, project, user_id) W
 CREATE INDEX idx_heartbeats_time_desc ON heartbeats(time DESC);
 
 -- For daily activity analysis
-CREATE INDEX idx_heartbeats_date_user ON heartbeats(DATE(time), user_id);
+CREATE INDEX idx_heartbeats_date_user ON heartbeats(DATE(time AT TIME ZONE 'UTC'), user_id);
 
 -- For LAG queries and window functions
 CREATE INDEX idx_heartbeats_window_operations ON heartbeats(user_id, time) 
