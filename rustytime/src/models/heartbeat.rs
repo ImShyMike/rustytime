@@ -305,7 +305,7 @@ impl SanitizedHeartbeatRequest {
         }
     }
 
-    pub fn to_new_heartbeat(
+    pub fn into_new_heartbeat(
         self,
         user_id: i32,
         ip_address: IpNetwork,
@@ -404,7 +404,7 @@ impl NewHeartbeat {
         headers: &HeaderMap,
     ) -> Self {
         let sanitized = SanitizedHeartbeatRequest::from_request(request);
-        sanitized.to_new_heartbeat(user_id, ip_address, headers)
+        sanitized.into_new_heartbeat(user_id, ip_address, headers)
     }
 }
 

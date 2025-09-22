@@ -35,7 +35,7 @@ tower-http = { version = "0.6.6", features = ["limit", "timeout", "trace", "cors
 tracing = { version = "0.1.41", default-features = false }
 tracing-subscriber = { version = "0.3.20", features = ["fmt", "env-filter"], default-features = false }
 dotenvy = { version = "0.15.7", default-features = false }
-serde = { version = "1.0.225", features = ["derive"], default-features = false }
+serde = { version = "1.0.226", features = ["derive"], default-features = false }
 uuid = { version = "1.18.1", features = ["serde", "v4"], default-features = false }
 chrono = { version = "0.4.42", default-features = false }
 serde_json = { version = "1.0.145", default-features = false }
