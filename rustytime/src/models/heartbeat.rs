@@ -286,6 +286,9 @@ impl SanitizedHeartbeatRequest {
                 .collect()
         });
 
+        // Lowercase the language
+        let language = request.language.map(|lang| lang.to_lowercase());
+
         Self {
             entity: truncate_string(request.entity, MAX_ENTITY_LENGTH),
             type_: truncate_string(type_, MAX_TYPE_LENGTH),
@@ -294,7 +297,7 @@ impl SanitizedHeartbeatRequest {
             project: truncate_optional_string(request.project, MAX_PROJECT_LENGTH),
             project_root_count: request.project_root_count,
             branch: truncate_optional_string(request.branch, MAX_BRANCH_LENGTH),
-            language: truncate_optional_string(request.language, MAX_LANGUAGE_LENGTH),
+            language: truncate_optional_string(language, MAX_LANGUAGE_LENGTH),
             dependencies,
             lines: request.lines,
             line_additions: request.line_additions,
