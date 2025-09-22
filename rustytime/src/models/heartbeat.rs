@@ -3,6 +3,7 @@ use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use diesel::sql_types::{BigInt, Date, Nullable, Text};
 use ipnetwork::IpNetwork;
+use linguist::container::Container;
 use linguist::{container::InMemoryLanguageContainer, resolver::resolve_languages_by_extension};
 use serde::{Deserialize, Serialize};
 
@@ -309,7 +310,7 @@ impl NewHeartbeat {
         let language = {
             let path = std::path::Path::new(&request.entity);
 
-            if let Ok(languages) = resolve_languages_by_extension(path, language_container) {
+            if let Some(languages) = language_container.get_languages_by_extension(path) {
                 if let Some(first_lang) = languages.first() {
                     Some(first_lang.name.to_ascii_lowercase())
                 } else {
