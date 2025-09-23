@@ -17,10 +17,6 @@ CREATE TABLE users (
   updated_at  TIMESTAMPTZ   NOT NULL DEFAULT now()
 );
 
--- Users table indexes for auth lookups
-CREATE INDEX idx_users_github_id ON users(github_id);
-CREATE INDEX idx_users_api_key ON users(api_key);
-
 -- Auto manage updated_at column
 SELECT diesel_manage_updated_at('users');
 
@@ -32,7 +28,8 @@ CREATE TABLE sessions (
     github_access_token TEXT        NOT NULL,
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
-    expires_at          TIMESTAMPTZ NOT NULL DEFAULT (now() + interval '7 days')
+    expires_at          TIMESTAMPTZ NOT NULL DEFAULT (now() + interval '7 days'),
+    CONSTRAINT sessions_expires_at_future CHECK (expires_at > created_at)
 );
 
 -- Create indexes for session lookups
@@ -83,16 +80,16 @@ SELECT create_hypertable(
 -- Enable compression for performance
 ALTER TABLE heartbeats
   SET (
-    timescaledb.compress            = true,
-    timescaledb.compress_segmentby  = 'user_id',
-    timescaledb.compress_orderby    = 'time'
+    timescaledb.compress                = true,
+    timescaledb.compress_segmentby      = 'user_id',
+    timescaledb.compress_orderby        = 'time DESC'
   );
 
--- Add a compression policy (compress chunks older than 1 day)
-SELECT add_compression_policy('heartbeats', INTERVAL '1 day');
+-- Add a compression policy
+SELECT add_compression_policy('heartbeats', INTERVAL '7 days');
 
--- Recent activity index
-CREATE INDEX ON heartbeats (user_id, time DESC);
+-- Primary time-series index
+CREATE INDEX idx_heartbeats_user_time ON heartbeats (user_id, time DESC);
 
 -- For common queries
 CREATE INDEX idx_heartbeats_project ON heartbeats(user_id, project, time DESC) WHERE project IS NOT NULL;
@@ -101,11 +98,21 @@ CREATE INDEX idx_heartbeats_editor ON heartbeats(user_id, editor, time DESC) WHE
 CREATE INDEX idx_heartbeats_operating_system ON heartbeats(user_id, operating_system, time DESC) WHERE operating_system IS NOT NULL;
 CREATE INDEX idx_heartbeats_project_user ON heartbeats(time, project, user_id) WHERE project IS NOT NULL;
 
+-- Remove expired sessions older than 30 days
+CREATE OR REPLACE FUNCTION cleanup_expired_sessions() RETURNS void AS $$
+BEGIN
+  DELETE FROM sessions WHERE expires_at < now() - INTERVAL '30 days';
+END;
+$$ LANGUAGE plpgsql;
+
+-- Schedule session cleanup to run daily
+SELECT add_job('cleanup_expired_sessions', '1 day');
+
 -- For global recent activity (last 24h, last hour, etc...)
 CREATE INDEX idx_heartbeats_time_desc ON heartbeats(time DESC);
 
--- For daily activity analysis
-CREATE INDEX idx_heartbeats_date_user ON heartbeats(DATE(time AT TIME ZONE 'UTC'), user_id);
+-- For daily activity analysis (simple time index)
+CREATE INDEX idx_heartbeats_time_user ON heartbeats(time, user_id);
 
 -- For LAG queries and window functions
 CREATE INDEX idx_heartbeats_window_operations ON heartbeats(user_id, time) 
