@@ -5,6 +5,12 @@
 	import { createDataLoader } from '$lib/utils/dataLoader';
 	import { handleAuthEffect } from '$lib/utils/authEffect';
 
+	import { PieChart } from 'layerchart';
+	import { schemeCategory10, schemeSet3 } from 'd3-scale-chromatic';
+
+	const renderContext = 'svg';
+	const debug = true;
+
 	const {
 		data: dashboardData,
 		loading,
@@ -14,8 +20,9 @@
 
 	interface UsageStat {
 		name: string;
-		count: number;
+		total_seconds: number;
 		percent: number;
+		text: string;
 	}
 
 	interface DashboardResponse {
@@ -151,108 +158,99 @@
 			<div class="bg-white rounded-xl shadow p-8 mb-8">
 				<h2 class="text-xl font-semibold text-gray-800 mb-6">Dashboard Statistics</h2>
 				<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-					<!-- Top Languages -->
-					<div>
-						<h3 class="text-lg font-medium text-gray-700 mb-4">Top Languages</h3>
-						{#if $dashboardData.languages.length > 0}
-							<div class="space-y-3">
-								{#each $dashboardData.languages.slice(0, 5) as lang (lang.name)}
-									<div class="flex items-center justify-between">
-										<span class="text-gray-700">{lang.name}</span>
-										<div class="flex items-center gap-2">
-											<div class="w-20 bg-gray-200 rounded-full h-2">
-												<div
-													class="bg-blue-600 h-2 rounded-full"
-													style="width: {lang.percent || 0}%"
-												></div>
-											</div>
-											<span class="text-sm text-gray-500 w-12 text-right"
-												>{(lang.percent || 0).toFixed(1)}%</span
-											>
-										</div>
-									</div>
-								{/each}
-							</div>
-						{:else}
-							<p class="text-gray-500">No language data available</p>
-						{/if}
-					</div>
-
-					<!-- Top Projects -->
+					<!-- Top Projects (Horizontal Bar Chart) -->
 					<div>
 						<h3 class="text-lg font-medium text-gray-700 mb-4">Top Projects</h3>
 						{#if $dashboardData.projects.length > 0}
-							<div class="space-y-3">
-								{#each $dashboardData.projects.slice(0, 5) as project (project.name)}
-									<div class="flex items-center justify-between">
-										<span class="text-gray-700 truncate">{project.name}</span>
-										<div class="flex items-center gap-2">
-											<div class="w-20 bg-gray-200 rounded-full h-2">
-												<div
-													class="bg-green-600 h-2 rounded-full"
-													style="width: {project.percent || 0}%"
-												></div>
-											</div>
-											<span class="text-sm text-gray-500 w-12 text-right"
-												>{(project.percent || 0).toFixed(1)}%</span
-											>
-										</div>
+							{#each $dashboardData.projects as project (project.name)}
+								<div class="mb-4 last:mb-0">
+									<p class="text-sm font-medium text-gray-800 mb-1">{project.name}</p>
+									<div class="w-full bg-gray-200 rounded-full h-4">
+										<div
+											class="bg-green-600 h-4 rounded-full"
+											style="width: {project.percent}%; transition: width 0.5s;"
+											title={project.text}
+										></div>
 									</div>
-								{/each}
+									<p class="text-xs text-gray-600 mt-1">
+										{project.text}
+									</p>
+								</div>
+							{/each}
+						{:else}
+							<p class="text-gray-500">No project data available</p>
+						{/if}
+					</div>
+
+					<!-- Top Languages (Pie Chart) -->
+					<div>
+						<h3 class="text-lg font-medium text-gray-700 mb-4">Top Languages</h3>
+						{#if $dashboardData.languages.length > 0}
+							<div class="h-[300px] p-4 rounded-sm overflow-auto">
+								<PieChart
+									data={$dashboardData.languages}
+									key="name"
+									value="total_seconds"
+									placement="right"
+									{renderContext}
+									{debug}
+									legend={{ placement: 'right', orientation: 'vertical' }}
+									cRange={schemeCategory10}
+									tooltip
+								/>
 							</div>
 						{:else}
 							<p class="text-gray-500">No project data available</p>
 						{/if}
 					</div>
 
-					<!-- Top Editors -->
+					<!-- Top Editors (Pie Chart) -->
 					<div>
 						<h3 class="text-lg font-medium text-gray-700 mb-4">Top Editors</h3>
 						{#if $dashboardData.editors.length > 0}
-							<div class="space-y-3">
-								{#each $dashboardData.editors.slice(0, 5) as editor (editor.name)}
-									<div class="flex items-center justify-between">
-										<span class="text-gray-700">{editor.name}</span>
-										<div class="flex items-center gap-2">
-											<div class="w-20 bg-gray-200 rounded-full h-2">
-												<div
-													class="bg-purple-600 h-2 rounded-full"
-													style="width: {editor.percent}%"
-												></div>
-											</div>
-											<span class="text-sm text-gray-500 w-12 text-right"
-												>{editor.percent.toFixed(1)}%</span
-											>
-										</div>
-									</div>
-								{/each}
+							<div class="h-[300px] p-4 rounded-sm overflow-auto">
+								<PieChart
+									data={$dashboardData.editors}
+									key="name"
+									value="total_seconds"
+									placement="right"
+									{renderContext}
+									{debug}
+									legend={{ placement: 'right', orientation: 'vertical'}}
+									cRange={schemeSet3}
+									tooltip
+								/>
 							</div>
 						{:else}
 							<p class="text-gray-500">No editor data available</p>
 						{/if}
 					</div>
 
-					<!-- Top Operating Systems -->
+					<!-- Top Operating Systems (Pie Chart) -->
 					<div>
 						<h3 class="text-lg font-medium text-gray-700 mb-4">Top Operating Systems</h3>
 						{#if $dashboardData.operating_systems.length > 0}
-							<div class="space-y-3">
-								{#each $dashboardData.operating_systems.slice(0, 5) as os (os.name)}
-									<div class="flex items-center justify-between">
-										<span class="text-gray-700">{os.name}</span>
-										<div class="flex items-center gap-2">
-											<div class="w-20 bg-gray-200 rounded-full h-2">
-												<div
-													class="bg-orange-600 h-2 rounded-full"
-													style="width: {os.percent}%"
-												></div>
-											</div>
-											<span class="text-sm text-gray-500 w-12 text-right"
-												>{os.percent.toFixed(1)}%</span
-											>
-										</div>
-									</div>
-								{/each}
+							<div class="h-[300px] p-4 rounded-sm overflow-auto">
+								<PieChart
+									data={$dashboardData.operating_systems}
+									key="name"
+									value="total_seconds"
+									placement="right"
+									{renderContext}
+									{debug}
+									legend={{ placement: 'right', orientation: 'vertical' }}
+									cRange={[
+										'#ff6b6b',
+										'#4ecdc4',
+										'#45b7d1',
+										'#96ceb4',
+										'#feca57',
+										'#ff9ff3',
+										'#54a0ff',
+										'#5f27cd'
+									]}
+									tooltip
+								/>
 							</div>
 						{:else}
 							<p class="text-gray-500">No operating system data available</p>
