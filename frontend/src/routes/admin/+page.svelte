@@ -1,36 +1,12 @@
 <script lang="ts">
-	import { auth, type User } from '$lib/stores/auth';
+	import { auth } from '$lib/stores/auth';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { createDataLoader } from '$lib/utils/dataLoader';
 	import { handleAuthEffect } from '$lib/utils/authEffect';
+	import type { AdminResponse } from '$lib/types/admin';
 
 	const { data: adminData, loading, error, loadData } = createDataLoader<AdminResponse>('/admin');
-
-	interface AdminStats {
-		total_users: number;
-		total_heartbeats: number;
-		heartbeats_last_hour: number;
-		heartbeats_last_24h: number;
-		requests_per_second: number;
-		top_languages: Array<{ language: string; count: number }>;
-		top_projects: Array<{ project: string; count: number }>;
-		daily_activity: Array<{ date: string; count: number }>;
-		all_users: Array<{
-			id: number;
-			name: string | null;
-			avatar_url: string | null;
-			created_at: string;
-			api_key: string;
-			github_id: number;
-			is_admin: boolean;
-		}>;
-	}
-
-	interface AdminResponse {
-		stats: AdminStats;
-		current_user: User;
-	}
 
 	$effect(() => {
 		handleAuthEffect({

@@ -4,12 +4,10 @@
 	import { resolve } from '$app/paths';
 	import { createDataLoader } from '$lib/utils/dataLoader';
 	import { handleAuthEffect } from '$lib/utils/authEffect';
-
-	import { PieChart } from 'layerchart';
-	import { schemeCategory10, schemeSet3 } from 'd3-scale-chromatic';
-
-	const renderContext = 'svg';
-	const debug = true;
+	import type { DashboardResponse } from '$lib/types/dashboard';
+	import { createPieChartOptions } from '$lib/utils/chart';
+	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 
 	const {
 		data: dashboardData,
@@ -17,31 +15,6 @@
 		error,
 		loadData
 	} = createDataLoader<DashboardResponse>('/dashboard');
-
-	interface UsageStat {
-		name: string;
-		total_seconds: number;
-		percent: number;
-		text: string;
-	}
-
-	interface DashboardResponse {
-		avatar_url: string;
-		username: string;
-		user_id: number;
-		github_id: number;
-		created_at: string;
-		expires_at: string;
-		api_key: string;
-		total_heartbeats: number;
-		human_readable_total: string;
-		is_admin: boolean;
-		dev_mode: boolean;
-		projects: UsageStat[];
-		editors: UsageStat[];
-		operating_systems: UsageStat[];
-		languages: UsageStat[];
-	}
 
 	$effect(() => {
 		handleAuthEffect({
@@ -55,6 +28,87 @@
 			requireAdmin: false,
 			redirectTo: '/'
 		});
+	});
+
+	let languagesChart: any = null;
+	let editorsChart: any = null;
+	let osChart: any = null;
+
+	// Initialize charts when data is available
+	$effect(() => {
+		if ($dashboardData && browser) {
+			initializeCharts();
+		}
+	});
+
+	async function initializeCharts() {
+		if (!$dashboardData) return;
+		
+		try {
+			const ApexChartsModule = await import('apexcharts');
+			const ApexCharts = ApexChartsModule.default;
+
+			// Languages chart
+			if ($dashboardData.languages.length > 0) {
+				const languagesElement = document.getElementById('languages-chart');
+				if (languagesElement) {
+					if (languagesChart) {
+						languagesChart.destroy();
+					}
+					const options = createPieChartOptions(
+						$dashboardData.languages,
+						[],
+						'Languages'
+					);
+					languagesChart = new ApexCharts(languagesElement, options);
+					languagesChart.render();
+				}
+			}
+
+			// Editors chart
+			if ($dashboardData.editors.length > 0) {
+				const editorsElement = document.getElementById('editors-chart');
+				if (editorsElement) {
+					if (editorsChart) {
+						editorsChart.destroy();
+					}
+					const options = createPieChartOptions(
+						$dashboardData.editors,
+						[],
+						'Editors'
+					);
+					editorsChart = new ApexCharts(editorsElement, options);
+					editorsChart.render();
+				}
+			}
+
+			// Operating Systems chart
+			if ($dashboardData.operating_systems.length > 0) {
+				const osElement = document.getElementById('os-chart');
+				if (osElement) {
+					if (osChart) {
+						osChart.destroy();
+					}
+					const options = createPieChartOptions(
+						$dashboardData.operating_systems,
+						[],
+						'Operating Systems'
+					);
+					osChart = new ApexCharts(osElement, options);
+					osChart.render();
+				}
+			}
+		} catch (error) {
+			console.error('Failed to load ApexCharts:', error);
+		}
+	}
+
+	onMount(() => {
+		return () => {
+			if (languagesChart) languagesChart.destroy();
+			if (editorsChart) editorsChart.destroy();
+			if (osChart) osChart.destroy();
+		};
 	});
 
 	const handleLogout = () => {
@@ -143,12 +197,12 @@
 					</div>
 					<div class="grid grid-cols-2 gap-4 text-sm text-gray-700">
 						<div>
-							<span class="font-semibold">Total Heartbeats:</span>
-							{$dashboardData.total_heartbeats.toLocaleString()}
-						</div>
-						<div>
 							<span class="font-semibold">Total Time:</span>
 							{$dashboardData.human_readable_total}
+						</div>
+						<div>
+							<span class="font-semibold">Total Heartbeats:</span>
+							{$dashboardData.total_heartbeats.toLocaleString()}
 						</div>
 					</div>
 				</div>
@@ -186,21 +240,9 @@
 					<div>
 						<h3 class="text-lg font-medium text-gray-700 mb-4">Top Languages</h3>
 						{#if $dashboardData.languages.length > 0}
-							<div class="h-[300px] p-4 rounded-sm overflow-auto">
-								<PieChart
-									data={$dashboardData.languages}
-									key="name"
-									value="total_seconds"
-									placement="right"
-									{renderContext}
-									{debug}
-									legend={{ placement: 'right', orientation: 'vertical' }}
-									cRange={schemeCategory10}
-									tooltip
-								/>
-							</div>
+							<div id="languages-chart" class="h-[350px]"></div>
 						{:else}
-							<p class="text-gray-500">No project data available</p>
+							<p class="text-gray-500">No language data available</p>
 						{/if}
 					</div>
 
@@ -208,19 +250,7 @@
 					<div>
 						<h3 class="text-lg font-medium text-gray-700 mb-4">Top Editors</h3>
 						{#if $dashboardData.editors.length > 0}
-							<div class="h-[300px] p-4 rounded-sm overflow-auto">
-								<PieChart
-									data={$dashboardData.editors}
-									key="name"
-									value="total_seconds"
-									placement="right"
-									{renderContext}
-									{debug}
-									legend={{ placement: 'right', orientation: 'vertical'}}
-									cRange={schemeSet3}
-									tooltip
-								/>
-							</div>
+							<div id="editors-chart" class="h-[350px]"></div>
 						{:else}
 							<p class="text-gray-500">No editor data available</p>
 						{/if}
@@ -230,28 +260,7 @@
 					<div>
 						<h3 class="text-lg font-medium text-gray-700 mb-4">Top Operating Systems</h3>
 						{#if $dashboardData.operating_systems.length > 0}
-							<div class="h-[300px] p-4 rounded-sm overflow-auto">
-								<PieChart
-									data={$dashboardData.operating_systems}
-									key="name"
-									value="total_seconds"
-									placement="right"
-									{renderContext}
-									{debug}
-									legend={{ placement: 'right', orientation: 'vertical' }}
-									cRange={[
-										'#ff6b6b',
-										'#4ecdc4',
-										'#45b7d1',
-										'#96ceb4',
-										'#feca57',
-										'#ff9ff3',
-										'#54a0ff',
-										'#5f27cd'
-									]}
-									tooltip
-								/>
-							</div>
+							<div id="os-chart" class="h-[350px]"></div>
 						{:else}
 							<p class="text-gray-500">No operating system data available</p>
 						{/if}

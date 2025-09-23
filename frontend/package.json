@@ -40,11 +40,6 @@
 		"vite": "^7.0.4"
 	},
 	"dependencies": {
-		"bits-ui": "^2.10.0",
-		"d3-array": "^3.2.4",
-		"d3-scale": "^4.0.2",
-		"d3-scale-chromatic": "^3.1.0",
-		"layerchart": "^1.0.12",
-		"melt": "^0.40.2"
+		"apexcharts": "^5.3.5"
 	}
 }
