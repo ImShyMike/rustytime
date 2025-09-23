@@ -217,19 +217,21 @@
 						<h3 class="text-lg font-medium text-gray-700 mb-4">Top Projects</h3>
 						{#if $dashboardData.projects.length > 0}
 							{#each $dashboardData.projects.slice(0, 8) as project (project.name)}
-								<div class="mb-4 last:mb-0">
-									<p class="text-sm font-medium text-gray-800 mb-1">{project.name}</p>
-									<div class="w-full bg-gray-200 rounded-full h-4">
-										<div
-											class="bg-green-600 h-4 rounded-full"
-											style="width: {project.percent}%; transition: width 0.5s;"
-											title={project.text}
-										></div>
+								{#if project.total_seconds > 0}
+									<div class="mb-4 last:mb-0">
+										<p class="text-sm font-medium text-gray-800 mb-1">{project.name}</p>
+										<div class="w-full bg-gray-200 rounded-full h-4">
+											<div
+												class="bg-green-600 h-4 rounded-full"
+												style="width: {project.percent}%; transition: width 0.5s;"
+												title={project.text}
+											></div>
+										</div>
+										<p class="text-xs text-gray-600 mt-1">
+											{project.text}
+										</p>
 									</div>
-									<p class="text-xs text-gray-600 mt-1">
-										{project.text}
-									</p>
-								</div>
+								{/if}
 							{/each}
 						{:else}
 							<p class="text-gray-500">No project data available</p>
