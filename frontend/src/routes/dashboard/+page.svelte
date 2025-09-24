@@ -43,7 +43,7 @@
 
 	async function initializeCharts() {
 		if (!$dashboardData) return;
-		
+
 		try {
 			const ApexChartsModule = await import('apexcharts');
 			const ApexCharts = ApexChartsModule.default;
@@ -72,11 +72,7 @@
 					if (editorsChart) {
 						editorsChart.destroy();
 					}
-					const options = createPieChartOptions(
-						$dashboardData.editors.slice(0, 8),
-						[],
-						'Editors'
-					);
+					const options = createPieChartOptions($dashboardData.editors.slice(0, 8), [], 'Editors');
 					editorsChart = new ApexCharts(editorsElement, options);
 					editorsChart.render();
 				}
@@ -170,11 +166,7 @@
 						{/if}
 					</div>
 				</div>
-			</div>
 
-			<!-- API Key -->
-			<div class="bg-white rounded-xl shadow p-8 mb-8">
-				<h2 class="text-xl font-semibold text-gray-800 mb-4">API Configuration</h2>
 				<div class="space-y-4">
 					<div>
 						<label for="api-key" class="block text-sm font-medium text-gray-700 mb-2">API Key</label
