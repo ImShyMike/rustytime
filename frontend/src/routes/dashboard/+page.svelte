@@ -5,7 +5,7 @@
 	import { createDataLoader } from '$lib/utils/dataLoader';
 	import { handleAuthEffect } from '$lib/utils/authEffect';
 	import type { DashboardResponse } from '$lib/types/dashboard';
-	import { createPieChartOptions } from '$lib/utils/chart';
+	import { createPieChartOptions, createHorizontalBarChartOptions } from '$lib/utils/chart';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 
@@ -30,6 +30,7 @@
 		});
 	});
 
+	let projectsChart: any = null;
 	let languagesChart: any = null;
 	let editorsChart: any = null;
 	let osChart: any = null;
@@ -48,6 +49,22 @@
 			const ApexChartsModule = await import('apexcharts');
 			const ApexCharts = ApexChartsModule.default;
 
+			// Projects chart
+			if ($dashboardData.projects.length > 0) {
+				const projectsElement = document.getElementById('projects-chart');
+				if (projectsElement) {
+					if (projectsChart) {
+						projectsChart.destroy();
+					}
+					const options = createHorizontalBarChartOptions(
+						$dashboardData.projects.slice(0, 8),
+						[]
+					);
+					projectsChart = new ApexCharts(projectsElement, options);
+					projectsChart.render();
+				}
+			}
+
 			// Languages chart
 			if ($dashboardData.languages.length > 0) {
 				const languagesElement = document.getElementById('languages-chart');
@@ -57,8 +74,7 @@
 					}
 					const options = createPieChartOptions(
 						$dashboardData.languages.slice(0, 8),
-						[],
-						'Languages'
+						[]
 					);
 					languagesChart = new ApexCharts(languagesElement, options);
 					languagesChart.render();
@@ -72,7 +88,7 @@
 					if (editorsChart) {
 						editorsChart.destroy();
 					}
-					const options = createPieChartOptions($dashboardData.editors.slice(0, 8), [], 'Editors');
+					const options = createPieChartOptions($dashboardData.editors.slice(0, 8), []);
 					editorsChart = new ApexCharts(editorsElement, options);
 					editorsChart.render();
 				}
@@ -88,7 +104,6 @@
 					const options = createPieChartOptions(
 						$dashboardData.operating_systems.slice(0, 8),
 						[],
-						'Operating Systems'
 					);
 					osChart = new ApexCharts(osElement, options);
 					osChart.render();
@@ -208,23 +223,7 @@
 					<div>
 						<h3 class="text-lg font-medium text-gray-700 mb-4">Top Projects</h3>
 						{#if $dashboardData.projects.length > 0}
-							{#each $dashboardData.projects.slice(0, 8) as project (project.name)}
-								{#if project.total_seconds > 0}
-									<div class="mb-4 last:mb-0">
-										<p class="text-sm font-medium text-gray-800 mb-1">{project.name}</p>
-										<div class="w-full bg-gray-200 rounded-full h-4">
-											<div
-												class="bg-green-600 h-4 rounded-full"
-												style="width: {project.percent}%; transition: width 0.5s;"
-												title={project.text}
-											></div>
-										</div>
-										<p class="text-xs text-gray-600 mt-1">
-											{project.text}
-										</p>
-									</div>
-								{/if}
-							{/each}
+							<div id="projects-chart" class="h-[350px]"></div>
 						{:else}
 							<p class="text-gray-500">No project data available</p>
 						{/if}
