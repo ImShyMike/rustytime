@@ -56,10 +56,7 @@
 					if (projectsChart) {
 						projectsChart.destroy();
 					}
-					const options = createHorizontalBarChartOptions(
-						$dashboardData.projects.slice(0, 8),
-						[]
-					);
+					const options = createHorizontalBarChartOptions($dashboardData.projects.slice(0, 8), []);
 					projectsChart = new ApexCharts(projectsElement, options);
 					projectsChart.render();
 				}
@@ -72,10 +69,7 @@
 					if (languagesChart) {
 						languagesChart.destroy();
 					}
-					const options = createPieChartOptions(
-						$dashboardData.languages.slice(0, 8),
-						[]
-					);
+					const options = createPieChartOptions($dashboardData.languages.slice(0, 8), []);
 					languagesChart = new ApexCharts(languagesElement, options);
 					languagesChart.render();
 				}
@@ -101,10 +95,7 @@
 					if (osChart) {
 						osChart.destroy();
 					}
-					const options = createPieChartOptions(
-						$dashboardData.operating_systems.slice(0, 8),
-						[],
-					);
+					const options = createPieChartOptions($dashboardData.operating_systems.slice(0, 8), []);
 					osChart = new ApexCharts(osElement, options);
 					osChart.render();
 				}

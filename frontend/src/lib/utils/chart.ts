@@ -19,10 +19,10 @@ export function createPieChartOptions(data: UsageStat[], colors: string[]) {
 		colors: colors,
 		legend: {
 			position: 'right',
-			offsetY: 0,
+			offsetY: 0
 		},
 		stroke: {
-			show: false,
+			show: false
 		},
 		plotOptions: {
 			pie: {
@@ -35,7 +35,7 @@ export function createPieChartOptions(data: UsageStat[], colors: string[]) {
 					return data[seriesIndex]?.text || '';
 				}
 			},
-			followCursor: false,
+			followCursor: false
 		},
 		responsive: [
 			{
@@ -52,10 +52,12 @@ export function createPieChartOptions(data: UsageStat[], colors: string[]) {
 
 export function createHorizontalBarChartOptions(data: UsageStat[], colors: string[]) {
 	return {
-		series: [{
-			name: 'Time Spent',
-			data: data.map((item) => item.total_seconds)
-		}],
+		series: [
+			{
+				name: 'Time Spent',
+				data: data.map((item) => item.total_seconds)
+			}
+		],
 		chart: {
 			type: 'bar',
 			height: 350,
@@ -65,7 +67,7 @@ export function createHorizontalBarChartOptions(data: UsageStat[], colors: strin
 				speed: 800
 			},
 			toolbar: {
-				show: false,
+				show: false
 			}
 		},
 		plotOptions: {
@@ -77,7 +79,7 @@ export function createHorizontalBarChartOptions(data: UsageStat[], colors: strin
 		},
 		colors: colors,
 		dataLabels: {
-			enabled: false,
+			enabled: false
 		},
 		stroke: {
 			width: 1,
@@ -111,7 +113,7 @@ export function createHorizontalBarChartOptions(data: UsageStat[], colors: strin
 				formatter: function (value: number, { dataPointIndex }: { dataPointIndex: number }) {
 					return data[dataPointIndex]?.text || '';
 				}
-			},
+			}
 		},
 		grid: {
 			show: false
