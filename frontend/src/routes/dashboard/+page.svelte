@@ -211,47 +211,52 @@ api_key = ${$dashboardData.api_key}`;
 			<!-- Dashboard Statistics -->
 			<div class="bg-white rounded-xl shadow p-8 mb-4">
 				<h2 class="text-xl font-semibold text-gray-800 mb-6">Dashboard Statistics</h2>
-				<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-					<!-- Top Projects (Horizontal Bar Chart) -->
-					<div>
-						<h3 class="text-lg font-medium text-gray-700 mb-4">Top Projects</h3>
-						{#if $dashboardData.projects.length > 0}
-							<div id="projects-chart" class="h-[350px]"></div>
-						{:else}
-							<p class="text-gray-500">No project data available</p>
-						{/if}
-					</div>
+				{#if $dashboardData.projects || $dashboardData.languages || $dashboardData.editors || $dashboardData.operating_systems}
+					<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+						<!-- Top Projects (Horizontal Bar Chart) -->
+						<div>
+							<h3 class="text-lg font-medium text-gray-700 mb-4">Top Projects</h3>
+							{#if $dashboardData.projects.length > 0}
+								<div id="projects-chart" class="h-[350px]"></div>
+							{:else}
+								<p class="text-gray-500">No project data available</p>
+							{/if}
+						</div>
 
-					<!-- Top Languages (Pie Chart) -->
-					<div>
-						<h3 class="text-lg font-medium text-gray-700 mb-4">Top Languages</h3>
-						{#if $dashboardData.languages.length > 0}
-							<div id="languages-chart" class="h-[350px]"></div>
-						{:else}
-							<p class="text-gray-500">No language data available</p>
-						{/if}
-					</div>
+						<!-- Top Languages (Pie Chart) -->
+						<div>
+							<h3 class="text-lg font-medium text-gray-700 mb-4">Top Languages</h3>
+							{#if $dashboardData.languages.length > 0}
+								<div id="languages-chart" class="h-[350px]"></div>
+							{:else}
+								<p class="text-gray-500">No language data available</p>
+							{/if}
+						</div>
 
-					<!-- Top Editors (Pie Chart) -->
-					<div>
-						<h3 class="text-lg font-medium text-gray-700 mb-4">Top Editors</h3>
-						{#if $dashboardData.editors.length > 0}
-							<div id="editors-chart" class="h-[350px]"></div>
-						{:else}
-							<p class="text-gray-500">No editor data available</p>
-						{/if}
-					</div>
+						<!-- Top Editors (Pie Chart) -->
+						<div>
+							<h3 class="text-lg font-medium text-gray-700 mb-4">Top Editors</h3>
+							{#if $dashboardData.editors.length > 0}
+								<div id="editors-chart" class="h-[350px]"></div>
+							{:else}
+								<p class="text-gray-500">No editor data available</p>
+							{/if}
+						</div>
 
-					<!-- Top Operating Systems (Pie Chart) -->
-					<div>
-						<h3 class="text-lg font-medium text-gray-700 mb-4">Top Operating Systems</h3>
-						{#if $dashboardData.operating_systems.length > 0}
-							<div id="os-chart" class="h-[350px]"></div>
-						{:else}
-							<p class="text-gray-500">No operating system data available</p>
-						{/if}
+						<!-- Top Operating Systems (Pie Chart) -->
+						<div>
+							<h3 class="text-lg font-medium text-gray-700 mb-4">Top Operating Systems</h3>
+							{#if $dashboardData.operating_systems.length > 0}
+								<div id="os-chart" class="h-[350px]"></div>
+							{:else}
+								<p class="text-gray-500">No operating system data available</p>
+							{/if}
+						</div>
 					</div>
-				</div>
+				{:else}
+					<p class="text-md text-gray-500">No data to display :(</p>
+					<p class="text-gray-500">Complete the setup bellow to start tracking your time!</p>
+				{/if}
 			</div>
 
 			<!-- Setup stuff -->
