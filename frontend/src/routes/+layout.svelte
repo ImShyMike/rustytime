@@ -9,7 +9,7 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
-	<title>{page.url.pathname === '/' ? '' : page.url.pathname.slice(1) + ' - '}🦀 rustytime</title>
+	<title>{page.url.pathname === '/' ? '' : page.url.pathname.slice(1) + ' - '} rustytime</title>
 	<meta name="description" content="Blazingly fast time tracking for developers." />
 </svelte:head>
 

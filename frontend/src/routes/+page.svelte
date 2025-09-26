@@ -27,7 +27,6 @@
 	<!-- Header -->
 	<header class="text-center mb-4 mt-[10vh]">
 		<div class="flex items-center justify-center gap-3 mb-4">
-			<div class="text-6xl">🦀</div>
 			<h1 class="text-5xl font-bold">rustytime</h1>
 		</div>
 		<p class="text-xl">Blazingly fast time tracking for developers.</p>

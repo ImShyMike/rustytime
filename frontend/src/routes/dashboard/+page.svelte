@@ -35,10 +35,22 @@
 	let editorsChart: any = null;
 	let osChart: any = null;
 
+	let config: string = $state('');
+
 	// Initialize charts when data is available
 	$effect(() => {
 		if ($dashboardData && browser) {
 			initializeCharts();
+		}
+	});
+
+	$effect(() => {
+		if ($dashboardData && $dashboardData.api_key) {
+			config = `[settings]
+api_url = https://api-rustytime.shymike.dev/api/v1
+api_key = ${$dashboardData.api_key}`;
+		} else {
+			config = '';
 		}
 	});
 
@@ -107,6 +119,7 @@
 
 	onMount(() => {
 		return () => {
+			if (projectsChart) projectsChart.destroy();
 			if (languagesChart) languagesChart.destroy();
 			if (editorsChart) editorsChart.destroy();
 			if (osChart) osChart.destroy();
@@ -142,13 +155,12 @@
 {:else if $auth.isAuthenticated && $auth.user && $dashboardData}
 	<div class="min-h-screen bg-gray-50">
 		<div class="max-w-4xl mx-auto py-12">
-			<h1 class="text-3xl font-bold text-green-600 mb-6 flex items-center gap-2">
-				<span>🎯</span> rustytime dashboard
+			<h1 class="text-3xl font-bold text-orange-600 mb-6 flex items-center gap-2">
+				rustytime dashboard
 			</h1>
 
 			<!-- User Information -->
-			<div class="bg-white rounded-xl shadow p-8 mb-8">
-				<h2 class="text-xl font-semibold text-gray-800 mb-4">User Information</h2>
+			<div class="bg-white rounded-xl shadow p-4 pb-1 mb-4">
 				<div class="flex items-center gap-4 mb-4">
 					{#if $dashboardData.avatar_url}
 						<img
@@ -159,55 +171,45 @@
 							class="rounded-full border-2 border-green-500"
 						/>
 					{/if}
-					<div>
-						<p class="font-bold text-lg text-gray-900">{$dashboardData.username}</p>
+					<div class="flex flex-col">
+						<div class="flex items-center gap-2">
+							{#if $dashboardData.is_admin}
+								<span
+									class="inline-flex items-center px-2.5 py-0.75 rounded-full text-xs font-medium bg-red-100 text-red-800"
+								>
+									Admin
+								</span>
+							{/if}
+							<p class="font-bold text-lg text-gray-900">{$dashboardData.username}</p>
+						</div>
 						<p class="text-gray-600">GitHub ID: {$dashboardData.github_id}</p>
 						<p class="text-gray-600">Member since: {$dashboardData.created_at}</p>
-						{#if $dashboardData.is_admin}
-							<span
-								class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 mt-1"
-							>
-								Admin
-							</span>
-						{/if}
-					</div>
-				</div>
-
-				<div class="space-y-4">
-					<div>
-						<label for="api-key" class="block text-sm font-medium text-gray-700 mb-2">API Key</label
-						>
-						<div class="flex items-center gap-2">
-							<input
-								id="api-key"
-								type="text"
-								readonly
-								value={$dashboardData.api_key}
-								class="block w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm font-mono"
-							/>
-							<button
-								onclick={() => navigator.clipboard.writeText($dashboardData!.api_key)}
-								class="cursor-pointer px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
-							>
-								Copy
-							</button>
-						</div>
-					</div>
-					<div class="grid grid-cols-2 gap-4 text-sm text-gray-700">
-						<div>
-							<span class="font-semibold">Total Time:</span>
-							{$dashboardData.human_readable_total}
-						</div>
-						<div>
-							<span class="font-semibold">Total Heartbeats:</span>
-							{$dashboardData.total_heartbeats.toLocaleString()}
-						</div>
 					</div>
 				</div>
 			</div>
 
+			<!-- Top Stats -->
+			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-4">
+				<div class="bg-white rounded-xl shadow p-4">
+					<p class="text-sm text-gray-700">Total Time</p>
+					<h3 class="font-semibold text-gray-800">{$dashboardData.human_readable_total}</h3>
+				</div>
+				<div class="bg-white rounded-xl shadow p-4">
+					<p class="text-sm text-gray-700">Top Project</p>
+					<h3 class="font-semibold text-gray-800">{$dashboardData.projects.at(0)?.name || "None"}</h3>
+				</div>
+				<div class="bg-white rounded-xl shadow p-4">
+					<p class="text-sm text-gray-700">Top Language</p>
+					<h3 class="font-semibold text-gray-800">{$dashboardData.languages.at(0)?.name || "None"}</h3>
+				</div>
+				<div class="bg-white rounded-xl shadow p-4">
+					<p class="text-sm text-gray-700">Total Heartbeats</p>
+					<h3 class="font-semibold text-gray-800">{$dashboardData.total_heartbeats.toLocaleString()}</h3>
+				</div>
+			</div>
+
 			<!-- Dashboard Statistics -->
-			<div class="bg-white rounded-xl shadow p-8 mb-8">
+			<div class="bg-white rounded-xl shadow p-8 mb-4">
 				<h2 class="text-xl font-semibold text-gray-800 mb-6">Dashboard Statistics</h2>
 				<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 					<!-- Top Projects (Horizontal Bar Chart) -->
@@ -252,7 +254,33 @@
 				</div>
 			</div>
 
-			<div class="flex justify-between mt-8">
+			<!-- Setup stuff -->
+			<div class="bg-white rounded-xl shadow p-6 mb-4">
+				<h2 class="text-xl font-semibold text-gray-800 mb-2">Setup</h2>
+				<div class="space-y-4">
+					<div>
+						<label for="api-setup" class="block text-sm font-medium text-gray-700 mb-2">Copy this into your <code class="bg-gray-200 p-1">~/.wakatime.cfg</code> file:</label
+						>
+						<div class="flex flex-col items-start gap-2">
+							<textarea
+								id="api-setup"
+								readonly
+								value={config}
+								rows="3"
+								class="resize-none block w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm font-mono"
+							></textarea>
+							<button
+								onclick={() => navigator.clipboard.writeText(config)}
+								class="cursor-pointer px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
+							>
+								Copy
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="flex justify-between mt-4 px-2">
 				<a href={resolve('/')} class="bg-gray-600 hover:bg-gray-700 text-white py-2 px-6 rounded"
 					>Back</a
 				>

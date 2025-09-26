@@ -14,7 +14,7 @@ use tracing::{info, warn};
 const TOTAL_HEARTBEATS: usize = 10000;
 const BATCH_SIZE: usize = 1000;
 const PROJECTS: [&str; 4] = ["Alpha", "Beta", "Gamma", "Delta"];
-const LANGUAGES: [&str; 5] = ["python", "javascript", "go", "rust", "c++"];
+const LANGUAGES: [&str; 5] = ["Python", "JavaScript", "Go", "Rust", "C++"];
 const FILE_EXTENSIONS: [&str; 5] = [".py", ".js", ".go", ".rs", ".cpp"];
 const BRANCHES: [&str; 4] = ["main", "dev", "feature/x", "bugfix/y"];
 const USER_AGENT: &str =

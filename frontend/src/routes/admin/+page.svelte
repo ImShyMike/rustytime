@@ -51,8 +51,8 @@
 {:else if $auth.isAuthenticated && $auth.user && $auth.user.is_admin && $adminData}
 	<div class="min-h-screen bg-gray-50">
 		<div class="max-w-6xl mx-auto py-12">
-			<h1 class="text-3xl font-bold text-red-600 mb-6 flex items-center gap-2">
-				<span>🦀</span> Admin Dashboard
+			<h1 class="text-3xl font-bold text-orange-600 mb-6 flex items-center gap-2">
+				admin dashboard
 			</h1>
 
 			<!-- System Statistics -->
@@ -222,7 +222,7 @@
 				{/if}
 			</div>
 
-			<div class="flex justify-between mt-8">
+			<div class="flex justify-between mt-8 px-2">
 				<a
 					href={resolve('/dashboard')}
 					class="bg-gray-600 hover:bg-gray-700 text-white py-2 px-6 rounded">Back to Dashboard</a
