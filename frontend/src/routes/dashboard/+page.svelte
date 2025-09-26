@@ -196,22 +196,28 @@ api_key = ${$dashboardData.api_key}`;
 				</div>
 				<div class="bg-white rounded-xl shadow p-4">
 					<p class="text-sm text-gray-700">Top Project</p>
-					<h3 class="font-semibold text-gray-800">{$dashboardData.projects.at(0)?.name || "None"}</h3>
+					<h3 class="font-semibold text-gray-800">
+						{$dashboardData.projects.at(0)?.name || 'None'}
+					</h3>
 				</div>
 				<div class="bg-white rounded-xl shadow p-4">
 					<p class="text-sm text-gray-700">Top Language</p>
-					<h3 class="font-semibold text-gray-800">{$dashboardData.languages.at(0)?.name || "None"}</h3>
+					<h3 class="font-semibold text-gray-800">
+						{$dashboardData.languages.at(0)?.name || 'None'}
+					</h3>
 				</div>
 				<div class="bg-white rounded-xl shadow p-4">
 					<p class="text-sm text-gray-700">Total Heartbeats</p>
-					<h3 class="font-semibold text-gray-800">{$dashboardData.total_heartbeats.toLocaleString()}</h3>
+					<h3 class="font-semibold text-gray-800">
+						{$dashboardData.total_heartbeats.toLocaleString()}
+					</h3>
 				</div>
 			</div>
 
 			<!-- Dashboard Statistics -->
 			<div class="bg-white rounded-xl shadow p-8 mb-4">
 				<h2 class="text-xl font-semibold text-gray-800 mb-6">Dashboard Statistics</h2>
-				{#if $dashboardData.projects || $dashboardData.languages || $dashboardData.editors || $dashboardData.operating_systems}
+				{#if $dashboardData.projects.length || $dashboardData.languages.length || $dashboardData.editors.length || $dashboardData.operating_systems.length}
 					<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 						<!-- Top Projects (Horizontal Bar Chart) -->
 						<div>
@@ -264,7 +270,8 @@ api_key = ${$dashboardData.api_key}`;
 				<h2 class="text-xl font-semibold text-gray-800 mb-2">Setup</h2>
 				<div class="space-y-4">
 					<div>
-						<label for="api-setup" class="block text-sm font-medium text-gray-700 mb-2">Copy this into your <code class="bg-gray-200 p-1">~/.wakatime.cfg</code> file:</label
+						<label for="api-setup" class="block text-sm font-medium text-gray-700 mb-2"
+							>Copy this into your <code class="bg-gray-200 p-1">~/.wakatime.cfg</code> file:</label
 						>
 						<div class="flex flex-col items-start gap-2">
 							<textarea
