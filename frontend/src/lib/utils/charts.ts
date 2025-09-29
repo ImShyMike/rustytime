@@ -50,7 +50,7 @@ export function createPieChartOptions(data: UsageStat[], colors: string[]) {
 	};
 }
 
-export function createHorizontalBarChartOptions(data: UsageStat[], colors: string[]) {
+export function createBarChartOptions(data: UsageStat[], colors: string[], horizontal: boolean = true) {
 	return {
 		series: [
 			{
@@ -72,7 +72,7 @@ export function createHorizontalBarChartOptions(data: UsageStat[], colors: strin
 		},
 		plotOptions: {
 			bar: {
-				horizontal: true,
+				horizontal: horizontal,
 				barHeight: '85%',
 				distributed: true
 			}
@@ -117,6 +117,70 @@ export function createHorizontalBarChartOptions(data: UsageStat[], colors: strin
 		},
 		grid: {
 			show: false
+		},
+		legend: {
+			show: false
+		}
+	};
+}
+
+export function createDateBarChartOptions(data: {
+        date: string;
+        count: number;
+    }[], colors: string[], horizontal: boolean = true) {
+	return {
+		series: [
+			{
+				name: 'Time Spent',
+				data: data.map((item) => item.count)
+			}
+		],
+		chart: {
+			type: 'bar',
+			height: 350,
+			animations: {
+				enabled: true,
+				easing: 'easeinout',
+				speed: 800
+			},
+			toolbar: {
+				show: false
+			}
+		},
+		plotOptions: {
+			bar: {
+				horizontal: horizontal,
+				barHeight: '85%',
+				distributed: true
+			}
+		},
+		colors: colors,
+		dataLabels: {
+			enabled: false
+		},
+		stroke: {
+			width: 1,
+			colors: ['#fff']
+		},
+		xaxis: {
+			categories: data.map((item) => item.date),
+			labels: {
+				show: true,
+			}
+		},
+		yaxis: {
+			labels: {
+				show: true
+			}
+		},
+		tooltip: {
+			theme: 'dark',
+			x: {
+				show: false
+			},
+		},
+		grid: {
+			show: true
 		},
 		legend: {
 			show: false

@@ -5,16 +5,17 @@
 	import { createDataLoader } from '$lib/utils/dataLoader';
 	import { handleAuthEffect } from '$lib/utils/authEffect';
 	import type { DashboardResponse } from '$lib/types/dashboard';
-	import { createPieChartOptions, createHorizontalBarChartOptions } from '$lib/utils/chart';
+	import { createPieChartOptions, createBarChartOptions } from '$lib/utils/charts';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
+	import { apexcharts } from '$lib/stores/apexcharts';
 
 	const {
 		data: dashboardData,
 		loading,
 		error,
 		loadData
-	} = createDataLoader<DashboardResponse>('/dashboard');
+	} = createDataLoader<DashboardResponse>('/page/dashboard');
 
 	$effect(() => {
 		handleAuthEffect({
@@ -39,7 +40,7 @@
 
 	// Initialize charts when data is available
 	$effect(() => {
-		if ($dashboardData && browser) {
+		if ($dashboardData && browser && $apexcharts) {
 			initializeCharts();
 		}
 	});
@@ -58,8 +59,7 @@ api_key = ${$dashboardData.api_key}`;
 		if (!$dashboardData) return;
 
 		try {
-			const ApexChartsModule = await import('apexcharts');
-			const ApexCharts = ApexChartsModule.default;
+			const ApexCharts = $apexcharts as any;
 
 			// Projects chart
 			if ($dashboardData.projects.length > 0) {
@@ -68,7 +68,7 @@ api_key = ${$dashboardData.api_key}`;
 					if (projectsChart) {
 						projectsChart.destroy();
 					}
-					const options = createHorizontalBarChartOptions($dashboardData.projects.slice(0, 8), []);
+					const options = createBarChartOptions($dashboardData.projects.slice(0, 8), [], true);
 					projectsChart = new ApexCharts(projectsElement, options);
 					projectsChart.render();
 				}
@@ -113,7 +113,7 @@ api_key = ${$dashboardData.api_key}`;
 				}
 			}
 		} catch (error) {
-			console.error('Failed to load ApexCharts:', error);
+			console.error('Failed to initialize ApexCharts:', error);
 		}
 	}
 

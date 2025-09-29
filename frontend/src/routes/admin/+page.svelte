@@ -5,8 +5,43 @@
 	import { createDataLoader } from '$lib/utils/dataLoader';
 	import { handleAuthEffect } from '$lib/utils/authEffect';
 	import type { AdminResponse } from '$lib/types/admin';
+	import { browser } from '$app/environment';
+	import { createDateBarChartOptions } from '$lib/utils/charts';
+	import { apexcharts } from '$lib/stores/apexcharts';
 
-	const { data: adminData, loading, error, loadData } = createDataLoader<AdminResponse>('/admin');
+	const { data: adminData, loading, error, loadData } = createDataLoader<AdminResponse>('/page/admin');
+
+	let activityChart: any = null;
+
+	$effect(() => {
+		if ($adminData && browser && $apexcharts) {
+			initializeCharts();
+		}
+	});
+
+	async function initializeCharts() {
+		if (!$adminData) {
+			return;
+		}
+
+		try {
+			const ApexCharts = $apexcharts as any;
+
+			if ($adminData.stats.daily_activity.length > 0) {
+				const activityElement = document.getElementById('activity-chart');
+				if (activityElement && $adminData) {
+					if (activityChart) {
+						activityChart.destroy();
+					}
+					const options = createDateBarChartOptions($adminData.stats.daily_activity, [], false);
+					activityChart = new ApexCharts(activityElement, options);
+					activityChart.render();
+				}
+			}
+		} catch (error) {
+			console.error('Failed to initialize ApexCharts:', error);
+		}
+	}
 
 	$effect(() => {
 		handleAuthEffect({
@@ -86,7 +121,7 @@
 					<h3 class="text-xl font-semibold text-gray-800 mb-4">Top Languages</h3>
 					{#if $adminData.stats.top_languages.length > 0}
 						<div class="space-y-2">
-							{#each $adminData.stats.top_languages.slice(0, 5) as lang (lang.language)}
+							{#each $adminData.stats.top_languages.slice(0, 10) as lang (lang.language)}
 								<div class="flex justify-between items-center">
 									<span class="text-gray-700">{lang.language}</span>
 									<span class="text-gray-600 font-mono">{lang.count}</span>
@@ -103,7 +138,7 @@
 					<h3 class="text-xl font-semibold text-gray-800 mb-4">Top Projects</h3>
 					{#if $adminData.stats.top_projects.length > 0}
 						<div class="space-y-2">
-							{#each $adminData.stats.top_projects.slice(0, 5) as project (project.project)}
+							{#each $adminData.stats.top_projects.slice(0, 10) as project (project.project)}
 								<div class="flex justify-between items-center">
 									<span class="text-gray-700 truncate">{project.project}</span>
 									<span class="text-gray-600 font-mono">{project.count}</span>
@@ -120,27 +155,7 @@
 			<div class="bg-white rounded-xl shadow p-6 mb-8">
 				<h3 class="text-xl font-semibold text-gray-800 mb-4">Daily Activity (Last Week)</h3>
 				{#if $adminData.stats.daily_activity.length > 0}
-					<div class="flex items-end justify-between gap-2 h-40">
-						{#each $adminData.stats.daily_activity as day (day.date)}
-							<div class="flex flex-col items-center flex-1">
-								<div
-									class="bg-blue-500 w-full rounded-t flex"
-									style="height: {Math.max(
-										(day.count /
-											Math.max(
-												...$adminData.stats.daily_activity.map(
-													(d: { date: string; count: number }) => d.count
-												)
-											)) *
-											120,
-										2
-									)}px"
-								></div>
-								<span class="text-xs text-gray-600 mt-2">{day.date}</span>
-								<span class="text-xs text-gray-500">{day.count}</span>
-							</div>
-						{/each}
-					</div>
+					<div id="activity-chart" class="w-full h-64"></div>
 				{:else}
 					<p class="text-gray-500">No activity data available</p>
 				{/if}
