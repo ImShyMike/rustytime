@@ -1,6 +1,7 @@
 import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
 import { auth } from '$lib/stores/auth';
+import { get } from 'svelte/store';
 import type { User } from '$lib/stores/auth';
 
 interface AuthEffectParams<T = unknown> {
@@ -32,21 +33,46 @@ export function handleAuthEffect<T = unknown>(params: AuthEffectParams<T>) {
 	if (isAuthLoading) return;
 
 	if (!isAuthenticated) {
-		auth.update((state) => ({
-			...state,
-			error: {
-				type: 'unauthorized',
-				message: 'Please log in to do that.',
-				timestamp: new Date()
+		try {
+			const current = get(auth);
+			if (!current.error || current.error.type !== 'unauthorized') {
+				auth.update((state) => ({
+					...state,
+					error: {
+						type: 'unauthorized',
+						message: 'Please log in to do that.',
+						timestamp: new Date()
+					}
+				}));
 			}
-		}));
+		} catch {
+			auth.update((state) => ({
+				...state,
+				error: {
+					type: 'unauthorized',
+					message: 'Please log in to do that.',
+					timestamp: new Date()
+				}
+			}));
+		}
 
-		goto(resolve(redirectTo));
+		if (typeof window !== 'undefined') {
+			const target = resolve(redirectTo);
+			if (window.location.pathname !== target) {
+				goto(target);
+			}
+		}
+
 		return;
 	}
 
 	if (requireAdmin && user && !user.is_admin) {
-		goto(resolve('/dashboard'));
+		if (typeof window !== 'undefined') {
+			const target = resolve('/dashboard');
+			if (window.location.pathname !== target) {
+				goto(target);
+			}
+		}
 		return;
 	}
 
