@@ -33,6 +33,13 @@
 		}
 	}
 
+    function getNameSizeClass(name: string | null): string {
+        if (!name) return 'text-md';
+        if (name.length <= 10) return 'text-lg';
+        if (name.length <= 20) return 'text-md';
+        return 'text-sm';
+    }
+
 	const handleLogout = () => {
 		auth.logout();
 		goto(resolve('/'));
@@ -58,7 +65,7 @@
 	style="width: {collapsed ? '5rem' : '16rem'};"
 >
 	<div
-		class="flex items-center justify-center gap-4 transition-all duration-300 {$auth.user
+		class="flex items-center justify-start gap-4 transition-all duration-300 {$auth.user
 			? collapsed
 				? 'mb-3'
 				: 'mb-6'
@@ -85,7 +92,7 @@
 						{$auth.user.is_admin ? 'Admin' : 'User'}
 					</span>
 				</div>
-				<h2 class="text-2xl text-subtext1 font-bold">
+				<h2 class="{getNameSizeClass($auth.user.name)} text-subtext1 font-bold">
 					{$auth.user.name || 'User'}
 				</h2>
 			</div>
@@ -97,8 +104,8 @@
 				href={resolve('/')}
 				data-sveltekit-preload-data="hover"
 				class="py-2 rounded-md items-center inline-flex {page.url.pathname === '/'
-					? 'bg-surface0/90 text-lavender'
-					: 'hover:bg-surface1/80'} {collapsed ? 'justify-center' : 'px-3'}"
+					? 'bg-surface0/70 text-lavender'
+					: 'hover:bg-surface1/50'} {collapsed ? 'justify-center' : 'px-3'}"
 			>
 				<LucideHouse class="w-6 h-6 inline" /><span class={collapsed ? 'hidden' : 'ml-2'}>Home</span
 				>
@@ -108,8 +115,8 @@
 				data-sveltekit-preload-data="hover"
 				class="w-full text-left cursor-pointer py-2 rounded-md items-center inline-flex {page.url
 					.pathname === '/dashboard'
-					? 'bg-surface0/90 text-lavender'
-					: 'hover:bg-surface1/80'} {collapsed ? 'justify-center' : 'px-3'}"
+					? 'bg-surface0/70 text-lavender'
+					: 'hover:bg-surface1/50'} {collapsed ? 'justify-center' : 'px-3'}"
 			>
 				<LucideLayoutDashboard class="w-6 h-6 inline" /><span class={collapsed ? 'hidden' : 'ml-2'}
 					>Dashboard</span
@@ -121,8 +128,8 @@
 					data-sveltekit-preload-data="hover"
 					class="w-full text-left py-2 cursor-pointer rounded-md items-center outline-dashed bg-yellow/5 outline-1 outline-yellow inline-flex {page
 						.url.pathname === '/admin'
-						? 'bg-surface0/90 text-lavender'
-						: 'hover:bg-surface1/80'} {collapsed ? 'justify-center' : 'px-3'}"
+						? 'bg-surface0/70 text-lavender'
+						: 'hover:bg-surface1/50'} {collapsed ? 'justify-center' : 'px-3'}"
 				>
 					<LucideWrench class="w-6 h-6 inline" /><span class={collapsed ? 'hidden' : 'ml-2'}
 						>Admin</span
@@ -132,7 +139,7 @@
 			{#if $auth.isAuthenticated && $auth.user}
 				<button
 					onclick={handleLogout}
-					class="py-2 rounded-md cursor-pointer items-center inline-flex hover:bg-surface1/80 {collapsed
+					class="py-2 rounded-md cursor-pointer items-center inline-flex hover:bg-surface1/50 {collapsed
 						? 'justify-center'
 						: 'px-3'}"
 				>
