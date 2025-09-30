@@ -257,15 +257,4 @@
 			</div>
 		</div>
 	</div>
-{:else}
-	<div class="min-h-screen flex items-center justify-center">
-		<div class="text-center">
-			<h1 class="text-2xl font-bold text-ctp-red-600 mb-4">Access Denied</h1>
-			<p class="text-ctp-subtext1 mb-4">You need admin privileges to access this page.</p>
-			<a
-				href={resolve('/')}
-				class="bg-ctp-surface2 hover:bg-ctp-overlay0 text-ctp-base px-4 py-2 rounded">Go Home</a
-			>
-		</div>
-	</div>
 {/if}
