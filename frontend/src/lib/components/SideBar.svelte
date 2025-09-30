@@ -58,9 +58,11 @@
 	style="width: {collapsed ? '5rem' : '16rem'};"
 >
 	<div
-		class="flex items-center justify-center gap-4 transition-all duration-300 {$auth.user ? collapsed
-			? 'mb-3'
-			: 'mb-6' : ''}"
+		class="flex items-center justify-center gap-4 transition-all duration-300 {$auth.user
+			? collapsed
+				? 'mb-3'
+				: 'mb-6'
+			: ''}"
 	>
 		{#if $auth.user}
 			{#if $auth.user.avatar_url}
