@@ -38,7 +38,7 @@
 			<!-- Loading State -->
 			<div class="text-center">
 				<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-ctp-text mx-auto"></div>
-				<p class="mt-4">Loading...</p>
+				<p class="mt-4 text-subtext0">Loading...</p>
 			</div>
 		{:else if $auth.isAuthenticated && $auth.user}
 			<!-- Authenticated User -->

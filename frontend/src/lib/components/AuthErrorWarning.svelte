@@ -9,9 +9,6 @@
 
 	export let showRetryButton = true;
 
-	let authState: typeof $auth;
-	$: authState = $auth;
-
 	function getErrorDisplayMessage(error: AuthError): string {
 		switch (error.type) {
 			case 'unauthorized':
@@ -42,11 +39,11 @@
 	function getVariantClasses(variant: 'destructive' | 'warning' | 'default'): string {
 		switch (variant) {
 			case 'destructive':
-				return 'border-destructive/50 dark:border-destructive [&>svg]:text-destructive';
+				return 'border-red text-red';
 			case 'warning':
-				return 'border-yellow-500/50 dark:border-yellow-500 [&>svg]:text-yellow-600';
+				return 'border-yellow text-yellow';
 			default:
-				return 'border-border [&>svg]:text-foreground';
+				return 'border-border text-text';
 		}
 	}
 
@@ -79,42 +76,40 @@
 	}
 </script>
 
-{#if authState.error}
+{#if $auth.error}
 	<div class="fixed top-4 right-4 z-50 w-full max-w-sm">
 		<div
-			class="relative rounded-lg border p-4 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/60 text-foreground {getVariantClasses(
-				getErrorVariant(authState.error)
+			class="bg-base relative rounded-lg border p-4 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/60 text-foreground {getVariantClasses(
+				getErrorVariant($auth.error)
 			)}"
 			role="alert"
 			aria-live="assertive"
 		>
 			<div class="flex items-start gap-3">
 				<div class="flex-shrink-0 mt-0.5">
-					<svelte:component this={getIconVariant(authState.error)} class="h-6 w-6" />
+					<svelte:component this={getIconVariant($auth.error)} class="h-6 w-6" />
 				</div>
 				<div class="flex-1 space-y-1">
-					<h5 class="text-sm font-medium leading-none tracking-tight">
-						{getTitleVariant(authState.error)}
+					<h5 class="text-sm font-medium leading-none tracking-tight text-text">
+						{getTitleVariant($auth.error)}
 					</h5>
-					<p class="text-sm opacity-90">
-						{authState.error.message
-							? authState.error.message
-							: getErrorDisplayMessage(authState.error)}
+					<p class="text-sm opacity-90 text-subtext0">
+						{$auth.error.message ? $auth.error.message : getErrorDisplayMessage($auth.error)}
 					</p>
 					<div class="flex items-center justify-between">
-						{#if authState.error.type === 'unauthorized'}
+						{#if $auth.error.type === 'unauthorized'}
 							<button
 								type="button"
-								class="cursor-pointer inline-flex h-8 items-center justify-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground ring-offset-background hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+								class="cursor-pointer bg-mantle border border-overlay0 inline-flex h-8 items-center justify-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground ring-offset-background hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
 								onclick={auth.login}
-								disabled={authState.isLoading}
+								disabled={$auth.isLoading}
 							>
 								Log in
 							</button>
 						{:else}
-							{#if authState.error}
+							{#if $auth.error}
 								<p class="text-xs opacity-70">
-									{authState.error.timestamp.toLocaleTimeString()}
+									{$auth.error.timestamp.toLocaleTimeString()}
 								</p>
 							{/if}
 							{#if showRetryButton}
@@ -122,9 +117,9 @@
 									type="button"
 									class="cursor-pointer inline-flex h-8 items-center justify-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground ring-offset-background hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
 									onclick={auth.retryVerification}
-									disabled={authState.isLoading}
+									disabled={$auth.isLoading}
 								>
-									{authState.isLoading ? 'Retrying...' : 'Retry'}
+									{$auth.isLoading ? 'Retrying...' : 'Retry'}
 								</button>
 							{/if}
 						{/if}

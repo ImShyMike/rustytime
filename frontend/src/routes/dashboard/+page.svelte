@@ -60,6 +60,10 @@ api_key = ${$dashboardData.api_key}`;
 		try {
 			const ApexCharts = $apexcharts as any;
 
+			const theme: 'light' | 'dark' = document?.documentElement?.classList?.contains('mocha')
+				? 'dark'
+				: 'light';
+
 			// Projects chart
 			if ($dashboardData.projects.length > 0) {
 				const projectsElement = document.getElementById('projects-chart');
@@ -67,7 +71,12 @@ api_key = ${$dashboardData.api_key}`;
 					if (projectsChart) {
 						projectsChart.destroy();
 					}
-					const options = createBarChartOptions($dashboardData.projects.slice(0, 8), [], true);
+					const options = createBarChartOptions(
+						$dashboardData.projects.slice(0, 8),
+						[],
+						true,
+						theme
+					);
 					projectsChart = new ApexCharts(projectsElement, options);
 					projectsChart.render();
 				}
@@ -80,7 +89,7 @@ api_key = ${$dashboardData.api_key}`;
 					if (languagesChart) {
 						languagesChart.destroy();
 					}
-					const options = createPieChartOptions($dashboardData.languages.slice(0, 8), []);
+					const options = createPieChartOptions($dashboardData.languages.slice(0, 8), [], theme);
 					languagesChart = new ApexCharts(languagesElement, options);
 					languagesChart.render();
 				}
@@ -93,7 +102,7 @@ api_key = ${$dashboardData.api_key}`;
 					if (editorsChart) {
 						editorsChart.destroy();
 					}
-					const options = createPieChartOptions($dashboardData.editors.slice(0, 8), []);
+					const options = createPieChartOptions($dashboardData.editors.slice(0, 8), [], theme);
 					editorsChart = new ApexCharts(editorsElement, options);
 					editorsChart.render();
 				}
@@ -106,7 +115,11 @@ api_key = ${$dashboardData.api_key}`;
 					if (osChart) {
 						osChart.destroy();
 					}
-					const options = createPieChartOptions($dashboardData.operating_systems.slice(0, 8), []);
+					const options = createPieChartOptions(
+						$dashboardData.operating_systems.slice(0, 8),
+						[],
+						theme
+					);
 					osChart = new ApexCharts(osElement, options);
 					osChart.render();
 				}
@@ -149,9 +162,7 @@ api_key = ${$dashboardData.api_key}`;
 {:else if $auth.isAuthenticated && $auth.user && $dashboardData}
 	<div class="min-h-screen bg-ctp-mantle">
 		<div class="max-w-4xl mx-auto py-12">
-			<h1 class="text-3xl font-bold text-ctp-mauve mb-6 flex items-center gap-2">
-				rustytime dashboard
-			</h1>
+			<h1 class="text-3xl font-bold text-ctp-mauve mb-6 flex items-center gap-2">Dashboard</h1>
 
 			<!-- User Information -->
 			<div class="bg-ctp-base rounded-xl shadow p-4 pb-1 mb-4">

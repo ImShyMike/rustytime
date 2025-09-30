@@ -14,7 +14,7 @@
 	<meta name="description" content="Blazingly fast time tracking for developers." />
 </svelte:head>
 
-<div class="app-container flex h-screen bg-base">
+<div class="app-container flex h-screen bg-mantle">
 	<div class="error-warning-container fixed top-0 left-0 right-0 z-50">
 		<AuthErrorWarning />
 	</div>

@@ -1,6 +1,10 @@
 import type { UsageStat } from '$lib/types/dashboard';
 
-export function createPieChartOptions(data: UsageStat[], colors: string[]) {
+export function createPieChartOptions(
+	data: UsageStat[],
+	colors: string[],
+	theme: 'light' | 'dark' = 'dark'
+) {
 	return {
 		series: data.map((item) => item.total_seconds),
 		chart: {
@@ -30,6 +34,7 @@ export function createPieChartOptions(data: UsageStat[], colors: string[]) {
 			}
 		},
 		tooltip: {
+			theme: theme,
 			y: {
 				formatter: function (value: number, { seriesIndex }: { seriesIndex: number }) {
 					return data[seriesIndex]?.text || '';
@@ -53,7 +58,8 @@ export function createPieChartOptions(data: UsageStat[], colors: string[]) {
 export function createBarChartOptions(
 	data: UsageStat[],
 	colors: string[],
-	horizontal: boolean = true
+	horizontal: boolean = true,
+	theme: 'light' | 'dark' = 'dark'
 ) {
 	return {
 		series: [
@@ -63,6 +69,9 @@ export function createBarChartOptions(
 			}
 		],
 		chart: {
+			theme: {
+				mode: theme
+			},
 			type: 'bar',
 			height: 350,
 			animations: {
@@ -104,7 +113,7 @@ export function createBarChartOptions(
 			}
 		},
 		tooltip: {
-			theme: 'dark',
+			theme: theme,
 			x: {
 				show: false
 			},
@@ -134,7 +143,8 @@ export function createDateBarChartOptions(
 		count: number;
 	}[],
 	colors: string[],
-	horizontal: boolean = true
+	horizontal: boolean = true,
+	theme: 'light' | 'dark' = 'dark'
 ) {
 	return {
 		series: [
@@ -144,6 +154,9 @@ export function createDateBarChartOptions(
 			}
 		],
 		chart: {
+			theme: {
+				mode: theme
+			},
 			type: 'bar',
 			height: 350,
 			animations: {
@@ -182,7 +195,7 @@ export function createDateBarChartOptions(
 			}
 		},
 		tooltip: {
-			theme: 'dark',
+			theme: theme,
 			x: {
 				show: false
 			}

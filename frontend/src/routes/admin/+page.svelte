@@ -31,13 +31,22 @@
 		try {
 			const ApexCharts = $apexcharts as any;
 
+			const theme: 'light' | 'dark' = document?.documentElement?.classList?.contains('mocha')
+				? 'dark'
+				: 'light';
+
 			if ($adminData.stats.daily_activity.length > 0) {
 				const activityElement = document.getElementById('activity-chart');
 				if (activityElement && $adminData) {
 					if (activityChart) {
 						activityChart.destroy();
 					}
-					const options = createDateBarChartOptions($adminData.stats.daily_activity, [], false);
+					const options = createDateBarChartOptions(
+						$adminData.stats.daily_activity,
+						[],
+						false,
+						theme
+					);
 					activityChart = new ApexCharts(activityElement, options);
 					activityChart.render();
 				}
@@ -63,11 +72,11 @@
 </script>
 
 {#if $loading}
-	<div class="min-h-screen flex items-center justify-center">
+	<div class="min-h-screen flex items-center justify-center text-subtext0">
 		<span>Loading admin data...</span>
 	</div>
 {:else if $auth.isLoading}
-	<div class="min-h-screen flex items-center justify-center">
+	<div class="min-h-screen flex items-center justify-center text-subtext0">
 		<span>Authenticating...</span>
 	</div>
 {:else if $error}
@@ -85,8 +94,8 @@
 {:else if $auth.isAuthenticated && $auth.user && $auth.user.is_admin && $adminData}
 	<div class="min-h-screen bg-ctp-mantle">
 		<div class="max-w-6xl mx-auto py-12">
-			<h1 class="text-3xl font-bold text-ctp-mauve-600 mb-6 flex items-center gap-2">
-				admin dashboard
+			<h1 class="text-3xl font-bold text-ctp-mauve mb-6 flex items-center gap-2">
+				Admin Dashboard
 			</h1>
 
 			<!-- System Statistics -->
