@@ -60,7 +60,7 @@
 								class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {$auth.user
 									.is_admin
 									? 'bg-ctp-red-400 text-ctp-crust'
-									: 'bg-ctp-surface0 text-ctp-crust'} items-center h-6"
+									: 'bg-ctp-overlay2 text-ctp-crust'} items-center h-6"
 							>
 								{$auth.user.is_admin ? 'Admin' : 'User'}
 							</span>

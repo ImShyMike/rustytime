@@ -2,10 +2,10 @@
 	import { auth } from '../stores/auth.js';
 	import type { AuthError } from '../stores/auth.js';
 
-	import MaterialSymbolsWarningRounded from '~icons/material-symbols/warning-rounded';
-	import MaterialSymbolsErrorRounded from '~icons/material-symbols/error-rounded';
-	import MaterialSymbolsAndroidWifi3BarOffRounded from '~icons/material-symbols/android-wifi-3-bar-off-rounded';
-	import MaterialSymbolsCloseRounded from '~icons/material-symbols/close-rounded';
+	import LucideTriangleAlert from '~icons/lucide/triangle-alert';
+	import LucideCircleAlert from '~icons/lucide/circle-alert';
+	import LucideWifiOff from '~icons/lucide/wifi-off';
+	import LucideX from '~icons/lucide/x';
 
 	export let showRetryButton = true;
 
@@ -64,14 +64,14 @@
 	function getIconVariant(error: AuthError) {
 		switch (error.type) {
 			case 'unauthorized':
-				return MaterialSymbolsErrorRounded;
+				return LucideCircleAlert;
 			case 'network':
-				return MaterialSymbolsAndroidWifi3BarOffRounded;
+				return LucideWifiOff;
 			case 'server':
-				return MaterialSymbolsWarningRounded;
+				return LucideTriangleAlert;
 			case 'unknown':
 			default:
-				return MaterialSymbolsWarningRounded;
+				return LucideTriangleAlert;
 		}
 	}
 </script>
@@ -131,7 +131,7 @@
 					onclick={auth.clearError}
 					aria-label="Dismiss notification"
 				>
-					<MaterialSymbolsCloseRounded class="h-4 w-4" />
+					<LucideX class="h-4 w-4" />
 				</button>
 			</div>
 		</div>

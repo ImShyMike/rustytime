@@ -80,7 +80,7 @@
 						class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {$auth.user
 							.is_admin
 							? 'bg-ctp-red-400 text-ctp-crust'
-							: 'bg-ctp-surface0 text-ctp-crust'} items-center h-6"
+							: 'bg-ctp-overlay2 text-ctp-crust'} items-center h-6"
 					>
 						{$auth.user.is_admin ? 'Admin' : 'User'}
 					</span>
@@ -97,8 +97,8 @@
 				href={resolve('/')}
 				data-sveltekit-preload-data="hover"
 				class="py-2 rounded-md items-center inline-flex {page.url.pathname === '/'
-					? 'bg-surface0 text-lavender'
-					: 'hover:bg-surface1'} {collapsed ? 'justify-center' : 'px-3'}"
+					? 'bg-surface0/90 text-lavender'
+					: 'hover:bg-surface1/80'} {collapsed ? 'justify-center' : 'px-3'}"
 			>
 				<LucideHouse class="w-6 h-6 inline" /><span class={collapsed ? 'hidden' : 'ml-2'}>Home</span
 				>
@@ -108,8 +108,8 @@
 				data-sveltekit-preload-data="hover"
 				class="w-full text-left cursor-pointer py-2 rounded-md items-center inline-flex {page.url
 					.pathname === '/dashboard'
-					? 'bg-surface0 text-lavender'
-					: 'hover:bg-surface1'} {collapsed ? 'justify-center' : 'px-3'}"
+					? 'bg-surface0/90 text-lavender'
+					: 'hover:bg-surface1/80'} {collapsed ? 'justify-center' : 'px-3'}"
 			>
 				<LucideLayoutDashboard class="w-6 h-6 inline" /><span class={collapsed ? 'hidden' : 'ml-2'}
 					>Dashboard</span
@@ -121,8 +121,8 @@
 					data-sveltekit-preload-data="hover"
 					class="w-full text-left py-2 cursor-pointer rounded-md items-center outline-dashed bg-yellow/5 outline-1 outline-yellow inline-flex {page
 						.url.pathname === '/admin'
-						? 'bg-surface0 text-lavender'
-						: 'hover:bg-surface1'} {collapsed ? 'justify-center' : 'px-3'}"
+						? 'bg-surface0/90 text-lavender'
+						: 'hover:bg-surface1/80'} {collapsed ? 'justify-center' : 'px-3'}"
 				>
 					<LucideWrench class="w-6 h-6 inline" /><span class={collapsed ? 'hidden' : 'ml-2'}
 						>Admin</span
@@ -132,7 +132,7 @@
 			{#if $auth.isAuthenticated && $auth.user}
 				<button
 					onclick={handleLogout}
-					class="py-2 rounded-md cursor-pointer items-center inline-flex hover:bg-surface1 {collapsed
+					class="py-2 rounded-md cursor-pointer items-center inline-flex hover:bg-surface1/80 {collapsed
 						? 'justify-center'
 						: 'px-3'}"
 				>

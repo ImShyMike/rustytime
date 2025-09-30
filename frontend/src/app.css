@@ -38,31 +38,24 @@
 	--color-lavender: var(--catppuccin-color-lavender);
 }
 
-/* Global color transitions (revised)
-	 - Limit to colorable properties only to avoid layout/paint jank
-	 - Exclude media and complex elements (img, svg, video, canvas, pre, code, path)
-	 - Slightly longer duration and a smoother timing function
-	 - Add will-change hint on high-level containers only */
 :where(
 	*:not(img):not(svg):not(video):not(canvas):not(pre):not(code):not(path),
 	*::before,
 	*::after
 ) {
 	transition-property: background-color, color, border-color, outline-color, fill, stroke;
-	--color-transition-duration: 260ms;
+	--color-transition-duration: 120ms;
 	transition-duration: var(--color-transition-duration);
+
 	transition-timing-function: ease;
 	transition-delay: 0ms;
 }
 
-/* Lightweight paint hint on the main containers to help the browser optimize
-	 when many children inherit color changes. Don't overuse will-change. */
 body,
 .app-container {
 	will-change: background-color, color;
 }
 
-/* Respect reduced motion accessibility setting */
 @media (prefers-reduced-motion: reduce) {
 	:where(*, *::before, *::after) {
 		transition: none !important;

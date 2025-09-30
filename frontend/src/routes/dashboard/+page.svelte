@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { auth } from '$lib/stores/auth';
-	import { resolve } from '$app/paths';
 	import { createDataLoader } from '$lib/utils/dataLoader';
 	import { handleAuthEffect } from '$lib/utils/authEffect';
 	import type { DashboardResponse } from '$lib/types/dashboard';
 	import { createPieChartOptions, createBarChartOptions } from '$lib/utils/charts';
+	import LucideCopy from '~icons/lucide/copy'
+	import LucideCopyCheck from '~icons/lucide/copy-check'
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 	import { apexcharts } from '$lib/stores/apexcharts';
@@ -36,6 +37,7 @@
 	let osChart: any = null;
 
 	let config: string = $state('');
+	let copied: boolean = $state(false);
 
 	// Initialize charts when data is available
 	$effect(() => {
@@ -138,6 +140,14 @@ api_key = ${$dashboardData.api_key}`;
 		}
 	}
 
+	function copySetup() {
+		if (!config) return;
+		navigator.clipboard.writeText(config).then(() => {
+			copied = true;
+			setTimeout(() => (copied = false), 2000);
+		});
+	}
+
 	onMount(() => {
 		return () => {
 			if (projectsChart) projectsChart.destroy();
@@ -191,7 +201,7 @@ api_key = ${$dashboardData.api_key}`;
 								class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {$auth.user
 									.is_admin
 									? 'bg-ctp-red-400 text-ctp-crust'
-									: 'bg-ctp-base text-ctp-crust'} items-center h-6"
+									: 'bg-ctp-overlay2 text-ctp-crust'} items-center h-6"
 							>
 								{$auth.user.is_admin ? 'Admin' : 'User'}
 							</span>
@@ -230,8 +240,8 @@ api_key = ${$dashboardData.api_key}`;
 			</div>
 
 			<!-- Dashboard Statistics -->
-			<div class="bg-ctp-base rounded-xl shadow p-8 mb-4">
-				<h2 class="text-xl font-semibold text-ctp-text mb-6">Dashboard Statistics</h2>
+			<div class="bg-ctp-base rounded-xl shadow p-6 mb-4">
+				<h2 class="text-xl font-semibold text-ctp-text mb-3">Dashboard Statistics</h2>
 				{#if $dashboardData.projects.length || $dashboardData.languages.length || $dashboardData.editors.length || $dashboardData.operating_systems.length}
 					<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 						<!-- Top Projects (Horizontal Bar Chart) -->
@@ -282,25 +292,35 @@ api_key = ${$dashboardData.api_key}`;
 
 			<!-- Setup stuff -->
 			<div class="bg-ctp-base rounded-xl shadow p-6 mb-4">
-				<h2 class="text-xl font-semibold text-ctp-text mb-2">Setup</h2>
+				<h2 class="text-xl font-semibold text-ctp-text mb-3">Setup</h2>
 				<div class="space-y-4">
 					<div>
 						<label for="api-setup" class="block text-sm font-medium text-ctp-text mb-2"
 							>Copy this into your <code class="bg-ctp-surface1 p-1">~/.wakatime.cfg</code> file:</label
 						>
-						<div class="flex flex-col items-start gap-2">
+						<div class="relative w-full">
 							<textarea
 								id="api-setup"
 								readonly
 								value={config}
 								rows="3"
-								class="resize-none text-text block w-full px-3 py-2 border border-ctp-surface1 rounded-md bg-ctp-base text-sm font-mono"
+								class="resize-none text-text block w-full pr-14 px-2 py-2 border border-ctp-surface1 rounded-md bg-ctp-base text-sm font-mono"
 							></textarea>
 							<button
-								onclick={() => navigator.clipboard.writeText(config)}
-								class="cursor-pointer px-5 py-2 bg-ctp-blue-600 hover:bg-ctp-blue-700 text-ctp-base text-sm rounded"
+								onclick={() => copySetup()}
+								aria-label="Copy setup to clipboard"
+								class={
+									`absolute top-2 right-2 cursor-pointer h-8 px-2 text-ctp-base text-sm rounded transition-transform duration-200 transform flex items-center gap-2 hover:scale-105 active:scale-100 ` +
+									(copied
+										? 'bg-ctp-green-600 hover:bg-ctp-green-700'
+										: 'bg-ctp-blue/70 hover:bg-ctp-blue')
+								}
 							>
-								Copy
+								{#if copied}
+									<LucideCopyCheck class="w-4 h-4 inline" />
+								{:else}
+									<LucideCopy class="w-4 h-4 inline" />
+								{/if}
 							</button>
 						</div>
 					</div>
