@@ -58,9 +58,9 @@
 	style="width: {collapsed ? '5rem' : '16rem'};"
 >
 	<div
-		class="flex items-center justify-center gap-4 transition-all duration-300 {collapsed
+		class="flex items-center justify-center gap-4 transition-all duration-300 {$auth.user ? collapsed
 			? 'mb-3'
-			: 'mb-6'}"
+			: 'mb-6' : ''}"
 	>
 		{#if $auth.user}
 			{#if $auth.user.avatar_url}
@@ -142,7 +142,7 @@
 			{:else}
 				<button
 					onclick={auth.login}
-					class="py-2 rounded-md cursor-pointer items-center inline-flex hover:bg-surface1 {collapsed
+					class="py-2 rounded-md cursor-pointer items-center bg-ctp-mauve/50 outline outline-mauve inline-flex hover:bg-ctp-mauve/65 {collapsed
 						? 'justify-center'
 						: 'px-3'}"
 				>
