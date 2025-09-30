@@ -3,14 +3,14 @@
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import { auth } from '$lib/stores/auth';
-	import MaterialSymbolsLoginRounded from '~icons/material-symbols/login-rounded';
-	import MaterialSymbolsOtherHouses from '~icons/material-symbols/other-houses';
-	import MaterialSymbolsDashboard from '~icons/material-symbols/dashboard';
-	import MaterialSymbolsToolsWrenchRounded from '~icons/material-symbols/tools-wrench-rounded';
-	import MaterialSymbolsDarkModeRounded from '~icons/material-symbols/dark-mode-rounded';
-	import MaterialSymbolsLightModeRounded from '~icons/material-symbols/light-mode-rounded';
-	import MaterialSymbolsLogoutRounded from '~icons/material-symbols/logout-rounded';
-	import MaterialSymbolsDoubleArrowRounded from '~icons/material-symbols/double-arrow-rounded';
+	import LucideLogIn from '~icons/lucide/log-in';
+	import LucideHouse from '~icons/lucide/house';
+	import LucideLayoutDashboard from '~icons/lucide/layout-dashboard';
+	import LucideWrench from '~icons/lucide/wrench';
+	import LucideMoon from '~icons/lucide/moon';
+	import LucideSunMedium from '~icons/lucide/sun-medium';
+	import LucideLogOut from '~icons/lucide/log-out';
+	import LucideChevronsRight from '~icons/lucide/chevrons-right';
 	import { onMount } from 'svelte';
 
 	let currentTheme: 'light' | 'dark' = 'light';
@@ -100,8 +100,7 @@
 					? 'bg-surface0 text-lavender'
 					: 'hover:bg-surface1'} {collapsed ? 'justify-center' : 'px-3'}"
 			>
-				<MaterialSymbolsOtherHouses class="w-6 h-6 inline" /><span
-					class={collapsed ? 'hidden' : 'ml-2'}>Home</span
+				<LucideHouse class="w-6 h-6 inline" /><span class={collapsed ? 'hidden' : 'ml-2'}>Home</span
 				>
 			</a>
 			<a
@@ -112,8 +111,8 @@
 					? 'bg-surface0 text-lavender'
 					: 'hover:bg-surface1'} {collapsed ? 'justify-center' : 'px-3'}"
 			>
-				<MaterialSymbolsDashboard class="w-6 h-6 inline" /><span
-					class={collapsed ? 'hidden' : 'ml-2'}>Dashboard</span
+				<LucideLayoutDashboard class="w-6 h-6 inline" /><span class={collapsed ? 'hidden' : 'ml-2'}
+					>Dashboard</span
 				>
 			</a>
 			{#if $auth.user?.is_admin}
@@ -125,8 +124,8 @@
 						? 'bg-surface0 text-lavender'
 						: 'hover:bg-surface1'} {collapsed ? 'justify-center' : 'px-3'}"
 				>
-					<MaterialSymbolsToolsWrenchRounded class="w-6 h-6 inline" /><span
-						class={collapsed ? 'hidden' : 'ml-2'}>Admin</span
+					<LucideWrench class="w-6 h-6 inline" /><span class={collapsed ? 'hidden' : 'ml-2'}
+						>Admin</span
 					>
 				</a>
 			{/if}
@@ -137,8 +136,8 @@
 						? 'justify-center'
 						: 'px-3'}"
 				>
-					<MaterialSymbolsLogoutRounded class="w-6 h-6 inline" /><span
-						class={collapsed ? 'hidden' : 'ml-2'}>Logout</span
+					<LucideLogOut class="w-6 h-6 inline" /><span class={collapsed ? 'hidden' : 'ml-2'}
+						>Logout</span
 					>
 				</button>
 			{:else}
@@ -148,8 +147,8 @@
 						? 'justify-center'
 						: 'px-3'}"
 				>
-					<MaterialSymbolsLoginRounded class="w-6 h-6 inline" /><span
-						class={collapsed ? 'hidden' : 'ml-2'}>Login</span
+					<LucideLogIn class="w-6 h-6 inline" /><span class={collapsed ? 'hidden' : 'ml-2'}
+						>Login</span
 					>
 				</button>
 			{/if}
@@ -162,9 +161,9 @@
 			aria-label="Toggle theme"
 		>
 			{#if currentTheme === 'light'}
-				<MaterialSymbolsDarkModeRounded class="w-8 h-8 text-subtext0" />
+				<LucideMoon class="w-8 h-8 text-subtext0" />
 			{:else}
-				<MaterialSymbolsLightModeRounded class="w-8 h-8 text-subtext0" />
+				<LucideSunMedium class="w-8 h-8 text-subtext0" />
 			{/if}
 			<span class={collapsed ? 'hidden' : ''}></span>
 		</button>
@@ -174,7 +173,7 @@
 			onclick={toggleCollapse}
 			aria-label="Toggle sidebar collapse"
 		>
-			<MaterialSymbolsDoubleArrowRounded
+			<LucideChevronsRight
 				class="w-8 h-8 text-subtext0 transition-transform duration-400"
 				style="transform: rotate({collapsed ? '0deg' : '-180deg'})"
 			/>

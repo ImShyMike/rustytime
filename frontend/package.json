@@ -16,9 +16,7 @@
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",
 		"@eslint/js": "^9.18.0",
-		"@iconify-json/material-symbols": "^1.2.36",
-		"@iconify-json/mdi": "^1.2.3",
-		"@iconify-json/tabler": "^1.2.23",
+		"@iconify-json/lucide": "^1.2.68",
 		"@sveltejs/adapter-cloudflare": "^7.0.0",
 		"@sveltejs/kit": "^2.22.0",
 		"@sveltejs/vite-plugin-svelte": "^6.0.0",
