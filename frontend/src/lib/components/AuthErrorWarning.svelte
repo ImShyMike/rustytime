@@ -97,30 +97,43 @@
 						{getTitleVariant(authState.error)}
 					</h5>
 					<p class="text-sm opacity-90">
-						{getErrorDisplayMessage(authState.error)}
+						{authState.error.message
+							? authState.error.message
+							: getErrorDisplayMessage(authState.error)}
 					</p>
 					<div class="flex items-center justify-between">
-						{#if authState.error.type !== 'unauthorized'}
-							<p class="text-xs opacity-70">
-								{authState.error.timestamp.toLocaleTimeString()}
-							</p>
-						{/if}
-						{#if showRetryButton && authState.error.type !== 'unauthorized'}
+						{#if authState.error.type === 'unauthorized'}
 							<button
 								type="button"
-								class="cursor-pointer inline-flex h-8 items-center justify-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground ring-offset-background transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-								on:click={auth.retryVerification}
+								class="cursor-pointer inline-flex h-8 items-center justify-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground ring-offset-background hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+								onclick={auth.login}
 								disabled={authState.isLoading}
 							>
-								{authState.isLoading ? 'Retrying...' : 'Retry'}
+								Log in
 							</button>
+						{:else}
+							{#if authState.error}
+								<p class="text-xs opacity-70">
+									{authState.error.timestamp.toLocaleTimeString()}
+								</p>
+							{/if}
+							{#if showRetryButton}
+								<button
+									type="button"
+									class="cursor-pointer inline-flex h-8 items-center justify-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground ring-offset-background hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+									onclick={auth.retryVerification}
+									disabled={authState.isLoading}
+								>
+									{authState.isLoading ? 'Retrying...' : 'Retry'}
+								</button>
+							{/if}
 						{/if}
 					</div>
 				</div>
 				<button
 					type="button"
-					class="cursor-pointer absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-					on:click={auth.clearError}
+					class="cursor-pointer absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-70 ring-offset-background hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+					onclick={auth.clearError}
 					aria-label="Dismiss notification"
 				>
 					<MaterialSymbolsCloseRounded class="h-4 w-4" />

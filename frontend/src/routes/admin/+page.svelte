@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { auth } from '$lib/stores/auth';
-	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { createDataLoader } from '$lib/utils/dataLoader';
 	import { handleAuthEffect } from '$lib/utils/authEffect';
@@ -9,7 +8,12 @@
 	import { createDateBarChartOptions } from '$lib/utils/charts';
 	import { apexcharts } from '$lib/stores/apexcharts';
 
-	const { data: adminData, loading, error, loadData } = createDataLoader<AdminResponse>('/page/admin');
+	const {
+		data: adminData,
+		loading,
+		error,
+		loadData
+	} = createDataLoader<AdminResponse>('/page/admin');
 
 	let activityChart: any = null;
 
@@ -56,11 +60,6 @@
 			redirectTo: '/'
 		});
 	});
-
-	const handleLogout = () => {
-		auth.logout();
-		goto(resolve('/'));
-	};
 </script>
 
 {#if $loading}
@@ -74,119 +73,121 @@
 {:else if $error}
 	<div class="min-h-screen flex items-center justify-center">
 		<div class="text-center">
-			<h1 class="text-2xl font-bold text-red-600 mb-4">Error</h1>
-			<p class="text-gray-600 mb-4">{$error}</p>
+			<h1 class="text-2xl font-bold text-ctp-red-600 mb-4">Error</h1>
+			<p class="text-ctp-subtext1 mb-4">{$error}</p>
 			<button
 				onclick={() => window.location.reload()}
-				class="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+				class="cursor-pointer bg-ctp-blue-600 hover:bg-ctp-blue-700 text-ctp-base px-4 py-2 rounded"
 				>Retry</button
 			>
 		</div>
 	</div>
 {:else if $auth.isAuthenticated && $auth.user && $auth.user.is_admin && $adminData}
-	<div class="min-h-screen bg-gray-50">
+	<div class="min-h-screen bg-ctp-mantle">
 		<div class="max-w-6xl mx-auto py-12">
-			<h1 class="text-3xl font-bold text-orange-600 mb-6 flex items-center gap-2">
+			<h1 class="text-3xl font-bold text-ctp-mauve-600 mb-6 flex items-center gap-2">
 				admin dashboard
 			</h1>
 
 			<!-- System Statistics -->
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-				<div class="bg-white rounded-xl shadow p-6">
-					<h3 class="text-lg font-semibold text-gray-800 mb-2">Total Users</h3>
-					<p class="text-3xl font-bold text-blue-600">{$adminData.stats.total_users}</p>
+				<div class="bg-ctp-base rounded-xl shadow p-6">
+					<h3 class="text-lg font-semibold text-ctp-text mb-2">Total Users</h3>
+					<p class="text-3xl font-bold text-ctp-blue-600">{$adminData.stats.total_users}</p>
 				</div>
-				<div class="bg-white rounded-xl shadow p-6">
-					<h3 class="text-lg font-semibold text-gray-800 mb-2">Total Heartbeats</h3>
-					<p class="text-3xl font-bold text-green-600">
+				<div class="bg-ctp-base rounded-xl shadow p-6">
+					<h3 class="text-lg font-semibold text-ctp-text mb-2">Total Heartbeats</h3>
+					<p class="text-3xl font-bold text-ctp-green-600">
 						{$adminData.stats.total_heartbeats.toLocaleString()}
 					</p>
 				</div>
-				<div class="bg-white rounded-xl shadow p-6">
-					<h3 class="text-lg font-semibold text-gray-800 mb-2">Last 24h</h3>
-					<p class="text-3xl font-bold text-purple-600">
+				<div class="bg-ctp-base rounded-xl shadow p-6">
+					<h3 class="text-lg font-semibold text-ctp-text mb-2">Last 24h</h3>
+					<p class="text-3xl font-bold text-ctp-mauve-600">
 						{$adminData.stats.heartbeats_last_24h.toLocaleString()}
 					</p>
 				</div>
-				<div class="bg-white rounded-xl shadow p-6">
-					<h3 class="text-lg font-semibold text-gray-800 mb-2">Requests/sec</h3>
-					<p class="text-3xl font-bold text-orange-600">{$adminData.stats.requests_per_second}</p>
+				<div class="bg-ctp-base rounded-xl shadow p-6">
+					<h3 class="text-lg font-semibold text-ctp-text mb-2">Requests/sec</h3>
+					<p class="text-3xl font-bold text-ctp-peach-600">
+						{$adminData.stats.requests_per_second}
+					</p>
 				</div>
 			</div>
 
 			<!-- Top Lists -->
 			<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
 				<!-- Top Languages -->
-				<div class="bg-white rounded-xl shadow p-6">
-					<h3 class="text-xl font-semibold text-gray-800 mb-4">Top Languages</h3>
+				<div class="bg-ctp-base rounded-xl shadow p-6">
+					<h3 class="text-xl font-semibold text-ctp-text mb-4">Top Languages</h3>
 					{#if $adminData.stats.top_languages.length > 0}
 						<div class="space-y-2">
 							{#each $adminData.stats.top_languages.slice(0, 10) as lang (lang.language)}
 								<div class="flex justify-between items-center">
-									<span class="text-gray-700">{lang.language}</span>
-									<span class="text-gray-600 font-mono">{lang.count}</span>
+									<span class="text-ctp-text">{lang.language}</span>
+									<span class="text-ctp-subtext1 font-mono">{lang.count}</span>
 								</div>
 							{/each}
 						</div>
 					{:else}
-						<p class="text-gray-500">No language data available</p>
+						<p class="text-ctp-subtext0">No language data available</p>
 					{/if}
 				</div>
 
 				<!-- Top Projects -->
-				<div class="bg-white rounded-xl shadow p-6">
-					<h3 class="text-xl font-semibold text-gray-800 mb-4">Top Projects</h3>
+				<div class="bg-ctp-base rounded-xl shadow p-6">
+					<h3 class="text-xl font-semibold text-ctp-text mb-4">Top Projects</h3>
 					{#if $adminData.stats.top_projects.length > 0}
 						<div class="space-y-2">
 							{#each $adminData.stats.top_projects.slice(0, 10) as project (project.project)}
 								<div class="flex justify-between items-center">
-									<span class="text-gray-700 truncate">{project.project}</span>
-									<span class="text-gray-600 font-mono">{project.count}</span>
+									<span class="text-ctp-text truncate">{project.project}</span>
+									<span class="text-ctp-subtext1 font-mono">{project.count}</span>
 								</div>
 							{/each}
 						</div>
 					{:else}
-						<p class="text-gray-500">No project data available</p>
+						<p class="text-ctp-subtext0">No project data available</p>
 					{/if}
 				</div>
 			</div>
 
 			<!-- Daily Activity Chart -->
-			<div class="bg-white rounded-xl shadow p-6 mb-8">
-				<h3 class="text-xl font-semibold text-gray-800 mb-4">Daily Activity (Last Week)</h3>
+			<div class="bg-ctp-base rounded-xl shadow p-6 mb-8">
+				<h3 class="text-xl font-semibold text-ctp-text mb-4">Daily Activity (Last Week)</h3>
 				{#if $adminData.stats.daily_activity.length > 0}
 					<div id="activity-chart" class="w-full h-64"></div>
 				{:else}
-					<p class="text-gray-500">No activity data available</p>
+					<p class="text-ctp-subtext0">No activity data available</p>
 				{/if}
 			</div>
 
 			<!-- User Management -->
-			<div class="bg-white rounded-xl shadow p-6">
-				<h3 class="text-xl font-semibold text-gray-800 mb-4">All Users</h3>
+			<div class="bg-ctp-base rounded-xl shadow p-6">
+				<h3 class="text-xl font-semibold text-ctp-text mb-4">All Users</h3>
 				{#if $adminData.stats.all_users.length > 0}
 					<div class="overflow-x-auto">
 						<table class="min-w-full divide-y divide-gray-200">
-							<thead class="bg-gray-50">
+							<thead class="bg-ctp-base">
 								<tr>
-									<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+									<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
 										>User</th
 									>
-									<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+									<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
 										>GitHub ID</th
 									>
-									<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+									<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
 										>Created (UTC)</th
 									>
-									<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
-										>Admin</th
+									<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
+										>Type</th
 									>
-									<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+									<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
 										>API Key</th
 									>
 								</tr>
 							</thead>
-							<tbody class="bg-white divide-y divide-gray-200">
+							<tbody class="bg-ctp-mantle divide-y divide-ctp-surface1">
 								{#each $adminData.stats.all_users as user (user.github_id)}
 									<tr>
 										<td class="px-6 py-4 whitespace-nowrap">
@@ -198,30 +199,30 @@
 														class="h-8 w-8 rounded-full mr-3"
 													/>
 												{/if}
-												<span class="text-sm font-medium text-gray-900"
+												<span class="text-sm font-medium text-ctp-text"
 													>{user.name || 'Unknown'}</span
 												>
 											</div>
 										</td>
-										<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+										<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1"
 											>{user.github_id}</td
 										>
-										<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+										<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1"
 											>{new Date(user.created_at).toLocaleString('en-US', { timeZone: 'UTC' })}</td
 										>
 										<td class="px-6 py-4 whitespace-nowrap">
 											<span
 												class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {user.is_admin
-													? 'bg-red-100 text-red-800'
-													: 'bg-gray-100 text-gray-800'}"
+													? 'bg-ctp-red-400 text-ctp-crust'
+													: 'bg-ctp-base text-ctp-crust'} items-center h-6"
 											>
 												{user.is_admin ? 'Admin' : 'User'}
 											</span>
 										</td>
-										<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
+										<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1 font-mono">
 											<button
 												onclick={() => navigator.clipboard.writeText(user.api_key)}
-												class="cursor-pointer hover:bg-gray-100 px-2 py-1 rounded transition-colors"
+												class="cursor-pointer hover:bg-ctp-base px-2 py-1 rounded"
 												title="Click to copy full API key"
 											>
 												{user.api_key.substring(0, 16)}...
@@ -233,20 +234,8 @@
 						</table>
 					</div>
 				{:else}
-					<p class="text-gray-500">No users found</p>
+					<p class="text-ctp-subtext0">No users found</p>
 				{/if}
-			</div>
-
-			<div class="flex justify-between mt-8 px-2">
-				<a
-					href={resolve('/dashboard')}
-					class="bg-gray-600 hover:bg-gray-700 text-white py-2 px-6 rounded">Back to Dashboard</a
-				>
-				<button
-					onclick={handleLogout}
-					class="cursor-pointer bg-red-600 hover:bg-red-700 text-white py-2 px-6 rounded"
-					>Logout</button
-				>
 			</div>
 		</div>
 	</div>

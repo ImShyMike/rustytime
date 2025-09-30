@@ -50,7 +50,11 @@ export function createPieChartOptions(data: UsageStat[], colors: string[]) {
 	};
 }
 
-export function createBarChartOptions(data: UsageStat[], colors: string[], horizontal: boolean = true) {
+export function createBarChartOptions(
+	data: UsageStat[],
+	colors: string[],
+	horizontal: boolean = true
+) {
 	return {
 		series: [
 			{
@@ -124,10 +128,14 @@ export function createBarChartOptions(data: UsageStat[], colors: string[], horiz
 	};
 }
 
-export function createDateBarChartOptions(data: {
-        date: string;
-        count: number;
-    }[], colors: string[], horizontal: boolean = true) {
+export function createDateBarChartOptions(
+	data: {
+		date: string;
+		count: number;
+	}[],
+	colors: string[],
+	horizontal: boolean = true
+) {
 	return {
 		series: [
 			{
@@ -165,7 +173,7 @@ export function createDateBarChartOptions(data: {
 		xaxis: {
 			categories: data.map((item) => item.date),
 			labels: {
-				show: true,
+				show: true
 			}
 		},
 		yaxis: {
@@ -177,7 +185,7 @@ export function createDateBarChartOptions(data: {
 			theme: 'dark',
 			x: {
 				show: false
-			},
+			}
 		},
 		grid: {
 			show: true

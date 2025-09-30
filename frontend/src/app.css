@@ -1,3 +1,72 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
+
+@import '@catppuccin/tailwindcss/mocha.css';
+
+@custom-variant dark (&:where(.mocha, .mocha *));
+
+@theme {
+	/* Base colors */
+	--color-base: var(--catppuccin-color-base);
+	--color-mantle: var(--catppuccin-color-mantle);
+	--color-crust: var(--catppuccin-color-crust);
+	--color-surface0: var(--catppuccin-color-surface0);
+	--color-surface1: var(--catppuccin-color-surface1);
+	--color-surface2: var(--catppuccin-color-surface2);
+	--color-overlay0: var(--catppuccin-color-overlay0);
+	--color-overlay1: var(--catppuccin-color-overlay1);
+	--color-overlay2: var(--catppuccin-color-overlay2);
+	--color-subtext0: var(--catppuccin-color-subtext0);
+	--color-subtext1: var(--catppuccin-color-subtext1);
+	--color-text: var(--catppuccin-color-text);
+
+	/* Accent colors */
+	--color-rosewater: var(--catppuccin-color-rosewater);
+	--color-flamingo: var(--catppuccin-color-flamingo);
+	--color-pink: var(--catppuccin-color-pink);
+	--color-mauve: var(--catppuccin-color-mauve);
+	--color-red: var(--catppuccin-color-red);
+	--color-maroon: var(--catppuccin-color-maroon);
+	--color-peach: var(--catppuccin-color-peach);
+	--color-yellow: var(--catppuccin-color-yellow);
+	--color-green: var(--catppuccin-color-green);
+	--color-teal: var(--catppuccin-color-teal);
+	--color-sky: var(--catppuccin-color-sky);
+	--color-sapphire: var(--catppuccin-color-sapphire);
+	--color-blue: var(--catppuccin-color-blue);
+	--color-lavender: var(--catppuccin-color-lavender);
+}
+
+/* Global color transitions (revised)
+	 - Limit to colorable properties only to avoid layout/paint jank
+	 - Exclude media and complex elements (img, svg, video, canvas, pre, code, path)
+	 - Slightly longer duration and a smoother timing function
+	 - Add will-change hint on high-level containers only */
+:where(
+	*:not(img):not(svg):not(video):not(canvas):not(pre):not(code):not(path),
+	*::before,
+	*::after
+) {
+	transition-property: background-color, color, border-color, outline-color, fill, stroke;
+	--color-transition-duration: 260ms;
+	transition-duration: var(--color-transition-duration);
+	transition-timing-function: ease;
+	transition-delay: 0ms;
+}
+
+/* Lightweight paint hint on the main containers to help the browser optimize
+	 when many children inherit color changes. Don't overuse will-change. */
+body,
+.app-container {
+	will-change: background-color, color;
+}
+
+/* Respect reduced motion accessibility setting */
+@media (prefers-reduced-motion: reduce) {
+	:where(*, *::before, *::after) {
+		transition: none !important;
+		animation-duration: 0.001ms !important;
+		animation-iteration-count: 1 !important;
+	}
+}
