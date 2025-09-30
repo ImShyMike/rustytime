@@ -31,9 +31,18 @@
 		try {
 			const ApexCharts = $apexcharts as any;
 
-			const theme: 'light' | 'dark' = document?.documentElement?.classList?.contains('mocha')
-				? 'dark'
-				: 'light';
+			const theme: 'light' | 'dark' = (() => {
+				try {
+					const saved = localStorage.getItem('theme');
+					if (saved === 'dark' || saved === 'light') return saved;
+				} catch (e) {}
+
+				const prefersDark =
+					window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+				if (prefersDark) return 'dark';
+
+				return document?.documentElement?.classList?.contains('mocha') ? 'dark' : 'light';
+			})();
 
 			if ($adminData.stats.daily_activity.length > 0) {
 				const activityElement = document.getElementById('activity-chart');

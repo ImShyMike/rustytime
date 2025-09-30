@@ -5,9 +5,12 @@ export function createPieChartOptions(
 	colors: string[],
 	theme: 'light' | 'dark' = 'dark'
 ) {
+	const textColor = theme === 'dark' ? '#E6EEF3' : '#111827';
+	const gridBorderColor = theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)';
 	return {
 		series: data.map((item) => item.total_seconds),
 		chart: {
+			foreColor: textColor,
 			type: 'pie',
 			height: 350,
 			animations: {
@@ -23,7 +26,10 @@ export function createPieChartOptions(
 		colors: colors,
 		legend: {
 			position: 'right',
-			offsetY: 0
+			offsetY: 0,
+			labels: {
+				colors: textColor
+			}
 		},
 		stroke: {
 			show: false
@@ -51,7 +57,10 @@ export function createPieChartOptions(
 					}
 				}
 			}
-		]
+		],
+		grid: {
+			borderColor: gridBorderColor
+		}
 	};
 }
 
@@ -61,6 +70,9 @@ export function createBarChartOptions(
 	horizontal: boolean = true,
 	theme: 'light' | 'dark' = 'dark'
 ) {
+	const textColor = theme === 'dark' ? '#E6EEF3' : '#111827';
+	const gridBorderColor = theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)';
+	const strokeColor = theme === 'dark' ? '#ffffff' : '#000000';
 	return {
 		series: [
 			{
@@ -72,6 +84,7 @@ export function createBarChartOptions(
 			theme: {
 				mode: theme
 			},
+			foreColor: textColor,
 			type: 'bar',
 			height: 350,
 			animations: {
@@ -96,12 +109,15 @@ export function createBarChartOptions(
 		},
 		stroke: {
 			width: 1,
-			colors: ['#fff']
+			colors: [strokeColor]
 		},
 		xaxis: {
 			categories: data.map((item) => item.name),
 			labels: {
 				show: true,
+				style: {
+					colors: textColor
+				},
 				formatter: function (value: number) {
 					return `${Math.floor(value / 3600)}h`;
 				}
@@ -109,7 +125,10 @@ export function createBarChartOptions(
 		},
 		yaxis: {
 			labels: {
-				show: true
+				show: true,
+				style: {
+					colors: textColor
+				}
 			}
 		},
 		tooltip: {
@@ -129,10 +148,14 @@ export function createBarChartOptions(
 			}
 		},
 		grid: {
-			show: false
+			show: true,
+			borderColor: gridBorderColor
 		},
 		legend: {
-			show: false
+			show: false,
+			labels: {
+				colors: textColor
+			}
 		}
 	};
 }
@@ -146,6 +169,9 @@ export function createDateBarChartOptions(
 	horizontal: boolean = true,
 	theme: 'light' | 'dark' = 'dark'
 ) {
+	const textColor = theme === 'dark' ? '#E6EEF3' : '#111827';
+	const gridBorderColor = theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)';
+	const strokeColor = theme === 'dark' ? '#ffffff' : '#000000';
 	return {
 		series: [
 			{
@@ -157,6 +183,7 @@ export function createDateBarChartOptions(
 			theme: {
 				mode: theme
 			},
+			foreColor: textColor,
 			type: 'bar',
 			height: 350,
 			animations: {
@@ -181,17 +208,23 @@ export function createDateBarChartOptions(
 		},
 		stroke: {
 			width: 1,
-			colors: ['#fff']
+			colors: [strokeColor]
 		},
 		xaxis: {
 			categories: data.map((item) => item.date),
 			labels: {
-				show: true
+				show: true,
+				style: {
+					colors: textColor
+				}
 			}
 		},
 		yaxis: {
 			labels: {
-				show: true
+				show: true,
+				style: {
+					colors: textColor
+				}
 			}
 		},
 		tooltip: {
@@ -201,10 +234,14 @@ export function createDateBarChartOptions(
 			}
 		},
 		grid: {
-			show: true
+			show: true,
+			borderColor: gridBorderColor
 		},
 		legend: {
-			show: false
+			show: false,
+			labels: {
+				colors: textColor
+			}
 		}
 	};
 }

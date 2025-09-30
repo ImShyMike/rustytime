@@ -38,35 +38,6 @@
 		goto(resolve('/'));
 	};
 
-	function navIfAuth(url: string, opts: { requireAdmin?: boolean } = {}) {
-		if ($auth.isAuthenticated && $auth.user) {
-			if (opts.requireAdmin && !$auth.user.is_admin) {
-				auth.update((s) => ({
-					...s,
-					error: {
-						type: 'unauthorized',
-						message: 'Admin access required to view that page.',
-						timestamp: new Date()
-					}
-				}));
-				return;
-			}
-
-			// @ts-expect-error known valid path
-			goto(resolve(url));
-			return;
-		}
-
-		auth.update((s) => ({
-			...s,
-			error: {
-				type: 'unauthorized',
-				message: 'You must be logged in to access that page.',
-				timestamp: new Date()
-			}
-		}));
-	}
-
 	onMount(() => {
 		const savedTheme = localStorage.getItem('theme');
 		if (savedTheme === 'dark') {
@@ -83,17 +54,22 @@
 </script>
 
 <div
-	class="relative bg-base text-text h-full p-4 border-r border-surface0 {collapsed
-		? 'w-20'
-		: 'w-64'}"
+	class="relative bg-base text-text h-full p-4 border-r border-surface0 transition-all duration-300"
+	style="width: {collapsed ? '5rem' : '16rem'};"
 >
-	<div class="flex items-center justify-center gap-4 {collapsed ? 'mb-3' : 'mb-6'}">
+	<div
+		class="flex items-center justify-center gap-4 transition-all duration-300 {collapsed
+			? 'mb-3'
+			: 'mb-6'}"
+	>
 		{#if $auth.user}
 			{#if $auth.user.avatar_url}
 				<img
 					src={$auth.user.avatar_url}
 					alt="Profile"
-					class="{collapsed ? 'h-8 w-8' : 'h-16 w-16'} rounded-full border-2 border-ctp-green-500"
+					class="{collapsed
+						? 'h-8 w-8'
+						: 'h-16 w-16'} transition-all duration-300 rounded-full border-2 border-ctp-green-500"
 				/>
 			{/if}
 			<div class={collapsed ? 'hidden' : ''}>
@@ -113,10 +89,11 @@
 			</div>
 		{/if}
 	</div>
-	<div class="flex flex-col justify-between">
-		<nav class="space-y-2 flex flex-col">
+	<div class="flex flex-col justify-between transition-all duration-300">
+		<nav class="space-y-2 flex flex-col transition-all duration-300">
 			<a
 				href={resolve('/')}
+				data-sveltekit-preload-data="hover"
 				class="py-2 rounded-md items-center inline-flex {page.url.pathname === '/'
 					? 'bg-surface0 text-lavender'
 					: 'hover:bg-surface1'} {collapsed ? 'justify-center' : 'px-3'}"
@@ -125,8 +102,9 @@
 					class={collapsed ? 'hidden' : 'ml-2'}>Home</span
 				>
 			</a>
-			<button
-				onclick={() => navIfAuth('/dashboard')}
+			<a
+				href={resolve('/dashboard')}
+				data-sveltekit-preload-data="hover"
 				class="w-full text-left cursor-pointer py-2 rounded-md items-center inline-flex {page.url
 					.pathname === '/dashboard'
 					? 'bg-surface0 text-lavender'
@@ -135,10 +113,11 @@
 				<MaterialSymbolsDashboard class="w-6 h-6 inline" /><span
 					class={collapsed ? 'hidden' : 'ml-2'}>Dashboard</span
 				>
-			</button>
+			</a>
 			{#if $auth.user?.is_admin}
-				<button
-					onclick={() => navIfAuth('/admin', { requireAdmin: true })}
+				<a
+					href={resolve('/admin')}
+					data-sveltekit-preload-data="hover"
 					class="w-full text-left py-2 cursor-pointer rounded-md items-center outline-dashed bg-yellow/5 outline-1 outline-yellow inline-flex {page
 						.url.pathname === '/admin'
 						? 'bg-surface0 text-lavender'
@@ -147,7 +126,7 @@
 					<MaterialSymbolsToolsWrenchRounded class="w-6 h-6 inline" /><span
 						class={collapsed ? 'hidden' : 'ml-2'}>Admin</span
 					>
-				</button>
+				</a>
 			{/if}
 			{#if $auth.isAuthenticated && $auth.user}
 				<button
@@ -194,8 +173,8 @@
 			aria-label="Toggle sidebar collapse"
 		>
 			<MaterialSymbolsDoubleArrowRounded
-				class="w-8 h-8 text-subtext0"
-				style="transform: rotate({collapsed ? '0deg' : '180deg'})"
+				class="w-8 h-8 text-subtext0 transition-transform duration-400"
+				style="transform: rotate({collapsed ? '0deg' : '-180deg'})"
 			/>
 		</button>
 	</div>
