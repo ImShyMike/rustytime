@@ -1,4 +1,4 @@
-name: Build and verify
+name: Build and verify backend
 
 on:
   push:
@@ -7,39 +7,6 @@ on:
   pull_request:
 
 jobs:
-  frontend:
-    name: Frontend build
-    runs-on: ubuntu-latest
-    env:
-      CI: true
-      PUBLIC_BACKEND_API_URL: https://localhost:3000
-    defaults:
-      run:
-        working-directory: frontend
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build SvelteKit app
-        run: npm run build
-
-      - name: Upload build artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-build
-          path: frontend/.svelte-kit/cloudflare
-
   backend:
     name: Backend check
     runs-on: ubuntu-latest
@@ -50,11 +17,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Cache cargo directories
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('rustytime/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo directories
-        uses: Swatinem/rust-cache@v2
 
       - name: Cargo check
         run: cargo check --all-targets
