@@ -33,12 +33,12 @@
 		}
 	}
 
-    function getNameSizeClass(name: string | null): string {
-        if (!name) return 'text-md';
-        if (name.length <= 10) return 'text-lg';
-        if (name.length <= 20) return 'text-md';
-        return 'text-sm';
-    }
+	function getNameSizeClass(name: string | null): string {
+		if (!name) return 'text-md';
+		if (name.length <= 10) return 'text-lg';
+		if (name.length <= 20) return 'text-md';
+		return 'text-sm';
+	}
 
 	const handleLogout = () => {
 		auth.logout();
@@ -61,14 +61,16 @@
 </script>
 
 <div
-	class="relative bg-base text-text h-full p-4 border-r border-surface0 transition-all duration-300"
+	class="block relative bg-base text-text h-full p-4 border-r border-surface0 transition-all duration-300 md:static md:top-auto md:left-auto md:z-auto {collapsed
+		? ''
+		: 'fixed left-0 top-0 z-40'}"
 	style="width: {collapsed ? '5rem' : '16rem'};"
 >
 	<div
-		class="flex items-center justify-start gap-4 transition-all duration-300 {$auth.user
+		class="flex items-center gap-4 transition-all duration-300 {$auth.user
 			? collapsed
-				? 'mb-3'
-				: 'mb-6'
+				? 'justify-center mb-3'
+				: 'justify-start mb-6'
 			: ''}"
 	>
 		{#if $auth.user}
@@ -176,7 +178,9 @@
 		</button>
 
 		<button
-			class="absolute bottom-6 right-6 cursor-pointer rounded-md items-center inline-flex hover:text-blue"
+			class="absolute bottom-6 {collapsed
+				? 'right-6'
+				: 'right-2'} right-6 cursor-pointer rounded-md items-center inline-flex hover:text-blue"
 			onclick={toggleCollapse}
 			aria-label="Toggle sidebar collapse"
 		>

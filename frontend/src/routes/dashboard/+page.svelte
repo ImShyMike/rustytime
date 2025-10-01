@@ -4,8 +4,8 @@
 	import { handleAuthEffect } from '$lib/utils/authEffect';
 	import type { DashboardResponse } from '$lib/types/dashboard';
 	import { createPieChartOptions, createBarChartOptions } from '$lib/utils/charts';
-	import LucideCopy from '~icons/lucide/copy'
-	import LucideCopyCheck from '~icons/lucide/copy-check'
+	import LucideCopy from '~icons/lucide/copy';
+	import LucideCopyCheck from '~icons/lucide/copy-check';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 	import { apexcharts } from '$lib/stores/apexcharts';
@@ -180,7 +180,7 @@ api_key = ${$dashboardData.api_key}`;
 	</div>
 {:else if $auth.isAuthenticated && $auth.user && $dashboardData}
 	<div class="min-h-screen bg-ctp-mantle">
-		<div class="max-w-4xl mx-auto py-12">
+		<div class="max-w-4xl mx-auto py-6 md:py-12 px-3">
 			<h1 class="text-3xl font-bold text-ctp-mauve mb-6 flex items-center gap-2">Dashboard</h1>
 
 			<!-- User Information -->
@@ -214,7 +214,7 @@ api_key = ${$dashboardData.api_key}`;
 			</div>
 
 			<!-- Top Stats -->
-			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-4">
+			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
 				<div class="bg-ctp-base rounded-xl shadow p-4">
 					<p class="text-sm text-ctp-text">Total Time</p>
 					<h3 class="font-semibold text-ctp-text">{$dashboardData.human_readable_total}</h3>
@@ -304,17 +304,15 @@ api_key = ${$dashboardData.api_key}`;
 								readonly
 								value={config}
 								rows="3"
-								class="resize-none text-text block w-full pr-14 px-2 py-2 border border-ctp-surface1 rounded-md bg-ctp-base text-sm font-mono"
+								class="resize-none text-text block w-full pr-14 px-2 py-2 border border-ctp-surface1 rounded-md bg-ctp-surface0/70 text-sm font-mono"
 							></textarea>
 							<button
 								onclick={() => copySetup()}
 								aria-label="Copy setup to clipboard"
-								class={
-									`absolute top-2 right-2 cursor-pointer h-8 px-2 text-ctp-base text-sm rounded transition-transform duration-200 transform flex items-center gap-2 hover:scale-105 active:scale-100 ` +
+								class={`absolute top-2 right-2 cursor-pointer h-8 px-2 text-ctp-base text-sm rounded transition-transform duration-200 transform flex items-center gap-2 hover:scale-105 active:scale-100 ` +
 									(copied
 										? 'bg-ctp-green-600 hover:bg-ctp-green-700'
-										: 'bg-ctp-blue/70 hover:bg-ctp-blue')
-								}
+										: 'bg-ctp-blue/70 hover:bg-ctp-blue')}
 							>
 								{#if copied}
 									<LucideCopyCheck class="w-4 h-4 inline" />

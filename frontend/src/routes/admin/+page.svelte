@@ -102,7 +102,7 @@
 	</div>
 {:else if $auth.isAuthenticated && $auth.user && $auth.user.is_admin && $adminData}
 	<div class="min-h-screen bg-ctp-mantle">
-		<div class="max-w-6xl mx-auto py-12">
+		<div class="max-w-6xl mx-auto py-6 md:py-12 px-3">
 			<h1 class="text-3xl font-bold text-ctp-mauve mb-6 flex items-center gap-2">
 				Admin Dashboard
 			</h1>

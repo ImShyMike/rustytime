@@ -19,7 +19,7 @@
 		<AuthErrorWarning />
 	</div>
 
-	<div class="side-bar flex-shrink-0 h-full">
+	<div class="side-bar relative w-20 md:w-auto flex-shrink-0 h-full">
 		<SideBar />
 	</div>
 
