@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CI: true
+      PUBLIC_BACKEND_API_URL: https://localhost:3000
     defaults:
       run:
         working-directory: frontend
