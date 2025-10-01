@@ -1,6 +1,6 @@
 <script lang="ts">
 	import '../app.css';
-	import favicon from '$lib/assets/favicon.svg';
+	import favicon from '$lib/assets/rustytime.svg';
 	import { page } from '$app/state';
 	import AuthErrorWarning from '$lib/components/AuthErrorWarning.svelte';
 	import SideBar from '$lib/components/SideBar.svelte';
