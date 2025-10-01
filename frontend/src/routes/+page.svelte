@@ -101,7 +101,7 @@
 					onclick={auth.login}
 					class="cursor-pointer bg-ctp-surface1 text-ctp-text hover:bg-ctp-surface0 font-semibold py-4 px-8 rounded-lg flex items-center gap-3 mx-auto"
 				>
-					<LucideGithub class="w-6 h-6" />
+					<LucideGithub class="min-w-6 min-h-6" />
 					Sign in with GitHub
 				</button>
 			</div>
