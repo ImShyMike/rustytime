@@ -26,11 +26,11 @@ export const load: PageServerLoad = async (event) => {
 			if (err.status === 401 || err.status === 403) {
 				throw redirect(302, '/?auth_error=unauthorized');
 			}
-			
+
 			// For other API errors, throw a SvelteKit error
 			throw error(err.status, err.message);
 		}
-		
+
 		// For unexpected errors
 		console.error('Unexpected error in admin load:', err);
 		throw error(500, 'Internal server error');

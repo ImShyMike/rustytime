@@ -224,7 +224,7 @@ const createAuthStore = () => {
 		// Set a specific error
 		setError: (type: AuthErrorType, message: string) => {
 			if (!browser) return;
-			
+
 			update((state) => ({
 				...state,
 				error: createAuthError(type, message)

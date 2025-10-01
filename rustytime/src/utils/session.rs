@@ -28,13 +28,24 @@ impl SessionManager {
     pub fn create_session_cookie(session_id: Uuid) -> Cookie<'static> {
         let expires = Utc::now() + Duration::days(SESSION_DURATION_DAYS);
 
-        Cookie::build((SESSION_COOKIE_NAME, session_id.to_string()))
+        // check if in production
+        let is_production = std::env::var("ENVIRONMENT").unwrap_or_default() == "production";
+
+        let mut cookie_builder = Cookie::build((SESSION_COOKIE_NAME, session_id.to_string()))
             .path("/")
             .expires(time::OffsetDateTime::from_unix_timestamp(expires.timestamp()).unwrap())
             .http_only(true)
             .secure(true)
-            .same_site(SameSite::Lax)
-            .build()
+            .same_site(SameSite::Lax);
+
+        // in production, allow sharing between subdomains
+        if is_production {
+            let domain =
+                std::env::var("COOKIE_DOMAIN").unwrap_or_else(|_| ".shymike.dev".to_string());
+            cookie_builder = cookie_builder.domain(domain);
+        }
+
+        cookie_builder.build()
     }
 
     /// Get session from cookie
@@ -70,11 +81,21 @@ impl SessionManager {
     /// Remove the session cookie
     #[inline(always)]
     pub fn remove_session_cookie() -> Cookie<'static> {
-        Cookie::build((SESSION_COOKIE_NAME, ""))
+        let is_production = std::env::var("ENVIRONMENT").unwrap_or_default() == "production";
+
+        let mut cookie_builder = Cookie::build((SESSION_COOKIE_NAME, ""))
             .path("/")
             .expires(time::OffsetDateTime::UNIX_EPOCH)
-            .http_only(true)
-            .build()
+            .http_only(true);
+
+        // in production, allow sharing between subdomains
+        if is_production {
+            let domain =
+                std::env::var("COOKIE_DOMAIN").unwrap_or_else(|_| ".shymike.dev".to_string());
+            cookie_builder = cookie_builder.domain(domain);
+        }
+
+        cookie_builder.build()
     }
 
     /// Check if user is authenticated

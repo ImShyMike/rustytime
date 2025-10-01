@@ -9,7 +9,7 @@
 	}
 
 	let { data }: Props = $props();
-	
+
 	// Get admin data from server-side load
 	const adminData = data.adminData;
 

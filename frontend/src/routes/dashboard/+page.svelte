@@ -12,7 +12,7 @@
 	}
 
 	let { data }: Props = $props();
-	
+
 	// Get dashboard data from server-side load
 	const dashboardData = data.dashboardData;
 
