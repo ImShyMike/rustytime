@@ -1,9 +1,8 @@
-import { dev } from '$app/environment';
 import { PUBLIC_BACKEND_API_URL } from '$env/static/public';
 import type { RequestEvent } from '@sveltejs/kit';
 
 // Use environment variable in production, fallback to localhost in development
-const API_BASE = dev ? 'http://localhost:3000' : PUBLIC_BACKEND_API_URL || 'http://localhost:3000';
+const API_BASE = PUBLIC_BACKEND_API_URL || 'http://localhost:3000';
 
 export class ServerApiError extends Error {
 	status: number;
@@ -31,6 +30,7 @@ class ServerApiClient {
 
 		// Forward cookies from the incoming request
 		const cookieHeader = event.request.headers.get('cookie');
+		console.error('Requesting', url, 'with cookies:', cookieHeader);
 
 		const config: RequestInit = {
 			headers: {

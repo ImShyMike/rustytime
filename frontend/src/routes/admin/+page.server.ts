@@ -9,6 +9,8 @@ export const load: PageServerLoad = async (event) => {
 		const adminData = await serverApi.get<AdminResponse>('/page/admin', event);
 
 		if (adminData && adminData.auth_url) {
+			console.error('Unauthorized access to admin, redirecting to home.');
+			console.error(adminData);
 			throw redirect(302, '/?auth_error=unauthorized');
 		}
 

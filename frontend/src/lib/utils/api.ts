@@ -1,13 +1,7 @@
-import { browser } from '$app/environment';
-import { dev } from '$app/environment';
 import { PUBLIC_BACKEND_API_URL } from '$env/static/public';
 
 // Use environment variable in production, fallback to localhost in development
-const API_BASE = browser
-	? dev
-		? 'http://localhost:3000'
-		: PUBLIC_BACKEND_API_URL || 'http://localhost:3000'
-	: 'http://localhost:3000';
+const API_BASE = PUBLIC_BACKEND_API_URL || 'http://localhost:3000';
 
 export class ApiError extends Error {
 	status: number;

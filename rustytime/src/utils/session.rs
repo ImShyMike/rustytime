@@ -35,14 +35,16 @@ impl SessionManager {
             .path("/")
             .expires(time::OffsetDateTime::from_unix_timestamp(expires.timestamp()).unwrap())
             .http_only(true)
-            .secure(true)
             .same_site(SameSite::Lax);
 
-        // in production, allow sharing between subdomains
+        // in production, set secure and domain
         if is_production {
             let domain =
                 std::env::var("COOKIE_DOMAIN").unwrap_or_else(|_| ".shymike.dev".to_string());
-            cookie_builder = cookie_builder.domain(domain);
+            cookie_builder = cookie_builder.domain(domain).secure(true);
+        } else {
+            // in development, don't set secure for localhost
+            cookie_builder = cookie_builder.secure(false);
         }
 
         cookie_builder.build()
@@ -92,7 +94,9 @@ impl SessionManager {
         if is_production {
             let domain =
                 std::env::var("COOKIE_DOMAIN").unwrap_or_else(|_| ".shymike.dev".to_string());
-            cookie_builder = cookie_builder.domain(domain);
+            cookie_builder = cookie_builder.domain(domain).secure(true);
+        } else {
+            cookie_builder = cookie_builder.secure(false);
         }
 
         cookie_builder.build()

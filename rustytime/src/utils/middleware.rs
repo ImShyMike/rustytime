@@ -108,6 +108,7 @@ pub fn cors_layer() -> CorsLayer {
     let mut allowed_origins = vec![
         "http://localhost:5173".parse::<HeaderValue>().unwrap(), // SvelteKit dev
         "http://localhost:4173".parse::<HeaderValue>().unwrap(), // SvelteKit preview
+        "http://localhost:8787".parse::<HeaderValue>().unwrap(), // Local Cloudflare Workers dev
     ];
 
     // add production domain from environment variable
@@ -130,6 +131,15 @@ pub fn cors_layer() -> CorsLayer {
             axum::http::header::AUTHORIZATION,
             axum::http::header::CONTENT_TYPE,
             axum::http::header::ACCEPT,
+            axum::http::header::COOKIE,
+            axum::http::header::SET_COOKIE,
+            axum::http::header::ORIGIN,
+            axum::http::header::REFERER,
+            axum::http::header::USER_AGENT,
+        ])
+        .expose_headers([
+            axum::http::header::SET_COOKIE,
+            axum::http::header::CONTENT_TYPE,
         ])
         .allow_credentials(true)
 }

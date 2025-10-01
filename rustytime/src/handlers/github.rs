@@ -65,10 +65,13 @@ pub async fn login(State(app_state): State<AppState>, cookies: Cookies) -> Json<
         .add_scope(Scope::new("read:user".to_string()))
         .url();
 
+    // check if in production for cookie security settings
+    let is_production = std::env::var("ENVIRONMENT").unwrap_or_default() == "production";
+
     let mut cookie = tower_cookies::Cookie::build(("rustytime_oauth_state", csrf_token_secret))
         .path("/")
         .http_only(true)
-        .secure(true)
+        .secure(is_production) // only secure in production
         .same_site(tower_cookies::cookie::SameSite::Lax)
         .build();
 
