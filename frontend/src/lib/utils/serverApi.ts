@@ -33,6 +33,8 @@ class ServerApiClient {
 		console.error('Requesting', url, 'with cookies:', cookieHeader);
 
 		const config: RequestInit = {
+			credentials: 'include',
+			mode: 'cors',
 			headers: {
 				'Content-Type': 'application/json',
 				...(cookieHeader && { Cookie: cookieHeader }),
@@ -42,7 +44,7 @@ class ServerApiClient {
 		};
 
 		try {
-			const response = await fetch(url, config);
+			const response = await event.fetch(url, config);
 
 			if (!response.ok) {
 				throw new ServerApiError(
