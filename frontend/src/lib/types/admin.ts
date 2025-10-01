@@ -23,4 +23,5 @@ interface AdminStats {
 export interface AdminResponse {
 	stats: AdminStats;
 	current_user: User;
+	auth_url: string | null;
 }

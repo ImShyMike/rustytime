@@ -1,26 +1,45 @@
 <script lang="ts">
 	import { auth } from '$lib/stores/auth';
-	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
+	import { browser } from '$app/environment';
 
 	import LucideGithub from '~icons/lucide/github';
 
-	// Handle OAuth callback
-	onMount(() => {
-		const urlParams = new URLSearchParams(window.location.search);
+	// Handle url changes
+	$effect(() => {
+		if (browser) {
+			handleUrlParams(page.url.searchParams);
+		}
+	});
+
+	function handleUrlParams(urlParams: URLSearchParams) {
 		const sessionId = urlParams.get('session_id');
 		const userData = urlParams.get('user');
+		const authError = urlParams.get('auth_error');
 
+		// Handle OAuth callback
 		if (sessionId && userData) {
 			try {
 				const user = JSON.parse(decodeURIComponent(userData));
 				auth.setSession(user, sessionId);
-				window.history.replaceState({}, document.title, window.location.pathname);
+				const newUrl = new URL(window.location.href);
+				newUrl.searchParams.delete('session_id');
+				newUrl.searchParams.delete('user');
+				window.history.replaceState({}, document.title, newUrl.pathname);
 			} catch (error) {
 				console.error('Failed to parse OAuth callback data:', error);
 			}
 		}
-	});
+
+		// Handle auth error from server redirects
+		if (authError === 'unauthorized') {
+			auth.setError('unauthorized', 'Please log in to access that page.');
+			const newUrl = new URL(window.location.href);
+			newUrl.searchParams.delete('auth_error');
+			window.history.replaceState({}, document.title, newUrl.pathname);
+		}
+	}
 </script>
 
 <div class="min-h-screen p-8 bg-mantle">

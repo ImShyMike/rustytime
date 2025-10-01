@@ -221,6 +221,16 @@ const createAuthStore = () => {
 			update((state) => ({ ...state, error: null }));
 		},
 
+		// Set a specific error
+		setError: (type: AuthErrorType, message: string) => {
+			if (!browser) return;
+			
+			update((state) => ({
+				...state,
+				error: createAuthError(type, message)
+			}));
+		},
+
 		// Retry session verification
 		retryVerification: async () => {
 			update((state) => ({ ...state, isLoading: true, error: null }));

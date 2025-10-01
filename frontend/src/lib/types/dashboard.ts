@@ -6,6 +6,7 @@ export interface UsageStat {
 }
 
 export interface DashboardResponse {
+	auth_url: string | null;
 	avatar_url: string;
 	username: string;
 	user_id: number;

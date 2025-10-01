@@ -1,30 +1,28 @@
 <script lang="ts">
-	import { auth } from '$lib/stores/auth';
-	import { resolve } from '$app/paths';
-	import { createDataLoader } from '$lib/utils/dataLoader';
-	import { handleAuthEffect } from '$lib/utils/authEffect';
-	import type { AdminResponse } from '$lib/types/admin';
 	import { browser } from '$app/environment';
 	import { createDateBarChartOptions } from '$lib/utils/charts';
 	import { apexcharts } from '$lib/stores/apexcharts';
+	import type { PageData } from './$types';
 
-	const {
-		data: adminData,
-		loading,
-		error,
-		loadData
-	} = createDataLoader<AdminResponse>('/page/admin');
+	interface Props {
+		data: PageData;
+	}
+
+	let { data }: Props = $props();
+	
+	// Get admin data from server-side load
+	const adminData = data.adminData;
 
 	let activityChart: any = null;
 
 	$effect(() => {
-		if ($adminData && browser && $apexcharts) {
+		if (adminData && browser && $apexcharts) {
 			initializeCharts();
 		}
 	});
 
 	async function initializeCharts() {
-		if (!$adminData) {
+		if (!adminData) {
 			return;
 		}
 
@@ -44,14 +42,14 @@
 				return document?.documentElement?.classList?.contains('mocha') ? 'dark' : 'light';
 			})();
 
-			if ($adminData.stats.daily_activity.length > 0) {
+			if (adminData.stats.daily_activity.length > 0) {
 				const activityElement = document.getElementById('activity-chart');
-				if (activityElement && $adminData) {
+				if (activityElement && adminData) {
 					if (activityChart) {
 						activityChart.destroy();
 					}
 					const options = createDateBarChartOptions(
-						$adminData.stats.daily_activity,
+						adminData.stats.daily_activity,
 						[],
 						false,
 						theme
@@ -64,43 +62,9 @@
 			console.error('Failed to initialize ApexCharts:', error);
 		}
 	}
-
-	$effect(() => {
-		handleAuthEffect({
-			isAuthLoading: $auth.isLoading,
-			isAuthenticated: $auth.isAuthenticated,
-			user: $auth.user,
-			data: $adminData,
-			loading: $loading,
-			error: $error,
-			loadData,
-			requireAdmin: true,
-			redirectTo: '/'
-		});
-	});
 </script>
 
-{#if $loading}
-	<div class="min-h-screen flex items-center justify-center text-subtext0">
-		<span>Loading admin data...</span>
-	</div>
-{:else if $auth.isLoading}
-	<div class="min-h-screen flex items-center justify-center text-subtext0">
-		<span>Authenticating...</span>
-	</div>
-{:else if $error}
-	<div class="min-h-screen flex items-center justify-center">
-		<div class="text-center">
-			<h1 class="text-2xl font-bold text-ctp-red-600 mb-4">Error</h1>
-			<p class="text-ctp-subtext1 mb-4">{$error}</p>
-			<button
-				onclick={() => window.location.reload()}
-				class="cursor-pointer bg-ctp-blue-600 hover:bg-ctp-blue-700 text-ctp-base px-4 py-2 rounded"
-				>Retry</button
-			>
-		</div>
-	</div>
-{:else if $auth.isAuthenticated && $auth.user && $auth.user.is_admin && $adminData}
+{#if adminData}
 	<div class="min-h-screen bg-ctp-mantle">
 		<div class="max-w-6xl mx-auto py-6 md:py-12 px-3">
 			<h1 class="text-3xl font-bold text-ctp-mauve mb-6 flex items-center gap-2">
@@ -111,24 +75,24 @@
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
 				<div class="bg-ctp-base rounded-xl shadow p-6">
 					<h3 class="text-lg font-semibold text-ctp-text mb-2">Total Users</h3>
-					<p class="text-3xl font-bold text-ctp-blue-600">{$adminData.stats.total_users}</p>
+					<p class="text-3xl font-bold text-ctp-blue-600">{adminData.stats.total_users}</p>
 				</div>
 				<div class="bg-ctp-base rounded-xl shadow p-6">
 					<h3 class="text-lg font-semibold text-ctp-text mb-2">Total Heartbeats</h3>
 					<p class="text-3xl font-bold text-ctp-green-600">
-						{$adminData.stats.total_heartbeats.toLocaleString()}
+						{adminData.stats.total_heartbeats.toLocaleString()}
 					</p>
 				</div>
 				<div class="bg-ctp-base rounded-xl shadow p-6">
 					<h3 class="text-lg font-semibold text-ctp-text mb-2">Last 24h</h3>
 					<p class="text-3xl font-bold text-ctp-mauve-600">
-						{$adminData.stats.heartbeats_last_24h.toLocaleString()}
+						{adminData.stats.heartbeats_last_24h.toLocaleString()}
 					</p>
 				</div>
 				<div class="bg-ctp-base rounded-xl shadow p-6">
 					<h3 class="text-lg font-semibold text-ctp-text mb-2">Requests/sec</h3>
 					<p class="text-3xl font-bold text-ctp-peach-600">
-						{$adminData.stats.requests_per_second}
+						{adminData.stats.requests_per_second}
 					</p>
 				</div>
 			</div>
@@ -138,9 +102,9 @@
 				<!-- Top Languages -->
 				<div class="bg-ctp-base rounded-xl shadow p-6">
 					<h3 class="text-xl font-semibold text-ctp-text mb-4">Top Languages</h3>
-					{#if $adminData.stats.top_languages.length > 0}
+					{#if adminData.stats.top_languages.length > 0}
 						<div class="space-y-2">
-							{#each $adminData.stats.top_languages.slice(0, 10) as lang (lang.language)}
+							{#each adminData.stats.top_languages.slice(0, 10) as lang (lang.language)}
 								<div class="flex justify-between items-center">
 									<span class="text-ctp-text">{lang.language}</span>
 									<span class="text-ctp-subtext1 font-mono">{lang.count}</span>
@@ -155,9 +119,9 @@
 				<!-- Top Projects -->
 				<div class="bg-ctp-base rounded-xl shadow p-6">
 					<h3 class="text-xl font-semibold text-ctp-text mb-4">Top Projects</h3>
-					{#if $adminData.stats.top_projects.length > 0}
+					{#if adminData.stats.top_projects.length > 0}
 						<div class="space-y-2">
-							{#each $adminData.stats.top_projects.slice(0, 10) as project (project.project)}
+							{#each adminData.stats.top_projects.slice(0, 10) as project (project.project)}
 								<div class="flex justify-between items-center">
 									<span class="text-ctp-text truncate">{project.project}</span>
 									<span class="text-ctp-subtext1 font-mono">{project.count}</span>
@@ -173,7 +137,7 @@
 			<!-- Daily Activity Chart -->
 			<div class="bg-ctp-base rounded-xl shadow p-6 mb-8">
 				<h3 class="text-xl font-semibold text-ctp-text mb-4">Daily Activity (Last Week)</h3>
-				{#if $adminData.stats.daily_activity.length > 0}
+				{#if adminData.stats.daily_activity.length > 0}
 					<div id="activity-chart" class="w-full h-64"></div>
 				{:else}
 					<p class="text-ctp-subtext0">No activity data available</p>
@@ -183,7 +147,7 @@
 			<!-- User Management -->
 			<div class="bg-ctp-base rounded-xl shadow p-6">
 				<h3 class="text-xl font-semibold text-ctp-text mb-4">All Users</h3>
-				{#if $adminData.stats.all_users.length > 0}
+				{#if adminData.stats.all_users.length > 0}
 					<div class="overflow-x-auto">
 						<table class="min-w-full divide-y divide-gray-200">
 							<thead class="bg-ctp-base">
@@ -206,7 +170,7 @@
 								</tr>
 							</thead>
 							<tbody class="bg-ctp-mantle divide-y divide-ctp-surface1">
-								{#each $adminData.stats.all_users as user (user.github_id)}
+								{#each adminData.stats.all_users as user (user.github_id)}
 									<tr>
 										<td class="px-6 py-4 whitespace-nowrap">
 											<div class="flex items-center">
