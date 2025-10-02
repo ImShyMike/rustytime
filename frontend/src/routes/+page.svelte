@@ -84,7 +84,7 @@
 		<div class="flex text-text items-center justify-center gap-3 mb-4">
 			<h1 class="text-5xl font-bold">rustytime</h1>
 		</div>
-		<p class="text-xl text-subtext0">Blazingly fast time tracking for developers.</p>
+		<p class="text-xl text-subtext0 px-1">Blazingly fast time tracking for developers.</p>
 	</header>
 
 	<!-- Main Content -->
@@ -100,7 +100,7 @@
 							class="w-16 h-16 rounded-full border-2 border-ctp-green-500"
 						/>
 					{/if}
-					<div>
+					<div class="self-start text-left break-words w-[min-content] max-w-full">
 						<h2 class="text-2xl text-subtext1 font-bold">
 							Welcome, {authState.user.name || 'User'}!
 						</h2>
@@ -111,26 +111,28 @@
 					</div>
 				</div>
 
-				<div class="space-y-4">
-					<a
-						href={resolve('/dashboard')}
-						class="inline-block bg-ctp-mauve-400 hover:bg-ctp-mauve-500 text-ctp-base font-semibold py-3 px-6 rounded-lg"
-					>
-						Go to Dashboard
-					</a>
-
-					{#if authState.user.is_admin}
+				<div class="flex flex-col items-center space-y-4">
+					<div class="flex flex-col items-center space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4">
 						<a
-							href={resolve('/admin')}
-							class="inline-block bg-ctp-red-400 hover:bg-ctp-red-500 text-ctp-base font-semibold py-3 px-6 rounded-lg ml-4"
+							href={resolve('/dashboard')}
+							class="inline-block bg-ctp-mauve-400 hover:bg-ctp-mauve-500 text-ctp-base font-semibold py-3 px-6 rounded-lg"
 						>
-							Admin Panel
+							Go to Dashboard
 						</a>
-					{/if}
+
+						{#if authState.user.is_admin}
+							<a
+								href={resolve('/admin')}
+								class="inline-block bg-ctp-red-400 hover:bg-ctp-red-500 text-ctp-base font-semibold py-3 px-6 rounded-lg"
+							>
+								Admin Panel
+							</a>
+						{/if}
+					</div>
 
 					<button
 						onclick={auth.logout}
-						class="cursor-pointer block mx-auto text-ctp-text/70 hover:text-ctp-text/50 underline"
+						class="cursor-pointer text-ctp-text/70 hover:text-ctp-text/50 underline"
 					>
 						Logout
 					</button>
