@@ -146,7 +146,7 @@ api_key = ${dashboardData.api_key}`;
 
 {#if dashboardData}
 	<div class="bg-ctp-mantle">
-		<div class="max-w-4xl mx-auto py-6 md:py-12 px-3">
+		<div class="max-w-6xl mx-auto py-6 md:py-12 px-3">
 			<h1 class="text-3xl font-bold text-ctp-mauve mb-6 flex items-center gap-2">Dashboard</h1>
 
 			<!-- User Information -->
