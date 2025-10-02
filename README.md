@@ -1,10 +1,10 @@
-# rustytime
+# [rustytime](https://rustytime.shymike.dev)
 
 🕒 blazingly fast time tracking for developers
 
 ---
 
-> If you want to try this project out, you can head over to [https://rustytime.shymike.dev](https://rustytime.shymike.dev/) for a deployed version
+> If you want to try this project out, you can head over to [https://rustytime.shymike.dev](https://rustytime.shymike.dev) for the deployed version!
 
 ## Features
 
@@ -15,7 +15,7 @@
 
 ## What is this?
 
-`rustytime` is a simple WakaTime compatible backend that can be used to track time in any program with an existing [plugin](https://wakatime.com/plugins)!
+`rustytime` is a [WakaTime](https://wakatime.com) compatible server that can be used to track time in any program with any of the existing [plugins](https://wakatime.com/plugins)!
 
 ## Installation
 
@@ -54,7 +54,7 @@ docker compose up
 
 ## Usage
 
-Simply run the docker compose and open the website at [http://localhost:3000](http://localhost:3000)
+Run the docker compose and open the website at [http://localhost:3000](http://localhost:3000)
 
 ### Seeding the DB
 
@@ -78,4 +78,4 @@ When using a WakaTime client, point your requests to `http://localhost:3000/api/
 
 ## License
 
-This project is licensed under the [GNU GPLv3](./LICENSE)
+This project is licensed under the [GNU AGPLv3](./LICENSE)
