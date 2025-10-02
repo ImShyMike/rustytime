@@ -6,6 +6,7 @@
 	import { browser } from '$app/environment';
 	import { apexcharts } from '$lib/stores/apexcharts';
 	import type { PageData } from './$types';
+	import UserTag from '$lib/components/UserTag.svelte';
 
 	interface Props {
 		data: PageData;
@@ -144,7 +145,7 @@ api_key = ${dashboardData.api_key}`;
 </script>
 
 {#if dashboardData}
-	<div class="min-h-screen bg-ctp-mantle">
+	<div class="bg-ctp-mantle">
 		<div class="max-w-4xl mx-auto py-6 md:py-12 px-3">
 			<h1 class="text-3xl font-bold text-ctp-mauve mb-6 flex items-center gap-2">Dashboard</h1>
 
@@ -162,13 +163,7 @@ api_key = ${dashboardData.api_key}`;
 					{/if}
 					<div class="flex flex-col">
 						<div class="flex items-center gap-2">
-							<span
-								class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {dashboardData.is_admin
-									? 'bg-ctp-red-400 text-ctp-crust'
-									: 'bg-ctp-overlay2 text-ctp-crust'} items-center h-6"
-							>
-								{dashboardData.is_admin ? 'Admin' : 'User'}
-							</span>
+							<UserTag is_admin={dashboardData.is_admin} />
 							<p class="font-bold text-lg text-ctp-text">{dashboardData.username}</p>
 						</div>
 						<p class="text-ctp-subtext1">GitHub ID: {dashboardData.github_id}</p>

@@ -3,8 +3,41 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { browser } from '$app/environment';
+	import { onMount } from 'svelte';
+	import Logo from '$lib/components/Logo.svelte';
+	import UserTag from '$lib/components/UserTag.svelte';
 
 	import LucideGithub from '~icons/lucide/github';
+
+	const props = $props();
+	let { data } = props;
+
+	type AuthSnapshot = App.PageData['auth'];
+	const DEFAULT_AUTH: AuthSnapshot = {
+		isAuthenticated: false,
+		sessionId: null,
+		user: null
+	};
+
+	let authState: AuthSnapshot = $state(data?.auth ?? DEFAULT_AUTH);
+
+	$effect(() => {
+		if (data?.auth) {
+			authState = data.auth;
+		}
+	});
+
+	onMount(() => {
+		const unsubscribe = auth.subscribe((state) => {
+			authState = {
+				isAuthenticated: state.isAuthenticated,
+				sessionId: state.sessionId,
+				user: state.user
+			};
+		});
+
+		return () => unsubscribe();
+	});
 
 	// Handle url changes
 	$effect(() => {
@@ -42,9 +75,12 @@
 	}
 </script>
 
-<div class="min-h-screen p-8 bg-mantle">
+<div class="bg-mantle">
 	<!-- Header -->
 	<header class="text-center mb-4 mt-[10vh]">
+		<Logo
+			className="w-32 h-32 mx-auto mb-4 text-ctp-subtext0 dark:text-ctp-lavender-300 drop-shadow-[0_10px_30px_rgba(108,111,133,0.35)] dark:drop-shadow-[0_10px_30px_rgba(198,160,246,0.35)] transition-colors"
+		/>
 		<div class="flex text-text items-center justify-center gap-3 mb-4">
 			<h1 class="text-5xl font-bold">rustytime</h1>
 		</div>
@@ -53,37 +89,24 @@
 
 	<!-- Main Content -->
 	<div class="rounded-xl p-8 mb-12">
-		{#if $auth.isLoading}
-			<!-- Loading State -->
-			<div class="text-center">
-				<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-ctp-text mx-auto"></div>
-				<p class="mt-4 text-subtext0">Loading...</p>
-			</div>
-		{:else if $auth.isAuthenticated && $auth.user}
+		{#if authState.isAuthenticated && authState.user}
 			<!-- Authenticated User -->
 			<div class="text-center">
 				<div class="flex items-center justify-center gap-4 mb-6">
-					{#if $auth.user.avatar_url}
+					{#if authState.user.avatar_url}
 						<img
-							src={$auth.user.avatar_url}
+							src={authState.user.avatar_url}
 							alt="Profile"
 							class="w-16 h-16 rounded-full border-2 border-ctp-green-500"
 						/>
 					{/if}
 					<div>
 						<h2 class="text-2xl text-subtext1 font-bold">
-							Welcome, {$auth.user.name || 'User'}!
+							Welcome, {authState.user.name || 'User'}!
 						</h2>
 						<div class="flex flex-row items-center gap-1 align-middle">
-							<span
-								class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {$auth.user
-									.is_admin
-									? 'bg-ctp-red-400 text-ctp-crust'
-									: 'bg-ctp-overlay2 text-ctp-crust'} items-center h-6"
-							>
-								{$auth.user.is_admin ? 'Admin' : 'User'}
-							</span>
-							<p class="text-subtext0">User ID: {$auth.user.id}</p>
+							<UserTag is_admin={authState.user.is_admin} />
+							<p class="text-subtext0">User ID: {authState.user.id}</p>
 						</div>
 					</div>
 				</div>
@@ -91,15 +114,15 @@
 				<div class="space-y-4">
 					<a
 						href={resolve('/dashboard')}
-						class="inline-block bg-ctp-peach-500 hover:bg-ctp-peach-600 text-ctp-base font-semibold py-3 px-6 rounded-lg"
+						class="inline-block bg-ctp-mauve-400 hover:bg-ctp-mauve-500 text-ctp-base font-semibold py-3 px-6 rounded-lg"
 					>
 						Go to Dashboard
 					</a>
 
-					{#if $auth.user.is_admin}
+					{#if authState.user.is_admin}
 						<a
 							href={resolve('/admin')}
-							class="inline-block bg-ctp-red-600 hover:bg-ctp-red-700 text-ctp-base font-semibold py-3 px-6 rounded-lg ml-4"
+							class="inline-block bg-ctp-red-400 hover:bg-ctp-red-500 text-ctp-base font-semibold py-3 px-6 rounded-lg ml-4"
 						>
 							Admin Panel
 						</a>

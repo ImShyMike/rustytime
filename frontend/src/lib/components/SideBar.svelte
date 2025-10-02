@@ -12,6 +12,7 @@
 	import LucideLogOut from '~icons/lucide/log-out';
 	import LucideChevronsRight from '~icons/lucide/chevrons-right';
 	import { onMount } from 'svelte';
+	import UserTag from '$lib/components/UserTag.svelte';
 
 	let currentTheme: 'light' | 'dark' = 'light';
 	let collapsed: boolean = false;
@@ -85,14 +86,7 @@
 			{/if}
 			<div class={collapsed ? 'hidden' : ''}>
 				<div class="flex flex-row items-center gap-1 align-middle">
-					<span
-						class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {$auth.user
-							.is_admin
-							? 'bg-ctp-red-400 text-ctp-crust'
-							: 'bg-ctp-overlay2 text-ctp-crust'} items-center h-6"
-					>
-						{$auth.user.is_admin ? 'Admin' : 'User'}
-					</span>
+					<UserTag is_admin={$auth.user.is_admin} />
 				</div>
 				<h2 class="{getNameSizeClass($auth.user.name)} text-subtext1 font-bold">
 					{$auth.user.name || 'User'}

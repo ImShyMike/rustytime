@@ -2,10 +2,61 @@
 	import '../app.css';
 	import favicon from '$lib/assets/rustytime.svg';
 	import { page } from '$app/state';
+	import { browser } from '$app/environment';
+	import { auth } from '$lib/stores/auth';
 	import AuthErrorWarning from '$lib/components/AuthErrorWarning.svelte';
 	import SideBar from '$lib/components/SideBar.svelte';
 
-	let { children } = $props();
+	const props = $props();
+	let { children, data } = props;
+
+	type AuthData = App.PageData['auth'];
+	const DEFAULT_AUTH: AuthData = {
+		isAuthenticated: false,
+		sessionId: null,
+		user: null
+	};
+
+	let lastAuthSnapshot = '';
+
+	const applyAuthState = (authData: AuthData) => {
+		auth.set({
+			user: authData.user,
+			sessionId: authData.sessionId,
+			isAuthenticated: authData.isAuthenticated,
+			isLoading: false,
+			error: null
+		});
+	};
+
+	const syncClientStorage = (authData: AuthData) => {
+		if (!browser) return;
+
+		if (authData.sessionId) {
+			localStorage.setItem('rustytime_session_id', authData.sessionId);
+		} else {
+			localStorage.removeItem('rustytime_session_id');
+		}
+	};
+
+	const hydrateAuth = (incoming: AuthData | undefined) => {
+		const authData = incoming ?? DEFAULT_AUTH;
+		const serialized = JSON.stringify(authData);
+
+		if (serialized === lastAuthSnapshot) {
+			return;
+		}
+
+		lastAuthSnapshot = serialized;
+		applyAuthState(authData);
+		syncClientStorage(authData);
+	};
+
+	hydrateAuth(data?.auth);
+
+	$effect(() => {
+		hydrateAuth(data?.auth);
+	});
 </script>
 
 <svelte:head>

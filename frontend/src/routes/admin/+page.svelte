@@ -3,6 +3,7 @@
 	import { createDateBarChartOptions } from '$lib/utils/charts';
 	import { apexcharts } from '$lib/stores/apexcharts';
 	import type { PageData } from './$types';
+	import UserTag from '$lib/components/UserTag.svelte';
 
 	interface Props {
 		data: PageData;
@@ -65,7 +66,7 @@
 </script>
 
 {#if adminData}
-	<div class="min-h-screen bg-ctp-mantle">
+	<div class="bg-ctp-mantle">
 		<div class="max-w-6xl mx-auto py-6 md:py-12 px-3">
 			<h1 class="text-3xl font-bold text-ctp-mauve mb-6 flex items-center gap-2">
 				Admin Dashboard
@@ -193,13 +194,7 @@
 											>{new Date(user.created_at).toLocaleString('en-US', { timeZone: 'UTC' })}</td
 										>
 										<td class="px-6 py-4 whitespace-nowrap">
-											<span
-												class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {user.is_admin
-													? 'bg-ctp-red-400 text-ctp-crust'
-													: 'bg-ctp-overlay2 text-ctp-crust'} items-center h-6"
-											>
-												{user.is_admin ? 'Admin' : 'User'}
-											</span>
+											<UserTag is_admin={user.is_admin} />
 										</td>
 										<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1 font-mono">
 											<button
