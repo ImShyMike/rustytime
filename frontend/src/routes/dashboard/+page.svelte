@@ -146,7 +146,7 @@ api_key = ${dashboardData.api_key}`;
 
 {#if dashboardData}
 	<div class="bg-ctp-mantle">
-		<div class="max-w-6xl mx-auto py-6 md:py-12 px-3">
+		<div class="max-w-6xl mx-auto py-4 md:py-12 px-3">
 			<h1
 				class="text-3xl font-bold text-ctp-mauve mb-6 flex items-center gap-2 justify-end text-right md:justify-start md:text-left pr-4 md:pr-0"
 			>
@@ -203,7 +203,7 @@ api_key = ${dashboardData.api_key}`;
 			</div>
 
 			<!-- Dashboard Statistics -->
-			<div class="bg-ctp-base rounded-xl shadow p-6 mb-4">
+			<div class="bg-ctp-base rounded-xl shadow p-4 mb-4">
 				<h2 class="text-xl font-semibold text-ctp-text mb-3">Dashboard Statistics</h2>
 				{#if dashboardData.projects.length || dashboardData.languages.length || dashboardData.editors.length || dashboardData.operating_systems.length}
 					<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -254,7 +254,7 @@ api_key = ${dashboardData.api_key}`;
 			</div>
 
 			<!-- Setup stuff -->
-			<div class="bg-ctp-base rounded-xl shadow p-6 mb-4">
+			<div class="bg-ctp-base rounded-xl shadow p-4">
 				<h2 class="text-xl font-semibold text-ctp-text mb-3">Setup</h2>
 				<div class="space-y-4">
 					<div>

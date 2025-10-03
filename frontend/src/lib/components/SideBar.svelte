@@ -152,7 +152,7 @@
 				</div>
 			{/if}
 		</div>
-		<div class="flex flex-col justify-between transition-all duration-300">
+		<div class="flex flex-col justify-between transition-all duration-300 mt-14 md:mt-0">
 			<nav class="space-y-2 flex flex-col transition-all duration-300">
 				<a
 					href={resolve('/')}
@@ -241,7 +241,7 @@
 
 			{#if buttonMode}
 				<button
-					class="absolute top-4 right-4 cursor-pointer rounded-md items-center inline-flex hover:text-blue"
+					class="absolute top-5 right-5 cursor-pointer rounded-md items-center inline-flex hover:text-blue"
 					onclick={closeMobileSidebar}
 					aria-label="Close sidebar"
 				>

@@ -67,7 +67,7 @@
 
 {#if adminData}
 	<div class="bg-ctp-mantle">
-		<div class="max-w-6xl mx-auto py-6 md:py-12 px-3">
+		<div class="max-w-6xl mx-auto py-4 md:py-12 px-3">
 			<h1
 				class="text-3xl font-bold text-ctp-mauve mb-6 flex items-center gap-2 justify-end text-right md:justify-start md:text-left pr-4 md:pr-0"
 			>
@@ -75,7 +75,7 @@
 			</h1>
 
 			<!-- System Statistics -->
-			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
 				<div class="bg-ctp-base rounded-xl shadow p-6">
 					<h3 class="text-lg font-semibold text-ctp-text mb-2">Total Users</h3>
 					<p class="text-3xl font-bold text-ctp-blue-600">{adminData.stats.total_users}</p>
@@ -101,7 +101,7 @@
 			</div>
 
 			<!-- Top Lists -->
-			<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+			<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
 				<!-- Top Languages -->
 				<div class="bg-ctp-base rounded-xl shadow p-6">
 					<h3 class="text-xl font-semibold text-ctp-text mb-4">Top Languages</h3>
@@ -138,7 +138,7 @@
 			</div>
 
 			<!-- Daily Activity Chart -->
-			<div class="bg-ctp-base rounded-xl shadow p-6 mb-8">
+			<div class="bg-ctp-base rounded-xl shadow p-6 mb-4">
 				<h3 class="text-xl font-semibold text-ctp-text mb-4">Daily Activity (Last Week)</h3>
 				{#if adminData.stats.daily_activity.length > 0}
 					<div id="activity-chart" class="w-full h-64"></div>
