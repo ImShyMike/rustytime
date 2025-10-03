@@ -6,7 +6,11 @@
 	import { browser } from '$app/environment';
 	import { apexcharts } from '$lib/stores/apexcharts';
 	import type { PageData } from './$types';
-	import UserTag from '$lib/components/UserTag.svelte';
+	import Container from '$lib/components/ui/Container.svelte';
+	import PageHeading from '$lib/components/ui/PageHeading.svelte';
+	import SectionTitle from '$lib/components/ui/SectionTitle.svelte';
+	import StatCard from '$lib/components/ui/StatCard.svelte';
+	import UserTag from '$lib/components/ui/UserTag.svelte';
 
 	interface Props {
 		data: PageData;
@@ -147,14 +151,10 @@ api_key = ${dashboardData.api_key}`;
 {#if dashboardData}
 	<div class="bg-ctp-mantle">
 		<div class="max-w-6xl mx-auto py-4 md:py-12 px-3">
-			<h1
-				class="text-3xl font-bold text-ctp-mauve mb-6 flex items-center gap-2 justify-end text-right md:justify-start md:text-left pr-4 md:pr-0"
-			>
-				Dashboard
-			</h1>
+			<PageHeading title="Dashboard" />
 
 			<!-- User Information -->
-			<div class="bg-ctp-base rounded-xl shadow p-4 pb-1 mb-4">
+			<Container className="pb-1 mb-4">
 				<div class="flex items-center gap-4 mb-4">
 					{#if dashboardData.avatar_url}
 						<img
@@ -174,42 +174,44 @@ api_key = ${dashboardData.api_key}`;
 						<p class="text-ctp-subtext1">Member since: {dashboardData.created_at}</p>
 					</div>
 				</div>
-			</div>
+			</Container>
 
 			<!-- Top Stats -->
 			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-				<div class="bg-ctp-base rounded-xl shadow p-4">
-					<p class="text-sm text-ctp-text">Total Time</p>
-					<h3 class="font-semibold text-ctp-text">{dashboardData.human_readable_total}</h3>
-				</div>
-				<div class="bg-ctp-base rounded-xl shadow p-4">
-					<p class="text-sm text-ctp-text">Top Project</p>
-					<h3 class="font-semibold text-ctp-text">
-						{dashboardData.projects.at(0)?.name || 'None'}
-					</h3>
-				</div>
-				<div class="bg-ctp-base rounded-xl shadow p-4">
-					<p class="text-sm text-ctp-text">Top Language</p>
-					<h3 class="font-semibold text-ctp-text">
-						{dashboardData.languages.at(0)?.name || 'None'}
-					</h3>
-				</div>
-				<div class="bg-ctp-base rounded-xl shadow p-4">
-					<p class="text-sm text-ctp-text">Total Heartbeats</p>
-					<h3 class="font-semibold text-ctp-text">
-						{dashboardData.total_heartbeats.toLocaleString()}
-					</h3>
-				</div>
+				<StatCard
+					title="Total Time"
+					value={dashboardData.human_readable_total}
+					valueClass="text-xl font-semibold text-ctp-text"
+					titleClass="text-sm text-ctp-text"
+				/>
+				<StatCard
+					title="Top Project"
+					value={dashboardData.projects.at(0)?.name || 'None'}
+					valueClass="text-xl font-semibold text-ctp-text"
+					titleClass="text-sm text-ctp-text"
+				/>
+				<StatCard
+					title="Top Language"
+					value={dashboardData.languages.at(0)?.name || 'None'}
+					valueClass="text-xl font-semibold text-ctp-text"
+					titleClass="text-sm text-ctp-text"
+				/>
+				<StatCard
+					title="Total Heartbeats"
+					value={dashboardData.total_heartbeats.toLocaleString()}
+					valueClass="text-xl font-semibold text-ctp-text"
+					titleClass="text-sm text-ctp-text"
+				/>
 			</div>
 
 			<!-- Dashboard Statistics -->
-			<div class="bg-ctp-base rounded-xl shadow p-4 mb-4">
-				<h2 class="text-xl font-semibold text-ctp-text mb-3">Dashboard Statistics</h2>
+			<Container className="mb-4">
+				<SectionTitle level="h2" className="mb-3">Dashboard Statistics</SectionTitle>
 				{#if dashboardData.projects.length || dashboardData.languages.length || dashboardData.editors.length || dashboardData.operating_systems.length}
 					<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 						<!-- Top Projects (Horizontal Bar Chart) -->
 						<div>
-							<h3 class="text-lg font-medium text-ctp-text mb-4">Top Projects</h3>
+							<SectionTitle size="sm" className="mb-4">Top Projects</SectionTitle>
 							{#if dashboardData.projects.length > 0}
 								<div id="projects-chart" class="h-[350px]"></div>
 							{:else}
@@ -219,7 +221,7 @@ api_key = ${dashboardData.api_key}`;
 
 						<!-- Top Languages (Pie Chart) -->
 						<div>
-							<h3 class="text-lg font-medium text-ctp-text mb-4">Top Languages</h3>
+							<SectionTitle size="sm" className="mb-4">Top Languages</SectionTitle>
 							{#if dashboardData.languages.length > 0}
 								<div id="languages-chart" class="h-[350px]"></div>
 							{:else}
@@ -229,7 +231,7 @@ api_key = ${dashboardData.api_key}`;
 
 						<!-- Top Editors (Pie Chart) -->
 						<div>
-							<h3 class="text-lg font-medium text-ctp-text mb-4">Top Editors</h3>
+							<SectionTitle size="sm" className="mb-4">Top Editors</SectionTitle>
 							{#if dashboardData.editors.length > 0}
 								<div id="editors-chart" class="h-[350px]"></div>
 							{:else}
@@ -239,7 +241,7 @@ api_key = ${dashboardData.api_key}`;
 
 						<!-- Top Operating Systems (Pie Chart) -->
 						<div>
-							<h3 class="text-lg font-medium text-ctp-text mb-4">Top Operating Systems</h3>
+							<SectionTitle size="sm" className="mb-4">Top Operating Systems</SectionTitle>
 							{#if dashboardData.operating_systems.length > 0}
 								<div id="os-chart" class="h-[350px]"></div>
 							{:else}
@@ -251,11 +253,11 @@ api_key = ${dashboardData.api_key}`;
 					<p class="text-md text-ctp-subtext0">No data to display :(</p>
 					<p class="text-ctp-subtext0">Complete the setup bellow to start tracking your time!</p>
 				{/if}
-			</div>
+			</Container>
 
 			<!-- Setup stuff -->
-			<div class="bg-ctp-base rounded-xl shadow p-4">
-				<h2 class="text-xl font-semibold text-ctp-text mb-3">Setup</h2>
+			<Container>
+				<SectionTitle level="h2" className="mb-3">Setup</SectionTitle>
 				<div class="space-y-4">
 					<div>
 						<label for="api-setup" class="block text-sm font-medium text-ctp-text mb-2"
@@ -286,7 +288,7 @@ api_key = ${dashboardData.api_key}`;
 						</div>
 					</div>
 				</div>
-			</div>
+			</Container>
 		</div>
 	</div>
 {/if}

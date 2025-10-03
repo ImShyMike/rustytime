@@ -4,8 +4,8 @@
 	import { page } from '$app/state';
 	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
-	import Logo from '$lib/components/Logo.svelte';
-	import UserTag from '$lib/components/UserTag.svelte';
+	import Logo from '$lib/components/images/Logo.svelte';
+	import UserTag from '$lib/components/ui/UserTag.svelte';
 
 	import LucideGithub from '~icons/lucide/github';
 

@@ -14,7 +14,7 @@
 	import LucideMenu from '~icons/lucide/menu';
 	import LucideX from '~icons/lucide/x';
 	import { onMount } from 'svelte';
-	import UserTag from '$lib/components/UserTag.svelte';
+	import UserTag from '$lib/components/ui/UserTag.svelte';
 
 	let currentTheme: 'light' | 'dark' = 'light';
 	let collapsed: boolean = false;

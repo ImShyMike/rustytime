@@ -99,7 +99,6 @@ const createAuthStore = () => {
 			}
 		},
 
-
 		hydrate: (snapshot?: AuthSnapshot) => {
 			const next = snapshot ? toState(snapshot) : toState(DEFAULT_AUTH_SNAPSHOT);
 			set(next);

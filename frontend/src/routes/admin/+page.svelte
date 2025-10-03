@@ -3,7 +3,12 @@
 	import { createDateBarChartOptions } from '$lib/utils/charts';
 	import { apexcharts } from '$lib/stores/apexcharts';
 	import type { PageData } from './$types';
-	import UserTag from '$lib/components/UserTag.svelte';
+	import Container from '$lib/components/ui/Container.svelte';
+	import KeyValueList from '$lib/components/ui/KeyValueList.svelte';
+	import PageHeading from '$lib/components/ui/PageHeading.svelte';
+	import SectionTitle from '$lib/components/ui/SectionTitle.svelte';
+	import StatCard from '$lib/components/ui/StatCard.svelte';
+	import UserTag from '$lib/components/ui/UserTag.svelte';
 
 	interface Props {
 		data: PageData;
@@ -68,88 +73,77 @@
 {#if adminData}
 	<div class="bg-ctp-mantle">
 		<div class="max-w-6xl mx-auto py-4 md:py-12 px-3">
-			<h1
-				class="text-3xl font-bold text-ctp-mauve mb-6 flex items-center gap-2 justify-end text-right md:justify-start md:text-left pr-4 md:pr-0"
-			>
-				Admin Dashboard
-			</h1>
+			<PageHeading title="Admin Dashboard" />
 
 			<!-- System Statistics -->
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-				<div class="bg-ctp-base rounded-xl shadow p-6">
-					<h3 class="text-lg font-semibold text-ctp-text mb-2">Total Users</h3>
-					<p class="text-3xl font-bold text-ctp-blue-600">{adminData.stats.total_users}</p>
-				</div>
-				<div class="bg-ctp-base rounded-xl shadow p-6">
-					<h3 class="text-lg font-semibold text-ctp-text mb-2">Total Heartbeats</h3>
-					<p class="text-3xl font-bold text-ctp-green-600">
-						{adminData.stats.total_heartbeats.toLocaleString()}
-					</p>
-				</div>
-				<div class="bg-ctp-base rounded-xl shadow p-6">
-					<h3 class="text-lg font-semibold text-ctp-text mb-2">Last 24h</h3>
-					<p class="text-3xl font-bold text-ctp-mauve-600">
-						{adminData.stats.heartbeats_last_24h.toLocaleString()}
-					</p>
-				</div>
-				<div class="bg-ctp-base rounded-xl shadow p-6">
-					<h3 class="text-lg font-semibold text-ctp-text mb-2">Requests/sec</h3>
-					<p class="text-3xl font-bold text-ctp-peach-600">
-						{adminData.stats.requests_per_second}
-					</p>
-				</div>
+				<StatCard
+					title="Total Users"
+					value={adminData.stats.total_users}
+					valueClass="text-3xl font-bold text-ctp-blue-600"
+				/>
+				<StatCard
+					title="Total Heartbeats"
+					value={adminData.stats.total_heartbeats.toLocaleString()}
+					valueClass="text-3xl font-bold text-ctp-green-600"
+				/>
+				<StatCard
+					title="Last 24h"
+					value={adminData.stats.heartbeats_last_24h.toLocaleString()}
+					valueClass="text-3xl font-bold text-ctp-mauve-600"
+				/>
+				<StatCard
+					title="Requests/sec"
+					value={adminData.stats.requests_per_second}
+					valueClass="text-3xl font-bold text-ctp-peach-600"
+				/>
 			</div>
 
 			<!-- Top Lists -->
 			<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
 				<!-- Top Languages -->
-				<div class="bg-ctp-base rounded-xl shadow p-6">
-					<h3 class="text-xl font-semibold text-ctp-text mb-4">Top Languages</h3>
-					{#if adminData.stats.top_languages.length > 0}
-						<div class="space-y-2">
-							{#each adminData.stats.top_languages.slice(0, 10) as lang (lang.language)}
-								<div class="flex justify-between items-center">
-									<span class="text-ctp-text">{lang.language}</span>
-									<span class="text-ctp-subtext1 font-mono">{lang.count}</span>
-								</div>
-							{/each}
-						</div>
-					{:else}
-						<p class="text-ctp-subtext0">No language data available</p>
-					{/if}
-				</div>
+				<Container>
+					<SectionTitle>Top Languages</SectionTitle>
+					<KeyValueList
+						items={adminData.stats.top_languages.slice(0, 10).map((lang) => ({
+							id: lang.language,
+							label: lang.language,
+							value: lang.count.toLocaleString()
+						}))}
+					>
+						<p slot="empty" class="text-ctp-subtext0">No language data available</p>
+					</KeyValueList>
+				</Container>
 
 				<!-- Top Projects -->
-				<div class="bg-ctp-base rounded-xl shadow p-6">
-					<h3 class="text-xl font-semibold text-ctp-text mb-4">Top Projects</h3>
-					{#if adminData.stats.top_projects.length > 0}
-						<div class="space-y-2">
-							{#each adminData.stats.top_projects.slice(0, 10) as project (project.project)}
-								<div class="flex justify-between items-center">
-									<span class="text-ctp-text truncate">{project.project}</span>
-									<span class="text-ctp-subtext1 font-mono">{project.count}</span>
-								</div>
-							{/each}
-						</div>
-					{:else}
-						<p class="text-ctp-subtext0">No project data available</p>
-					{/if}
-				</div>
+				<Container>
+					<SectionTitle>Top Projects</SectionTitle>
+					<KeyValueList
+						items={adminData.stats.top_projects.slice(0, 10).map((project) => ({
+							id: project.project,
+							label: project.project,
+							value: project.count.toLocaleString(),
+							labelClass: 'truncate'
+						}))}
+					>
+						<p slot="empty" class="text-ctp-subtext0">No project data available</p>
+					</KeyValueList>
+				</Container>
 			</div>
 
 			<!-- Daily Activity Chart -->
-			<div class="bg-ctp-base rounded-xl shadow p-6 mb-4">
-				<h3 class="text-xl font-semibold text-ctp-text mb-4">Daily Activity (Last Week)</h3>
+			<Container className="mb-4">
+				<SectionTitle className="mb-4">Daily Activity (Past Week)</SectionTitle>
 				{#if adminData.stats.daily_activity.length > 0}
 					<div id="activity-chart" class="w-full h-64"></div>
 				{:else}
 					<p class="text-ctp-subtext0">No activity data available</p>
 				{/if}
-			</div>
+			</Container>
 
-			<!-- User Management -->
-			<div class="bg-ctp-base rounded-xl shadow p-6">
-				<h3 class="text-xl font-semibold text-ctp-text mb-4">All Users</h3>
+			<!-- User List -->
+			<Container>
+				<SectionTitle className="mb-4">All Users</SectionTitle>
 				{#if adminData.stats.all_users.length > 0}
 					<div class="overflow-x-auto">
 						<table class="min-w-full divide-y divide-gray-200">
@@ -215,7 +209,7 @@
 				{:else}
 					<p class="text-ctp-subtext0">No users found</p>
 				{/if}
-			</div>
+			</Container>
 		</div>
 	</div>
 {/if}

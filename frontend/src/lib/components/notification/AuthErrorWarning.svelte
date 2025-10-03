@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { auth } from '../stores/auth.js';
-	import type { AuthError } from '../stores/auth.js';
+	import { auth } from '../../stores/auth.js';
+	import type { AuthError } from '../../stores/auth.js';
 
 	import LucideTriangleAlert from '~icons/lucide/triangle-alert';
 	import LucideCircleAlert from '~icons/lucide/circle-alert';
