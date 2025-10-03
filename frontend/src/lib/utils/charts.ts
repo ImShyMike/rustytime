@@ -1,10 +1,11 @@
 import type { UsageStat } from '$lib/types/dashboard';
+import type { ApexOptions } from 'apexcharts';
 
 export function createPieChartOptions(
 	data: UsageStat[],
 	colors: string[],
 	theme: 'light' | 'dark' = 'dark'
-) {
+): ApexOptions {
 	const textColor = theme === 'dark' ? '#E6EEF3' : '#111827';
 	const gridBorderColor = theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)';
 	return {
@@ -15,7 +16,6 @@ export function createPieChartOptions(
 			height: 350,
 			animations: {
 				enabled: true,
-				easing: 'easeinout',
 				speed: 800
 			}
 		},
@@ -42,9 +42,7 @@ export function createPieChartOptions(
 		tooltip: {
 			theme: theme,
 			y: {
-				formatter: function (value: number, { seriesIndex }: { seriesIndex: number }) {
-					return data[seriesIndex]?.text || '';
-				}
+				formatter: (_value, { seriesIndex }) => data[seriesIndex ?? 0]?.text ?? ''
 			},
 			followCursor: false
 		},
@@ -61,7 +59,7 @@ export function createPieChartOptions(
 		grid: {
 			borderColor: gridBorderColor
 		}
-	};
+	} satisfies ApexOptions;
 }
 
 export function createBarChartOptions(
@@ -69,7 +67,7 @@ export function createBarChartOptions(
 	colors: string[],
 	horizontal: boolean = true,
 	theme: 'light' | 'dark' = 'dark'
-) {
+): ApexOptions {
 	const textColor = theme === 'dark' ? '#E6EEF3' : '#111827';
 	const gridBorderColor = theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)';
 	const strokeColor = theme === 'dark' ? '#ffffff' : '#000000';
@@ -80,16 +78,15 @@ export function createBarChartOptions(
 				data: data.map((item) => item.total_seconds)
 			}
 		],
+		theme: {
+			mode: theme
+		},
 		chart: {
-			theme: {
-				mode: theme
-			},
 			foreColor: textColor,
 			type: 'bar',
 			height: 350,
 			animations: {
 				enabled: true,
-				easing: 'easeinout',
 				speed: 800
 			},
 			toolbar: {
@@ -118,8 +115,9 @@ export function createBarChartOptions(
 				style: {
 					colors: textColor
 				},
-				formatter: function (value: number) {
-					return `${Math.floor(value / 3600)}h`;
+				formatter: (value: string) => {
+					const numericValue = Number(value);
+					return Number.isFinite(numericValue) ? `${Math.floor(numericValue / 3600)}h` : value;
 				}
 			}
 		},
@@ -138,13 +136,9 @@ export function createBarChartOptions(
 			},
 			y: {
 				title: {
-					formatter: function (value: number, { dataPointIndex }: { dataPointIndex: number }) {
-						return data[dataPointIndex]?.name || '';
-					}
+					formatter: (_seriesName, { dataPointIndex }) => data[dataPointIndex ?? 0]?.name ?? ''
 				},
-				formatter: function (value: number, { dataPointIndex }: { dataPointIndex: number }) {
-					return data[dataPointIndex]?.text || '';
-				}
+				formatter: (value, { dataPointIndex }) => data[dataPointIndex ?? 0]?.text ?? ''
 			}
 		},
 		grid: {
@@ -157,7 +151,7 @@ export function createBarChartOptions(
 				colors: textColor
 			}
 		}
-	};
+	} satisfies ApexOptions;
 }
 
 export function createDateBarChartOptions(
@@ -168,7 +162,7 @@ export function createDateBarChartOptions(
 	colors: string[],
 	horizontal: boolean = true,
 	theme: 'light' | 'dark' = 'dark'
-) {
+): ApexOptions {
 	const textColor = theme === 'dark' ? '#E6EEF3' : '#111827';
 	const gridBorderColor = theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)';
 	const strokeColor = theme === 'dark' ? '#ffffff' : '#000000';
@@ -179,16 +173,15 @@ export function createDateBarChartOptions(
 				data: data.map((item) => item.count)
 			}
 		],
+		theme: {
+			mode: theme
+		},
 		chart: {
-			theme: {
-				mode: theme
-			},
 			foreColor: textColor,
 			type: 'bar',
 			height: 350,
 			animations: {
 				enabled: true,
-				easing: 'easeinout',
 				speed: 800
 			},
 			toolbar: {
@@ -243,5 +236,5 @@ export function createDateBarChartOptions(
 				colors: textColor
 			}
 		}
-	};
+	} satisfies ApexOptions;
 }

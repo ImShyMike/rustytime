@@ -2,13 +2,15 @@
 	import { browser } from '$app/environment';
 	import { createDateBarChartOptions } from '$lib/utils/charts';
 	import { apexcharts } from '$lib/stores/apexcharts';
+	import type ApexCharts from 'apexcharts';
+	import type { ApexOptions } from 'apexcharts';
 	import type { PageData } from './$types';
-	import Container from '$lib/components/ui/Container.svelte';
-	import KeyValueList from '$lib/components/ui/KeyValueList.svelte';
-	import PageHeading from '$lib/components/ui/PageHeading.svelte';
-	import SectionTitle from '$lib/components/ui/SectionTitle.svelte';
-	import StatCard from '$lib/components/ui/StatCard.svelte';
-	import UserTag from '$lib/components/ui/UserTag.svelte';
+	import { Container, KeyValueList, PageHeading, SectionTitle, StatCard, UserTag } from '$lib';
+
+	type ApexChartsConstructor = new (element: Element | string, options: ApexOptions) => ApexCharts;
+
+	const isApexChartsConstructor = (value: unknown): value is ApexChartsConstructor =>
+		typeof value === 'function';
 
 	interface Props {
 		data: PageData;
@@ -19,7 +21,7 @@
 	// Get admin data from server-side load
 	const adminData = data.adminData;
 
-	let activityChart: any = null;
+	let activityChart: ApexCharts | null = null;
 
 	$effect(() => {
 		if (adminData && browser && $apexcharts) {
@@ -33,13 +35,20 @@
 		}
 
 		try {
-			const ApexCharts = $apexcharts as any;
+			const apexchartsValue = $apexcharts;
+			if (!isApexChartsConstructor(apexchartsValue)) {
+				return;
+			}
+
+			const ApexCharts = apexchartsValue;
 
 			const theme: 'light' | 'dark' = (() => {
 				try {
 					const saved = localStorage.getItem('theme');
 					if (saved === 'dark' || saved === 'light') return saved;
-				} catch (e) {}
+				} catch (error) {
+					console.warn('Unable to read theme preference from localStorage', error);
+				}
 
 				const prefersDark =
 					window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;

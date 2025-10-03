@@ -3,8 +3,7 @@
 	import favicon from '$lib/assets/rustytime.svg';
 	import { page } from '$app/state';
 	import { auth } from '$lib/stores/auth';
-	import AuthErrorWarning from '$lib/components/notification/AuthErrorWarning.svelte';
-	import SideBar from '$lib/components/SideBar.svelte';
+	import { AuthErrorWarning, SideBar } from '$lib';
 
 	const props = $props();
 	let { children, data } = props;

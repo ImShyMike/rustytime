@@ -5,13 +5,15 @@
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 	import { apexcharts } from '$lib/stores/apexcharts';
+	import type ApexCharts from 'apexcharts';
+	import type { ApexOptions } from 'apexcharts';
 	import type { PageData } from './$types';
-	import Container from '$lib/components/ui/Container.svelte';
-	import PageHeading from '$lib/components/ui/PageHeading.svelte';
-	import SectionTitle from '$lib/components/ui/SectionTitle.svelte';
-	import StatCard from '$lib/components/ui/StatCard.svelte';
-	import UserTag from '$lib/components/ui/UserTag.svelte';
+	import { Container, PageHeading, SectionTitle, StatCard, UserTag } from '$lib';
 
+	type ApexChartsConstructor = new (element: Element | string, options: ApexOptions) => ApexCharts;
+
+	const isApexChartsConstructor = (value: unknown): value is ApexChartsConstructor =>
+		typeof value === 'function';
 	interface Props {
 		data: PageData;
 	}
@@ -21,10 +23,10 @@
 	// Get dashboard data from server-side load
 	const dashboardData = data.dashboardData;
 
-	let projectsChart: any = null;
-	let languagesChart: any = null;
-	let editorsChart: any = null;
-	let osChart: any = null;
+	let projectsChart: ApexCharts | null = null;
+	let languagesChart: ApexCharts | null = null;
+	let editorsChart: ApexCharts | null = null;
+	let osChart: ApexCharts | null = null;
 
 	let config: string = $state('');
 	let copied: boolean = $state(false);
@@ -50,13 +52,20 @@ api_key = ${dashboardData.api_key}`;
 		if (!dashboardData) return;
 
 		try {
-			const ApexCharts = $apexcharts as any;
+			const apexchartsValue = $apexcharts;
+			if (!isApexChartsConstructor(apexchartsValue)) {
+				return;
+			}
+
+			const ApexCharts = apexchartsValue;
 
 			const theme: 'light' | 'dark' = (() => {
 				try {
 					const saved = localStorage.getItem('theme');
 					if (saved === 'dark' || saved === 'light') return saved;
-				} catch (e) {}
+				} catch (error) {
+					console.warn('Unable to read theme preference from localStorage', error);
+				}
 
 				const prefersDark =
 					window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
