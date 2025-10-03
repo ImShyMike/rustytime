@@ -77,7 +77,7 @@
 		<div class="flex text-text items-center justify-center gap-3 mb-4">
 			<h1 class="text-5xl font-bold">rustytime</h1>
 		</div>
-		<p class="text-xl text-subtext0 px-1">Blazingly fast time tracking for developers.</p>
+		<p class="text-xl text-ctp-subtext1 dark:text-subtext0 px-1">Blazingly fast time tracking for developers.</p>
 	</header>
 
 	<!-- Main Content -->
@@ -136,7 +136,7 @@
 			<div class="text-center">
 				<button
 					onclick={auth.login}
-					class="cursor-pointer bg-ctp-surface1 text-ctp-text hover:bg-ctp-surface0 font-semibold py-4 px-8 rounded-lg flex items-center gap-3 mx-auto"
+					class="cursor-pointer bg-ctp-surface2 text-ctp-text hover:bg-ctp-surface1 font-semibold py-4 px-8 rounded-lg flex items-center gap-3 mx-auto"
 				>
 					<LucideGithub class="min-w-6 min-h-6" />
 					Sign in with GitHub

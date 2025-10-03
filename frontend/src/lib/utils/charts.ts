@@ -1,6 +1,38 @@
 import type { UsageStat } from '$lib/types/dashboard';
 import type { ApexOptions } from 'apexcharts';
 
+const FALLBACK_COLORS: Record<'light' | 'dark', string[]> = {
+	dark: [
+		'#f5c2e7',
+		'#cba6f7',
+		'#f38ba8',
+		'#fab387',
+		'#f9e2af',
+		'#a6e3a1',
+		'#94e2d5',
+		'#89dceb',
+		'#74c7ec',
+		'#89b4fa',
+		'#b4befe'
+	],
+	light: [
+		'#ea76cb',
+		'#8839ef',
+		'#d20f39',
+		'#fe640b',
+		'#df8e1d',
+		'#40a02b',
+		'#179299',
+		'#04a5e5',
+		'#209fb5',
+		'#1e66f5',
+		'#7287fd'
+	]
+};
+
+const resolveColors = (colors: string[], theme: 'light' | 'dark') =>
+	colors.length > 0 ? colors : FALLBACK_COLORS[theme];
+
 export function createPieChartOptions(
 	data: UsageStat[],
 	colors: string[],
@@ -8,12 +40,14 @@ export function createPieChartOptions(
 ): ApexOptions {
 	const textColor = theme === 'dark' ? '#E6EEF3' : '#111827';
 	const gridBorderColor = theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)';
+	const resolvedColors = resolveColors(colors, theme);
 	return {
 		series: data.map((item) => item.total_seconds),
 		chart: {
 			foreColor: textColor,
 			type: 'pie',
 			height: 350,
+			background: 'transparent',
 			animations: {
 				enabled: true,
 				speed: 800
@@ -23,7 +57,12 @@ export function createPieChartOptions(
 		dataLabels: {
 			enabled: false
 		},
-		colors: colors,
+		colors: resolvedColors,
+		fill: {
+			type: 'solid',
+			colors: resolvedColors,
+			opacity: 1
+		},
 		legend: {
 			position: 'right',
 			offsetY: 0,
@@ -71,6 +110,7 @@ export function createBarChartOptions(
 	const textColor = theme === 'dark' ? '#E6EEF3' : '#111827';
 	const gridBorderColor = theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)';
 	const strokeColor = theme === 'dark' ? '#ffffff' : '#000000';
+	const resolvedColors = resolveColors(colors, theme);
 	return {
 		series: [
 			{
@@ -85,6 +125,7 @@ export function createBarChartOptions(
 			foreColor: textColor,
 			type: 'bar',
 			height: 350,
+			background: 'transparent',
 			animations: {
 				enabled: true,
 				speed: 800
@@ -100,13 +141,18 @@ export function createBarChartOptions(
 				distributed: true
 			}
 		},
-		colors: colors,
+		colors: resolvedColors,
 		dataLabels: {
 			enabled: false
 		},
 		stroke: {
 			width: 1,
 			colors: [strokeColor]
+		},
+		fill: {
+			type: 'solid',
+			colors: resolvedColors,
+			opacity: 1
 		},
 		xaxis: {
 			categories: data.map((item) => item.name),
@@ -166,6 +212,7 @@ export function createDateBarChartOptions(
 	const textColor = theme === 'dark' ? '#E6EEF3' : '#111827';
 	const gridBorderColor = theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)';
 	const strokeColor = theme === 'dark' ? '#ffffff' : '#000000';
+	const resolvedColors = resolveColors(colors, theme);
 	return {
 		series: [
 			{
@@ -180,6 +227,7 @@ export function createDateBarChartOptions(
 			foreColor: textColor,
 			type: 'bar',
 			height: 350,
+			background: 'transparent',
 			animations: {
 				enabled: true,
 				speed: 800
@@ -195,13 +243,18 @@ export function createDateBarChartOptions(
 				distributed: true
 			}
 		},
-		colors: colors,
+		colors: resolvedColors,
 		dataLabels: {
 			enabled: false
 		},
 		stroke: {
 			width: 1,
 			colors: [strokeColor]
+		},
+		fill: {
+			type: 'solid',
+			colors: resolvedColors,
+			opacity: 1
 		},
 		xaxis: {
 			categories: data.map((item) => item.date),
