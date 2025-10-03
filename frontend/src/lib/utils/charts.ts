@@ -3,6 +3,7 @@ import type { ApexOptions } from 'apexcharts';
 
 const FALLBACK_COLORS: Record<'light' | 'dark', string[]> = {
 	dark: [
+		'#89b4fa',
 		'#f5c2e7',
 		'#cba6f7',
 		'#f38ba8',
@@ -12,10 +13,9 @@ const FALLBACK_COLORS: Record<'light' | 'dark', string[]> = {
 		'#94e2d5',
 		'#89dceb',
 		'#74c7ec',
-		'#89b4fa',
-		'#b4befe'
 	],
 	light: [
+		'#1e66f5',
 		'#ea76cb',
 		'#8839ef',
 		'#d20f39',
@@ -25,8 +25,6 @@ const FALLBACK_COLORS: Record<'light' | 'dark', string[]> = {
 		'#179299',
 		'#04a5e5',
 		'#209fb5',
-		'#1e66f5',
-		'#7287fd'
 	]
 };
 

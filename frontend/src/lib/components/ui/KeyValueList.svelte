@@ -15,7 +15,7 @@
 </script>
 
 {#if items.length > 0}
-	<div class={`space-y-2 ${className}`.trim()}>
+	<div class={`space-y ${className}`.trim()}>
 		{#each items as item, index (item.id ?? `${item.label}-${index}`)}
 			<div class={`${rowClass}`.trim()}>
 				<span class={`${labelClass} ${item.labelClass ?? ''}`.trim()}>{item.label}</span>

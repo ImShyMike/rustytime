@@ -112,7 +112,7 @@
 			<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
 				<!-- Top Languages -->
 				<Container>
-					<SectionTitle>Top Languages</SectionTitle>
+					<SectionTitle className="mb-2">Top Languages</SectionTitle>
 					<KeyValueList
 						items={adminData.stats.top_languages.slice(0, 10).map((lang) => ({
 							id: lang.language,
@@ -126,7 +126,7 @@
 
 				<!-- Top Projects -->
 				<Container>
-					<SectionTitle>Top Projects</SectionTitle>
+					<SectionTitle className="mb-2">Top Projects</SectionTitle>
 					<KeyValueList
 						items={adminData.stats.top_projects.slice(0, 10).map((project) => ({
 							id: project.project,
