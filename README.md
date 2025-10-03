@@ -15,7 +15,7 @@
 
 ## What is this?
 
-`rustytime` is a [WakaTime](https://wakatime.com) compatible server that can be used to track time in any program with any of the existing [plugins](https://wakatime.com/plugins)!
+`rustytime` is a [WakaTime](https://wakatime.com) compatible server that can be used to track time in most program with any of the existing [plugins](https://wakatime.com/plugins)!
 
 ## Installation
 

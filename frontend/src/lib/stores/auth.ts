@@ -1,4 +1,5 @@
 import { browser } from '$app/environment';
+import { invalidateAll } from '$app/navigation';
 import { writable } from 'svelte/store';
 import { api, ApiError, setGlobalErrorCallback } from '../utils/api.js';
 
@@ -31,6 +32,22 @@ export interface AuthState {
 	error: AuthError | null;
 }
 
+type AuthSnapshot = App.Locals['auth'];
+
+const DEFAULT_AUTH_SNAPSHOT: AuthSnapshot = {
+	isAuthenticated: false,
+	sessionId: null,
+	user: null
+};
+
+const toState = (snapshot: AuthSnapshot): AuthState => ({
+	user: snapshot.user,
+	sessionId: snapshot.sessionId,
+	isAuthenticated: snapshot.isAuthenticated,
+	isLoading: false,
+	error: null
+});
+
 // Create auth store
 const createAuthStore = () => {
 	const { subscribe, set, update } = writable<AuthState>({
@@ -47,39 +64,6 @@ const createAuthStore = () => {
 		message,
 		timestamp: new Date()
 	});
-
-	// Helper function to classify errors
-	const classifyError = (error: unknown): AuthError => {
-		if (error instanceof ApiError) {
-			if (error.status === 0) {
-				return createAuthError(
-					'network',
-					'Unable to connect to server. Please check your connection.'
-				);
-			} else if (error.status === 401 || error.status === 403) {
-				return createAuthError('unauthorized', `Authentication failed: ${error.message}`);
-			} else if (error.status >= 500) {
-				return createAuthError('server', `Server error: ${error.message}`);
-			} else {
-				return createAuthError('unknown', `HTTP error: ${error.message}`);
-			}
-		} else if (error instanceof Error) {
-			if (
-				error.message.toLowerCase().includes('network') ||
-				error.message.toLowerCase().includes('fetch') ||
-				error.message.toLowerCase().includes('failed to fetch')
-			) {
-				return createAuthError(
-					'network',
-					'Unable to connect to server. Please check your connection.'
-				);
-			} else {
-				return createAuthError('unknown', `Unexpected error: ${error.message}`);
-			}
-		} else {
-			return createAuthError('unknown', 'An unknown error occurred');
-		}
-	};
 
 	return {
 		subscribe,
@@ -108,112 +92,17 @@ const createAuthStore = () => {
 			try {
 				await api.get('/auth/github/logout');
 
-				localStorage.removeItem('rustytime_session_id');
-
-				set({
-					user: null,
-					sessionId: null,
-					isAuthenticated: false,
-					isLoading: false,
-					error: null
-				});
+				set(toState(DEFAULT_AUTH_SNAPSHOT));
+				await invalidateAll();
 			} catch (error) {
 				console.error('Logout error:', error);
 			}
 		},
 
-		// Verify session using stored session ID
-		verifySession: async () => {
-			if (!browser) {
-				update((state) => ({ ...state, isLoading: false }));
-				return;
-			}
 
-			const sessionId = localStorage.getItem('rustytime_session_id');
-
-			if (!sessionId) {
-				update((state) => ({ ...state, isLoading: false }));
-				return;
-			}
-
-			try {
-				const data = await api.get<{
-					valid: boolean;
-					user?: {
-						id: number;
-						github_id: number;
-						username?: string;
-						name?: string;
-						avatar_url: string | null;
-						is_admin: boolean;
-					};
-				}>(`/auth/github/verify?session_id=${sessionId}`);
-
-				if (data.valid && data.user) {
-					const user: User = {
-						id: data.user.id,
-						github_id: data.user.github_id,
-						name: data.user.username || data.user.name || null,
-						avatar_url: data.user.avatar_url,
-						is_admin: data.user.is_admin
-					};
-
-					set({
-						user,
-						sessionId,
-						isAuthenticated: true,
-						isLoading: false,
-						error: null
-					});
-				} else {
-					// Session is invalid, clear it
-					localStorage.removeItem('rustytime_session_id');
-					set({
-						user: null,
-						sessionId: null,
-						isAuthenticated: false,
-						isLoading: false,
-						error: createAuthError('unauthorized', 'Session is invalid or expired')
-					});
-				}
-			} catch (error) {
-				console.error('Session verification error:', error);
-
-				const authError = classifyError(error);
-
-				// Only clear session for unauthorized errors
-				if (authError.type === 'unauthorized') {
-					localStorage.removeItem('rustytime_session_id');
-					set({
-						user: null,
-						sessionId: null,
-						isAuthenticated: false,
-						isLoading: false,
-						error: authError
-					});
-				} else {
-					// For network/server errors, just update loading and error state
-					update((state) => ({
-						...state,
-						isLoading: false,
-						error: authError
-					}));
-				}
-			}
-		},
-
-		// Set session after OAuth callback
-		setSession: (user: User, sessionId: string) => {
-			if (!browser) return;
-
-			localStorage.setItem('rustytime_session_id', sessionId);
-			set({
-				user,
-				sessionId,
-				isAuthenticated: true,
-				isLoading: false,
-				error: null
-			});
+		hydrate: (snapshot?: AuthSnapshot) => {
+			const next = snapshot ? toState(snapshot) : toState(DEFAULT_AUTH_SNAPSHOT);
+			set(next);
 		},
 
 		// Clear any existing error
@@ -231,10 +120,19 @@ const createAuthStore = () => {
 			}));
 		},
 
-		// Retry session verification
+		// Retry session verification by reloading server-derived auth state
 		retryVerification: async () => {
+			if (!browser) return;
+
 			update((state) => ({ ...state, isLoading: true, error: null }));
-			await auth.verifySession();
+
+			try {
+				await invalidateAll();
+			} catch (error) {
+				console.error('Auth retry failed:', error);
+			} finally {
+				update((state) => ({ ...state, isLoading: false }));
+			}
 		}
 	};
 };
@@ -268,9 +166,4 @@ if (browser) {
 			});
 		}
 	});
-}
-
-// Auto-verify session on load
-if (browser) {
-	auth.verifySession();
 }

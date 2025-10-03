@@ -52,17 +52,11 @@
 		const authError = urlParams.get('auth_error');
 
 		// Handle OAuth callback
-		if (sessionId && userData) {
-			try {
-				const user = JSON.parse(decodeURIComponent(userData));
-				auth.setSession(user, sessionId);
-				const newUrl = new URL(window.location.href);
-				newUrl.searchParams.delete('session_id');
-				newUrl.searchParams.delete('user');
-				window.history.replaceState({}, document.title, newUrl.pathname);
-			} catch (error) {
-				console.error('Failed to parse OAuth callback data:', error);
-			}
+		if (sessionId || userData) {
+			const newUrl = new URL(window.location.href);
+			newUrl.searchParams.delete('session_id');
+			newUrl.searchParams.delete('user');
+			window.history.replaceState({}, document.title, newUrl.pathname);
 		}
 
 		// Handle auth error from server redirects
@@ -79,7 +73,7 @@
 	<!-- Header -->
 	<header class="text-center mb-4 mt-[5vh] sm:mt-[10vh]">
 		<Logo
-			className="w-32 h-32 mx-auto mb-4 text-ctp-subtext0 dark:text-ctp-lavender-300 drop-shadow-[0_10px_30px_rgba(108,111,133,0.35)] dark:drop-shadow-[0_10px_30px_rgba(198,160,246,0.35)] transition-colors"
+			className="w-32 h-32 mx-auto mb-4 text-ctp-subtext0 dark:text-ctp-lavender-300 drop-shadow-[0_10px_30px_rgba(108,111,133,0.5)] dark:drop-shadow-[0_10px_30px_rgba(198,160,246,0.35)] transition-colors"
 		/>
 		<div class="flex text-text items-center justify-center gap-3 mb-4">
 			<h1 class="text-5xl font-bold">rustytime</h1>
