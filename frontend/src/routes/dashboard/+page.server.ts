@@ -9,8 +9,6 @@ export const load: PageServerLoad = async (event) => {
 		const dashboardData = await serverApi.get<DashboardResponse>('/page/dashboard', event);
 
 		if (dashboardData && dashboardData.auth_url) {
-			console.error('Unauthorized access to dashboard, redirecting to home.');
-			console.error(dashboardData);
 			throw redirect(302, '/?auth_error=unauthorized');
 		}
 

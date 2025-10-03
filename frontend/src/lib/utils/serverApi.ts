@@ -30,7 +30,6 @@ class ServerApiClient {
 
 		// Forward cookies from the incoming request
 		const cookieHeader = event.request.headers.get('cookie');
-		console.error('Requesting', url, 'with cookies:', cookieHeader);
 
 		const config: RequestInit = {
 			credentials: 'include',

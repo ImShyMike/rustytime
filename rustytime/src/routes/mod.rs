@@ -20,7 +20,7 @@ pub fn create_app_router(app_state: AppState) -> Router {
         // required authentication
         .merge(protected_routes(app_state.clone()))
         // optional authentication
-        .merge(semi_protected_routes(app_state.clone()))
+        // .merge(semi_protected_routes(app_state.clone()))
         // admin routes
         .merge(create_admin_routes(app_state.clone()))
         // API routes
@@ -44,6 +44,7 @@ async fn not_found() -> impl IntoResponse {
 /// Public routes that don't require authentication
 fn public_routes() -> Router<AppState> {
     Router::new()
+        .route("/", get(home_page))
 }
 
 /// Protected routes that require authentication
@@ -57,14 +58,13 @@ fn protected_routes(app_state: AppState) -> Router<AppState> {
 }
 
 /// Routes that work with and without authentication
-fn semi_protected_routes(app_state: AppState) -> Router<AppState> {
-    Router::new()
-        .route("/", get(home_page))
-        .layer(axum_middleware::from_fn_with_state(
-            app_state,
-            middleware::optional_auth,
-        ))
-}
+// fn semi_protected_routes(app_state: AppState) -> Router<AppState> {
+//     Router::new()
+//         .layer(axum_middleware::from_fn_with_state(
+//             app_state,
+//             middleware::optional_auth,
+//         ))
+// }
 
 /// Admin routes that require admin privileges
 pub fn create_admin_routes(app_state: AppState) -> Router<AppState> {

@@ -78,4 +78,4 @@ When using a WakaTime client, point your requests to `http://localhost:3000/api/
 
 ## License
 
-This project is licensed under the [GNU AGPLv3](./LICENSE)
+This project is licensed under the [GNU AGPLv3](https://github.com/ImShyMike/rustytime/blob/HEAD/LICENSE)

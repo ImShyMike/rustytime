@@ -28,19 +28,19 @@ pub async fn require_auth(
 }
 
 /// Middleware to inject the user if authenticated
-pub async fn optional_auth(
-    State(app_state): State<AppState>,
-    cookies: Cookies,
-    mut request: Request,
-    next: Next,
-) -> Response {
-    // try to get current user and add to request extensions
-    if let Ok(Some(user)) = SessionManager::get_current_user(&cookies, &app_state.db_pool).await {
-        request.extensions_mut().insert(user);
-    }
+// pub async fn optional_auth(
+//     State(app_state): State<AppState>,
+//     cookies: Cookies,
+//     mut request: Request,
+//     next: Next,
+// ) -> Response {
+//     // try to get current user and add to request extensions
+//     if let Ok(Some(user)) = SessionManager::get_current_user(&cookies, &app_state.db_pool).await {
+//         request.extensions_mut().insert(user);
+//     }
 
-    next.run(request).await
-}
+//     next.run(request).await
+// }
 
 /// Middleware to require admin privileges
 pub async fn require_admin(
