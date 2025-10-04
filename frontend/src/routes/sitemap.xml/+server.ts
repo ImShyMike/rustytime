@@ -63,4 +63,3 @@ function formatUrlEntry({ path, changefreq, priority, lastmod }: SitemapEntry): 
 
 	return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>${changefreq}</changefreq>\n    <priority>${priority}</priority>\n  </url>`;
 }
-

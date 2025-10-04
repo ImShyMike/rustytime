@@ -77,7 +77,9 @@
 		<div class="flex text-text items-center justify-center gap-3 mb-4">
 			<h1 class="text-5xl font-bold">rustytime</h1>
 		</div>
-		<p class="text-xl text-ctp-subtext1 dark:text-subtext0 px-1">Blazingly fast time tracking for developers.</p>
+		<p class="text-xl text-ctp-subtext1 dark:text-subtext0 px-1">
+			Blazingly fast time tracking for developers.
+		</p>
 	</header>
 
 	<!-- Main Content -->
@@ -93,7 +95,7 @@
 							class="w-16 h-16 rounded-full border-2 border-ctp-green-500"
 						/>
 					{/if}
-					<div class="self-start text-left break-words w-[min-content] max-w-full">
+					<div class="self-start text-left break-words sm:w-auto w-[min-content] max-w-full">
 						<h2 class="text-2xl text-subtext1 font-bold">
 							Welcome, {authState.user.name || 'User'}!
 						</h2>

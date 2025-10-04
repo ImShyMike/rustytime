@@ -12,7 +12,7 @@ const FALLBACK_COLORS: Record<'light' | 'dark', string[]> = {
 		'#a6e3a1',
 		'#94e2d5',
 		'#89dceb',
-		'#74c7ec',
+		'#74c7ec'
 	],
 	light: [
 		'#1e66f5',
@@ -24,7 +24,7 @@ const FALLBACK_COLORS: Record<'light' | 'dark', string[]> = {
 		'#40a02b',
 		'#179299',
 		'#04a5e5',
-		'#209fb5',
+		'#209fb5'
 	]
 };
 
