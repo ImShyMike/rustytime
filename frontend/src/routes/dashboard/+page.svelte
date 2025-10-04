@@ -158,7 +158,7 @@ api_key = ${dashboardData.api_key}`;
 </script>
 
 <svelte:head>
-	<title>Dashboard - rustytime</title>«
+	<title>Dashboard - rustytime</title>
 </svelte:head>
 
 {#if dashboardData}

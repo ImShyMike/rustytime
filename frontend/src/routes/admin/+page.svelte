@@ -80,7 +80,7 @@
 </script>
 
 <svelte:head>
-	<title>Admin - rustytime</title>«
+	<title>Admin - rustytime</title>
 </svelte:head>
 
 {#if adminData}
