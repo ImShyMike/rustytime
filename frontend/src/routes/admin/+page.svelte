@@ -79,6 +79,10 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Admin - rustytime</title>«
+</svelte:head>
+
 {#if adminData}
 	<div class="bg-ctp-mantle">
 		<div class="max-w-6xl mx-auto py-4 md:py-12 px-3">

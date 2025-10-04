@@ -157,6 +157,10 @@ api_key = ${dashboardData.api_key}`;
 	});
 </script>
 
+<svelte:head>
+	<title>Dashboard - rustytime</title>«
+</svelte:head>
+
 {#if dashboardData}
 	<div class="bg-ctp-mantle">
 		<div class="max-w-6xl mx-auto py-4 md:py-12 px-3">

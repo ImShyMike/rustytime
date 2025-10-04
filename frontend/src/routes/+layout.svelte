@@ -8,6 +8,19 @@
 	const props = $props();
 	let { children, data } = props;
 
+	const SITE_TITLE = 'rustytime';
+	const SITE_DESCRIPTION = 'Blazingly fast time tracking for developers.';
+	const SITE_URL = 'https://rustytime.shymike.dev';
+
+	const ogImagePath = favicon.startsWith('/') ? favicon : `/${favicon}`;
+	const ogImageUrl = `${SITE_URL}${ogImagePath}`;
+
+	let canonicalUrl = $state(SITE_URL);
+
+	$effect(() => {
+		canonicalUrl = `${SITE_URL}${page.url.pathname}${page.url.search}`;
+	});
+
 	type AuthData = App.PageData['auth'];
 	const DEFAULT_AUTH: AuthData = {
 		isAuthenticated: false,
@@ -38,8 +51,20 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
-	<title>{page.url.pathname === '/' ? '' : page.url.pathname.slice(1) + ' - '} rustytime</title>
-	<meta name="description" content="Blazingly fast time tracking for developers." />
+	<link rel="canonical" href={canonicalUrl} />
+	<title>{SITE_TITLE}</title>
+	<meta name="description" content={SITE_DESCRIPTION} />
+	<meta property="og:type" content="website" />
+	<meta property="og:site_name" content={SITE_TITLE} />
+	<meta property="og:title" content={SITE_TITLE} />
+	<meta property="og:description" content={SITE_DESCRIPTION} />
+	<meta property="og:url" content={canonicalUrl} />
+	<meta property="og:image" content={ogImageUrl} />
+	<meta property="og:image:alt" content="rustytime logo" />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content={SITE_TITLE} />
+	<meta name="twitter:description" content={SITE_DESCRIPTION} />
+	<meta name="twitter:image" content={ogImageUrl} />
 </svelte:head>
 
 <div class="app-container flex h-screen bg-mantle">
