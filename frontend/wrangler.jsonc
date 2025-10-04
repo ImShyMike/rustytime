@@ -20,7 +20,8 @@
 	],
 	"vars": {
 		"ENVIRONMENT": "production",
-		"PUBLIC_BACKEND_API_URL": "https://api-rustytime.shymike.dev"
+		"PUBLIC_BACKEND_API_URL": "https://api-rustytime.shymike.dev",
+		"PUBLIC_SITE_URL": "https://rustytime.shymike.dev"
 	},
 	"observability": {
 		"logs": {
