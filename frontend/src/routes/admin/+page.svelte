@@ -163,6 +163,9 @@
 							<thead class="bg-ctp-base">
 								<tr>
 									<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
+										>Id</th
+									>
+									<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
 										>User</th
 									>
 									<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
@@ -180,8 +183,14 @@
 								</tr>
 							</thead>
 							<tbody class="bg-ctp-mantle divide-y divide-ctp-surface1">
-								{#each adminData.stats.all_users as user (user.github_id)}
+								{#each [...adminData.stats.all_users].sort((a, b) => {
+									if (a.is_admin === b.is_admin) return (a.id ?? 0) - (b.id ?? 0);
+									return a.is_admin ? -1 : 1;
+								}) as user (user.github_id)}
 									<tr>
+										<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1"
+											>{user.id}</td
+										>
 										<td class="px-6 py-4 whitespace-nowrap">
 											<div class="flex items-center">
 												{#if user.avatar_url}
