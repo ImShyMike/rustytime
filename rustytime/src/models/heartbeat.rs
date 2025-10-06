@@ -206,6 +206,7 @@ pub struct Heartbeat {
     pub lineno: Option<i32>,
     pub cursorpos: Option<i32>,
     pub source_type: Option<String>,
+    pub project_id: Option<i32>,
 }
 
 #[derive(Insertable, Deserialize, Debug)]
@@ -223,7 +224,7 @@ pub struct NewHeartbeat {
     pub is_write: Option<bool>,
     pub editor: Option<String>,
     pub operating_system: Option<String>,
-    pub machine: String,
+    pub machine: Option<String>,
     pub user_agent: String,
     pub lines: Option<i32>,
     pub project_root_count: Option<i32>,
@@ -233,6 +234,7 @@ pub struct NewHeartbeat {
     pub lineno: Option<i32>,
     pub cursorpos: Option<i32>,
     pub source_type: Option<String>,
+    pub project_id: Option<i32>,
 }
 
 #[derive(Serialize)]
@@ -324,8 +326,7 @@ impl SanitizedHeartbeatRequest {
         let machine = headers
             .get("x-machine-name")
             .and_then(|value| value.to_str().ok())
-            .unwrap_or("")
-            .to_string();
+            .map(|s| s.to_string());
 
         // Parse user agent to get OS and editor info
         let (operating_system, editor) = match parse_user_agent(user_agent.clone()) {
@@ -351,7 +352,7 @@ impl SanitizedHeartbeatRequest {
             is_write: self.is_write,
             editor: truncate_optional_string(editor, MAX_EDITOR_LENGTH),
             operating_system: truncate_optional_string(operating_system, MAX_OS_LENGTH),
-            machine: truncate_string(machine, MAX_MACHINE_LENGTH),
+            machine: truncate_optional_string(machine, MAX_MACHINE_LENGTH),
             user_agent: truncate_string(user_agent, MAX_USER_AGENT_LENGTH),
             lines: self.lines,
             project_root_count: self.project_root_count,
@@ -361,6 +362,7 @@ impl SanitizedHeartbeatRequest {
             lineno: self.lineno,
             cursorpos: self.cursorpos,
             source_type: SourceType::DIRECT_ENTRY.to_string().into(),
+            project_id: None,
         }
     }
 }
@@ -386,7 +388,7 @@ impl NewHeartbeat {
             is_write: None,
             editor: None,
             operating_system: None,
-            machine: String::new(),
+            machine: None,
             user_agent: String::new(),
             lines: None,
             project_root_count: None,
@@ -396,6 +398,7 @@ impl NewHeartbeat {
             lineno: None,
             cursorpos: None,
             source_type: None,
+            project_id: None,
         }
     }
 

@@ -27,6 +27,18 @@ diesel::table! {
         lineno -> Nullable<Int4>,
         cursorpos -> Nullable<Int4>,
         source_type -> Nullable<Text>,
+        project_id -> Nullable<Int4>,
+    }
+}
+
+diesel::table! {
+    projects (id) {
+        id -> Int4,
+        user_id -> Int4,
+        name -> Text,
+        repo_url -> Nullable<Text>,
+        created_at -> Nullable<Timestamptz>,
+        updated_at -> Nullable<Timestamptz>,
     }
 }
 
@@ -59,10 +71,7 @@ diesel::table! {
 }
 
 diesel::joinable!(heartbeats -> users (user_id));
+diesel::joinable!(projects -> users (user_id));
 diesel::joinable!(sessions -> users (user_id));
 
-diesel::allow_tables_to_appear_in_same_query!(
-    heartbeats,
-    sessions,
-    users,
-);
+diesel::allow_tables_to_appear_in_same_query!(heartbeats, projects, sessions, users,);

@@ -16,6 +16,7 @@ use crate::db::connection::DbPool;
 use crate::get_db_conn;
 use crate::models::heartbeat::Heartbeat;
 use crate::models::heartbeat::*;
+use crate::models::project::get_or_create_project_id;
 use crate::schema::heartbeats;
 use crate::state::AppState;
 use crate::utils::auth::{get_user_id_from_api_key, get_valid_api_key};
@@ -215,8 +216,24 @@ async fn store_heartbeats_in_db(
     let pool = pool.clone();
     tokio::task::spawn_blocking(move || {
         let mut connection = pool.get().expect("Failed to get DB connection from pool");
+        let mut new_heartbeats = new_heartbeats;
 
         connection.transaction(|conn| {
+            for heartbeat in &mut new_heartbeats {
+                if heartbeat.project_id.is_none() {
+                    if let Some(project_name) = heartbeat
+                        .project
+                        .as_ref()
+                        .map(|name| name.trim())
+                        .filter(|name| !name.is_empty())
+                    {
+                        let project_id =
+                            get_or_create_project_id(conn, heartbeat.user_id, project_name, None)?;
+                        heartbeat.project_id = Some(project_id);
+                    }
+                }
+            }
+
             match diesel::insert_into(heartbeats::table)
                 .values(&new_heartbeats)
                 .on_conflict_do_nothing()

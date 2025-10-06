@@ -27,7 +27,7 @@ pub async fn require_auth(
     next.run(request).await
 }
 
-/// Middleware to inject the user if authenticated
+// Middleware to inject the user if authenticated
 // pub async fn optional_auth(
 //     State(app_state): State<AppState>,
 //     cookies: Cookies,

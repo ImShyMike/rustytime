@@ -43,8 +43,7 @@ async fn not_found() -> impl IntoResponse {
 
 /// Public routes that don't require authentication
 fn public_routes() -> Router<AppState> {
-    Router::new()
-        .route("/", get(home_page))
+    Router::new().route("/", get(home_page))
 }
 
 /// Protected routes that require authentication
@@ -57,7 +56,7 @@ fn protected_routes(app_state: AppState) -> Router<AppState> {
         ))
 }
 
-/// Routes that work with and without authentication
+// Routes that work with and without authentication
 // fn semi_protected_routes(app_state: AppState) -> Router<AppState> {
 //     Router::new()
 //         .layer(axum_middleware::from_fn_with_state(
