@@ -9,6 +9,7 @@
 	import type { ApexOptions } from 'apexcharts';
 	import type { PageData } from './$types';
 	import { Container, PageHeading, SectionTitle, StatCard, UserTag } from '$lib';
+	import { formatRelativeTime } from '$lib/utils/time';
 
 	type ApexChartsConstructor = new (element: Element | string, options: ApexOptions) => ApexCharts;
 
@@ -183,8 +184,10 @@ api_key = ${dashboardData.api_key}`;
 							<UserTag is_admin={dashboardData.is_admin} />
 							<p class="font-bold text-lg text-ctp-text">{dashboardData.username}</p>
 						</div>
-						<p class="text-ctp-subtext1">GitHub ID: {dashboardData.github_id}</p>
-						<p class="text-ctp-subtext1">Member since: {dashboardData.created_at}</p>
+						<p class="text-ctp-subtext1">User ID: {dashboardData.user_id}</p>
+						<p class="text-ctp-subtext0">
+							Joined {formatRelativeTime(new Date(dashboardData.created_at))}
+						</p>
 					</div>
 				</div>
 			</Container>
@@ -195,36 +198,33 @@ api_key = ${dashboardData.api_key}`;
 					title="Total Time"
 					value={dashboardData.human_readable_total}
 					valueClass="text-xl font-semibold text-ctp-text"
-					titleClass="text-sm text-ctp-text"
 				/>
 				<StatCard
 					title="Top Project"
 					value={dashboardData.projects.at(0)?.name || 'None'}
 					valueClass="text-xl font-semibold text-ctp-text"
-					titleClass="text-sm text-ctp-text"
 				/>
 				<StatCard
 					title="Top Language"
 					value={dashboardData.languages.at(0)?.name || 'None'}
 					valueClass="text-xl font-semibold text-ctp-text"
-					titleClass="text-sm text-ctp-text"
 				/>
 				<StatCard
 					title="Total Heartbeats"
 					value={dashboardData.total_heartbeats.toLocaleString()}
 					valueClass="text-xl font-semibold text-ctp-text"
-					titleClass="text-sm text-ctp-text"
 				/>
 			</div>
 
 			<!-- Dashboard Statistics -->
-			<Container className="mb-4">
-				<SectionTitle level="h2" className="mb-3">Dashboard Statistics</SectionTitle>
-				{#if dashboardData.projects.length || dashboardData.languages.length || dashboardData.editors.length || dashboardData.operating_systems.length}
+			{#if dashboardData.projects.length || dashboardData.languages.length || dashboardData.editors.length || dashboardData.operating_systems.length}
+				<Container className="mb-4">
+					<SectionTitle level="h2" className="mb-3 text-lavender">Dashboard Statistics</SectionTitle
+					>
 					<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 						<!-- Top Projects (Horizontal Bar Chart) -->
 						<div>
-							<SectionTitle size="sm" className="mb-4">Top Projects</SectionTitle>
+							<SectionTitle>Top Projects</SectionTitle>
 							{#if dashboardData.projects.length > 0}
 								<div id="projects-chart" class="h-[350px]"></div>
 							{:else}
@@ -262,11 +262,15 @@ api_key = ${dashboardData.api_key}`;
 							{/if}
 						</div>
 					</div>
-				{:else}
-					<p class="text-md text-ctp-subtext0">No data to display :(</p>
+				</Container>
+			{:else}
+				<Container
+					className="flex flex-col items-center gap-4 border border-dashed border-ctp-surface0/80 py-12 text-center mb-4"
+				>
+					<p class="text-lg font-semibold text-ctp-text">No data to display :(</p>
 					<p class="text-ctp-subtext0">Complete the setup bellow to start tracking your time!</p>
-				{/if}
-			</Container>
+				</Container>
+			{/if}
 
 			<!-- Setup stuff -->
 			<Container>

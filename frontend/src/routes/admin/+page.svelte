@@ -115,49 +115,66 @@
 			<!-- Top Lists -->
 			<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
 				<!-- Top Languages -->
-				<Container>
-					<SectionTitle className="mb-2">Top Languages</SectionTitle>
-					<KeyValueList
-						items={adminData.stats.top_languages.slice(0, 10).map((lang) => ({
-							id: lang.language,
-							label: lang.language,
-							value: lang.count.toLocaleString()
-						}))}
+				{#if adminData.stats.top_projects.length !== 0}
+					<Container>
+						<SectionTitle className="mb-2">Top Languages</SectionTitle>
+						<KeyValueList
+							items={adminData.stats.top_languages.slice(0, 10).map((lang) => ({
+								id: lang.language,
+								label: lang.language,
+								value: lang.count.toLocaleString()
+							}))}
+						></KeyValueList>
+					</Container>
+				{:else}
+					<Container
+						className="flex flex-col items-center gap-4 border border-dashed border-ctp-surface0/80 py-12 text-center"
 					>
-						<p slot="empty" class="text-ctp-subtext0">No language data available</p>
-					</KeyValueList>
-				</Container>
+						<p class="text-lg font-semibold text-ctp-text">No language data available</p>
+					</Container>
+				{/if}
 
 				<!-- Top Projects -->
-				<Container>
-					<SectionTitle className="mb-2">Top Projects</SectionTitle>
-					<KeyValueList
-						items={adminData.stats.top_projects.slice(0, 10).map((project) => ({
-							id: project.project,
-							label: project.project,
-							value: project.count.toLocaleString(),
-							labelClass: 'truncate'
-						}))}
+				{#if adminData.stats.top_projects.length !== 0}
+					<Container>
+						<SectionTitle className="mb-2">Top Projects</SectionTitle>
+						<KeyValueList
+							items={adminData.stats.top_projects.slice(0, 10).map((project) => ({
+								id: project.project,
+								label: project.project,
+								value: project.count.toLocaleString(),
+								labelClass: 'truncate'
+							}))}
+						></KeyValueList>
+					</Container>
+				{:else}
+					<Container
+						className="flex flex-col items-center gap-4 border border-dashed border-ctp-surface0/80 py-12 text-center"
 					>
-						<p slot="empty" class="text-ctp-subtext0">No project data available</p>
-					</KeyValueList>
-				</Container>
+						<p class="text-lg font-semibold text-ctp-text">No project data available</p>
+					</Container>
+				{/if}
 			</div>
 
 			<!-- Daily Activity Chart -->
-			<Container className="mb-4">
-				<SectionTitle className="mb-4">Daily Activity (Past Week)</SectionTitle>
-				{#if adminData.stats.daily_activity.length > 0}
+			{#if adminData.stats.daily_activity.length > 0}
+				<Container className="mb-4">
+					<SectionTitle className="mb-4">Daily Activity (Past Week)</SectionTitle>
+
 					<div id="activity-chart" class="w-full h-64"></div>
-				{:else}
-					<p class="text-ctp-subtext0">No activity data available</p>
-				{/if}
-			</Container>
+				</Container>
+			{:else}
+				<Container
+					className="flex flex-col items-center gap-4 border border-dashed border-ctp-surface0/80 py-12 text-center mb-4"
+				>
+					<p class="text-lg font-semibold text-ctp-text">No activity data available</p>
+				</Container>
+			{/if}
 
 			<!-- User List -->
-			<Container>
-				<SectionTitle className="mb-4">All Users</SectionTitle>
-				{#if adminData.stats.all_users.length > 0}
+			{#if adminData.stats.all_users.length > 0}
+				<Container>
+					<SectionTitle className="mb-4">All Users</SectionTitle>
 					<div class="overflow-x-auto">
 						<table class="min-w-full divide-y divide-gray-200">
 							<thead class="bg-ctp-base">
@@ -188,9 +205,7 @@
 									return a.is_admin ? -1 : 1;
 								}) as user (user.github_id)}
 									<tr>
-										<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1"
-											>{user.id}</td
-										>
+										<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1">{user.id}</td>
 										<td class="px-6 py-4 whitespace-nowrap">
 											<div class="flex items-center">
 												{#if user.avatar_url}
@@ -228,10 +243,15 @@
 							</tbody>
 						</table>
 					</div>
-				{:else}
-					<p class="text-ctp-subtext0">No users found</p>
-				{/if}
-			</Container>
+				</Container>
+			{:else}
+				<Container
+					className="flex flex-col items-center gap-4 border border-dashed border-ctp-surface0/80 py-12 text-center mb-4"
+				>
+					<p class="text-lg font-semibold text-ctp-text">No users found</p>
+					<p class="text-ctp-subtext0">How are you even seeing this</p>
+				</Container>
+			{/if}
 		</div>
 	</div>
 {/if}

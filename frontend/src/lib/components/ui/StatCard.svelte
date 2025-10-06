@@ -3,21 +3,29 @@
 
 	export let title: string = '';
 	export let value: string | number | null = null;
+	export let subvalue: string | number | null = null;
 	export let className = '';
-	export let titleClass = 'text-lg font-semibold text-ctp-text';
-	export let valueClass = 'text-3xl font-bold text-ctp-text';
+	export let titleClass = 'text-xs font-semibold uppercase tracking-wide text-ctp-overlay0';
+	export let valueClass = 'text-3xl font-bold text-ctp-text mt-auto';
+	export let subvalueClass = 'text-xs font-semibold uppercase tracking-wide text-ctp-overlay0';
 </script>
 
-<Container className={`flex flex-col gap-2 ${className}`.trim()}>
+<Container className={`flex flex-col ${className}`.trim()}>
 	<slot name="title">
 		{#if title}
-			<h3 class={titleClass}>{title}</h3>
+			<p class={titleClass}>{title}</p>
 		{/if}
 	</slot>
 
 	<slot>
 		{#if value !== null && value !== undefined}
 			<p class={valueClass}>{value}</p>
+		{/if}
+	</slot>
+
+	<slot name="subvalue">
+		{#if subvalue !== null && subvalue !== undefined}
+			<p class={subvalueClass}>{subvalue}</p>
 		{/if}
 	</slot>
 </Container>

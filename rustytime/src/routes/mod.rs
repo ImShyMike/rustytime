@@ -46,10 +46,14 @@ fn public_routes() -> Router<AppState> {
     Router::new().route("/", get(home_page))
 }
 
-/// Protected routes that require authentication
 fn protected_routes(app_state: AppState) -> Router<AppState> {
     Router::new()
-        .route("/page/dashboard", get(handlers::dashboard::dashboard))
+        .nest(
+            "/page",
+            Router::new()
+                .route("/dashboard", get(handlers::dashboard::dashboard))
+                .route("/projects", get(handlers::projects::projects_dashboard)),
+        )
         .layer(axum_middleware::from_fn_with_state(
             app_state,
             middleware::require_auth,
@@ -68,7 +72,7 @@ fn protected_routes(app_state: AppState) -> Router<AppState> {
 /// Admin routes that require admin privileges
 pub fn create_admin_routes(app_state: AppState) -> Router<AppState> {
     Router::new()
-        .nest("/page/admin", admin::admin_routes(app_state.clone()))
+        .nest("/admin", admin::admin_routes(app_state.clone()))
         .layer(axum_middleware::from_fn_with_state(
             app_state,
             middleware::require_admin,

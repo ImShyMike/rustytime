@@ -15,11 +15,7 @@
 	const ogImagePath = favicon.startsWith('/') ? favicon : `/${favicon}`;
 	const ogImageUrl = `${SITE_URL}${ogImagePath}`;
 
-	let canonicalUrl = $state(SITE_URL);
-
-	$effect(() => {
-		canonicalUrl = `${SITE_URL}${page.url.pathname}${page.url.search}`;
-	});
+	const canonicalUrl = $derived(`${SITE_URL}${page.url.pathname}${page.url.search}`);
 
 	type AuthData = App.PageData['auth'];
 	const DEFAULT_AUTH: AuthData = {

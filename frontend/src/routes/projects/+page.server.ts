@@ -1,19 +1,19 @@
 import type { PageServerLoad } from './$types';
 import { serverApi, ServerApiError } from '$lib/utils/serverApi';
-import type { AdminResponse } from '$lib/types/admin';
+import type { ProjectsResponse } from '$lib/types/projects';
 import { redirect, error } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async (event) => {
 	try {
-		// Fetch admin data on the server
-		const adminData = await serverApi.get<AdminResponse>('/admin', event);
+		// Fetch projects data on the server
+		const projectsData = await serverApi.get<ProjectsResponse>('/page/projects', event);
 
-		if (adminData && adminData.auth_url) {
+		if (projectsData && projectsData.auth_url) {
 			throw redirect(302, '/?auth_error=unauthorized');
 		}
 
 		return {
-			adminData
+			projectsData
 		};
 	} catch (err) {
 		// Re-throw SvelteKit redirects
@@ -32,7 +32,7 @@ export const load: PageServerLoad = async (event) => {
 		}
 
 		// For unexpected errors
-		console.error('Unexpected error in admin load:', err);
+		console.error('Unexpected error in dashboard load:', err);
 		throw error(500, 'Internal server error');
 	}
 };

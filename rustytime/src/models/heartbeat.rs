@@ -9,7 +9,7 @@ use crate::schema::heartbeats;
 use crate::utils::http::parse_user_agent;
 use crate::utils::time::{TimeFormat, human_readable_duration};
 
-const TIMEOUT_SECONDS: i32 = 120; // 2 minutes in seconds
+pub const TIMEOUT_SECONDS: i32 = 120; // 2 minutes in seconds
 
 // Character limits
 const MAX_ENTITY_LENGTH: usize = 512;

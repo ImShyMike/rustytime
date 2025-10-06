@@ -5,6 +5,7 @@
 	import { auth } from '$lib/stores/auth';
 	import LucideLogIn from '~icons/lucide/log-in';
 	import LucideHouse from '~icons/lucide/house';
+	import LucideGauge from '~icons/lucide/gauge';
 	import LucideLayoutDashboard from '~icons/lucide/layout-dashboard';
 	import LucideWrench from '~icons/lucide/wrench';
 	import LucideMoon from '~icons/lucide/moon';
@@ -175,8 +176,21 @@
 						? 'bg-surface0/70 text-lavender'
 						: 'hover:bg-surface1/50'} {collapsed ? 'justify-center' : 'px-3'}"
 				>
+					<LucideGauge class="w-6 h-6 inline" /><span class={collapsed ? 'hidden' : 'ml-2'}
+						>Dashboard</span
+					>
+				</a>
+				<a
+					href={resolve('/projects')}
+					onclick={() => setTimeout(closeMobileSidebar, 100)}
+					data-sveltekit-preload-data="hover"
+					class="w-full text-left cursor-pointer py-2 rounded-md items-center inline-flex {page.url
+						.pathname === '/projects'
+						? 'bg-surface0/70 text-lavender'
+						: 'hover:bg-surface1/50'} {collapsed ? 'justify-center' : 'px-3'}"
+				>
 					<LucideLayoutDashboard class="w-6 h-6 inline" /><span
-						class={collapsed ? 'hidden' : 'ml-2'}>Dashboard</span
+						class={collapsed ? 'hidden' : 'ml-2'}>Projects</span
 					>
 				</a>
 				{#if $auth.user?.is_admin}
