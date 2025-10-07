@@ -1,13 +1,13 @@
 #![cfg(feature = "seed")]
 
+use crate::db::connection::DbPool;
+use crate::handlers::user::store_heartbeats_in_db;
 use crate::models::heartbeat::{NewHeartbeat, SourceType};
 use crate::models::user::User;
-use crate::schema::heartbeats;
 use chrono::Utc;
-use diesel::prelude::*;
 use ipnetwork::{IpNetwork, Ipv4Network};
-use rand::Rng;
 use rand::prelude::IndexedRandom;
+use rand::Rng;
 use std::net::Ipv4Addr;
 use tracing::{info, warn};
 
@@ -29,41 +29,38 @@ struct HeartbeatParams<'a> {
     user_agent: &'a str,
 }
 
-pub fn seed_database(conn: &mut PgConnection) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn seed_database(pool: &DbPool) -> Result<(), Box<dyn std::error::Error>> {
     info!("🔄 Starting database seeding...");
 
-    let Ok(user) = create_dummy_user(conn) else {
-        warn!("⚠️  Dummy user already exists, skipping seeding.");
-        return Ok(());
+    let user = {
+        let mut conn = pool.get()?;
+
+        if let Some(existing_user) = User::find_by_github_id(&mut conn, -1)? {
+            warn!("⚠️  Dummy user already exists (id: {}), skipping seeding.", existing_user.id);
+            return Ok(());
+        }
+
+        User::create_or_update(
+            &mut conn,
+            -1,
+            "Test User",
+            "https://avatars.githubusercontent.com/u/999999",
+        )?
     };
+
     info!(
         "✅ Created dummy user: {} (API Key: {})",
         user.name, user.api_key
     );
 
-    generate_random_heartbeats(conn, user.id, TOTAL_HEARTBEATS)?;
+    generate_random_heartbeats(pool, user.id, TOTAL_HEARTBEATS).await?;
 
     info!("✅ Database seeding completed successfully!");
     Ok(())
 }
-
-fn create_dummy_user(conn: &mut PgConnection) -> Result<User, Box<dyn std::error::Error>> {
-    if User::find_by_github_id(conn, -1)?.is_some() {
-        return Err("Dummy user already exists".into());
-    }
-
-    let user = User::create_or_update(
-        conn,
-        -1,
-        "Test User",
-        "https://avatars.githubusercontent.com/u/999999",
-    )?;
-
-    Ok(user)
-}
-
-fn generate_random_heartbeats(
-    conn: &mut PgConnection,
+ 
+async fn generate_random_heartbeats(
+    pool: &DbPool,
     user_id: i32,
     count: usize,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -81,17 +78,24 @@ fn generate_random_heartbeats(
         user_agent: USER_AGENT,
     };
 
-    let mut heartbeats = Vec::with_capacity(count);
+    let mut batch = Vec::with_capacity(BATCH_SIZE);
+
     for _ in 0..count {
         let heartbeat = generate_random_heartbeat(&mut rng, user_id, &params);
-        heartbeats.push(heartbeat);
+        batch.push(heartbeat);
+
+        if batch.len() == BATCH_SIZE {
+            let current_batch: Vec<_> = batch.drain(..).collect();
+            store_heartbeats_in_db(pool, current_batch).await?;
+        }
     }
 
-    for batch in heartbeats.chunks(BATCH_SIZE) {
-        diesel::insert_into(heartbeats::table)
-            .values(batch)
-            .execute(conn)?;
+    if !batch.is_empty() {
+        let current_batch: Vec<_> = batch.drain(..).collect();
+        store_heartbeats_in_db(pool, current_batch).await?;
     }
+
+    info!("✅ Inserted {} heartbeats into the database", count);
 
     Ok(())
 }
@@ -137,7 +141,7 @@ fn generate_random_heartbeat<R: Rng>(
         is_write: Some(rng.random_bool(0.5)),
         editor: Some("vscode".to_string()),
         operating_system: Some("linux".to_string()),
-        machine: "test-machine".to_string(),
+        machine: Some("test-machine".to_string()),
         user_agent: params.user_agent.to_string(),
         lines: Some(rng.random_range(1..=1000)),
         project_root_count: None,
@@ -147,5 +151,6 @@ fn generate_random_heartbeat<R: Rng>(
         lineno: Some(rng.random_range(1..=100)),
         cursorpos: Some(rng.random_range(0..500)),
         source_type: SourceType::SEEDING.to_string().into(),
+        project_id: None,
     }
 }

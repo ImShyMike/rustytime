@@ -5,7 +5,7 @@
 	import LucideGithub from '~icons/lucide/github';
 	import LucideExternalLink from '~icons/lucide/external-link';
 	import StatCard from '$lib/components/ui/StatCard.svelte';
-	import { formatDuration, formatRelativeTime, creationDateFormatter } from '$lib/utils/time';
+	import { formatRelativeTime, creationDateFormatter } from '$lib/utils/time';
 
 	interface Props {
 		data: PageData;
@@ -13,7 +13,7 @@
 
 	type EnhancedProject = Project & {
 		createdAtFormatted: string;
-		createdAtRelative: string | null;
+		lastUpdated: string | null;
 		repoLabel: string | null;
 	};
 
@@ -35,32 +35,45 @@
 		}
 	};
 
-	const formattedProjects = $derived.by((): EnhancedProject[] => {
+	const sortedProjects = $derived.by((): Project[] => {
 		if (!projectsData?.projects) {
 			return [];
 		}
 
-		return projectsData.projects.map((project) => {
+		return [...projectsData.projects].sort((a, b) => {
+			const dateA = a.updated_at ? new Date(a.updated_at).getTime() : 0;
+			const dateB = b.updated_at ? new Date(b.updated_at).getTime() : 0;
+			return dateB - dateA;
+		});
+	});
+
+	const formattedProjects = $derived.by((): EnhancedProject[] => {
+		if (!sortedProjects.length) {
+			return [];
+		}
+
+		return sortedProjects.map((project) => {
 			const createdDate = project.created_at ? new Date(project.created_at) : null;
-			const isValidDate = createdDate && !Number.isNaN(createdDate.getTime());
+			const updatedDate = project.updated_at ? new Date(project.updated_at) : null;
+			const isCreatedAtValid = createdDate && !Number.isNaN(createdDate.getTime());
+			const isUpdatedAtValid = updatedDate && !Number.isNaN(updatedDate.getTime());
 
 			return {
 				...project,
 				createdAtFormatted:
-					isValidDate && createdDate ? creationDateFormatter.format(createdDate) : 'Unknown',
-				createdAtRelative: isValidDate && createdDate ? formatRelativeTime(createdDate) : null,
+					isCreatedAtValid && createdDate ? creationDateFormatter.format(createdDate) : 'Unknown',
+				lastUpdated: isUpdatedAtValid && updatedDate ? formatRelativeTime(updatedDate) : null,
 				repoLabel: project.repo_url ? formatRepoLabel(project.repo_url) : null
 			} satisfies EnhancedProject;
 		});
 	});
 
-	const totalTrackedSeconds = $derived(
-		formattedProjects.reduce(
-			(accumulator, project) => accumulator + (project.total_seconds ?? 0),
-			0
-		)
-	);
-	const totalTrackedTime = $derived(formatDuration(totalTrackedSeconds));
+	const lastUpdatedProject = $derived.by<EnhancedProject | null>(() => formattedProjects[0] ?? null);
+	const lastUpdatedProjectLabel = $derived.by<string>(() => {
+		const project = formattedProjects[0];
+		return project?.lastUpdated ? `Updated ${project.lastUpdated}` : 'Awaiting activity';
+	});
+
 	const projectCount = $derived(formattedProjects.length);
 	const repoCount = $derived(
 		formattedProjects.filter((project) => Boolean(project.repo_url)).length
@@ -79,13 +92,20 @@
 			<!-- Project Statistics -->
 			{#if formattedProjects.length}
 				<div class="grid grid-cols-1 gap-4 mb-8 sm:grid-cols-2">
-					<StatCard title="Total tracked time" value={totalTrackedTime} />
-
 					<StatCard
 						title="Total projects"
 						value={projectCount}
-						subvalue="({repoCount} with repositories)"
+						subvalue="{repoCount} with repositories"
 					/>
+
+					{#if lastUpdatedProject}
+						<StatCard
+							title="Last updated project"
+							value={lastUpdatedProject.name ?? 'Unknown project'}
+							subvalue={lastUpdatedProjectLabel}
+						/>
+					{/if}
+					
 				</div>
 
 				<!-- Project List -->
@@ -125,8 +145,8 @@
 									<span class="text-sm font-semibold text-ctp-subtext0"
 										>{project.createdAtFormatted}</span
 									>
-									{#if project.createdAtRelative}
-										<span class="text-xs text-ctp-overlay1">{project.createdAtRelative}</span>
+									{#if project.lastUpdated}
+										<span class="text-xs text-ctp-overlay1">Last updated {project.lastUpdated}</span>
 									{/if}
 								</div>
 							</div>

@@ -60,8 +60,7 @@ pub async fn projects_dashboard(
             created_at: proj.created_at,
             updated_at: proj.updated_at,
             total_seconds: time,
-            human_readable_total: human_readable_duration(time, TimeFormat::HourMinute)
-                .human_readable,
+            human_readable_total: human_readable_duration(time, TimeFormat::NoDays).human_readable,
         })
         .collect();
 

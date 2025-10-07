@@ -50,12 +50,7 @@ async fn main() {
     // seed database if enabled
     #[cfg(feature = "seed")]
     {
-        let mut conn = pool.get().unwrap_or_else(|e| {
-            error!("❌ Failed to get database connection for seeding: {}", e);
-            std::process::exit(1);
-        });
-
-        let result = db::seed::seed_database(&mut conn);
+        let result = db::seed::seed_database(&pool).await;
         match result {
             Ok(_) => info!("✅ Database seeding completed"),
             Err(e) => {

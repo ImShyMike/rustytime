@@ -209,7 +209,7 @@ pub async fn get_statusbar_today(
 }
 
 /// Store heartbeats in the database
-async fn store_heartbeats_in_db(
+pub async fn store_heartbeats_in_db(
     pool: &DbPool,
     new_heartbeats: Vec<NewHeartbeat>,
 ) -> Result<Vec<Heartbeat>, diesel::result::Error> {
