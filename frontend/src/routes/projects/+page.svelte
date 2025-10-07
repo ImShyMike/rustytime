@@ -14,6 +14,7 @@
 	type EnhancedProject = Project & {
 		createdAtFormatted: string;
 		lastUpdated: string | null;
+		lastUpdatedExact: string | null;
 		repoLabel: string | null;
 	};
 
@@ -63,6 +64,8 @@
 				createdAtFormatted:
 					isCreatedAtValid && createdDate ? creationDateFormatter.format(createdDate) : 'Unknown',
 				lastUpdated: isUpdatedAtValid && updatedDate ? formatRelativeTime(updatedDate) : null,
+				lastUpdatedExact:
+					isUpdatedAtValid && updatedDate ? creationDateFormatter.format(updatedDate) : null,
 				repoLabel: project.repo_url ? formatRepoLabel(project.repo_url) : null
 			} satisfies EnhancedProject;
 		});
@@ -146,7 +149,12 @@
 										>{project.createdAtFormatted}</span
 									>
 									{#if project.lastUpdated}
-										<span class="text-xs text-ctp-overlay1">Last updated {project.lastUpdated}</span>
+										<span
+											class="text-xs text-ctp-overlay1"
+											title={project.lastUpdatedExact ?? undefined}
+										>
+											Last updated {project.lastUpdated}
+										</span>
 									{/if}
 								</div>
 							</div>
