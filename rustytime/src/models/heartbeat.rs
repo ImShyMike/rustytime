@@ -4,6 +4,7 @@ use diesel::prelude::*;
 use diesel::sql_types::{BigInt, Date, Nullable, Text};
 use ipnetwork::IpNetwork;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use crate::schema::heartbeats;
 use crate::utils::http::parse_user_agent;
@@ -161,22 +162,38 @@ pub struct HeartbeatRequest {
 #[serde(untagged)]
 pub enum HeartbeatApiResponseVariant {
     Single(HeartbeatApiResponse),
-    Multiple(Vec<HeartbeatResponse>),
+    Multiple(HeartbeatBulkApiResponse),
 }
 
 #[derive(Serialize, Debug)]
 pub struct HeartbeatResponse {
     pub id: String,
-    pub entity: String,
-    #[serde(rename = "type")]
-    pub type_: String,
-    pub time: f64,
 }
 
 #[derive(Serialize, Debug)]
 pub struct HeartbeatApiResponse {
     pub data: HeartbeatResponse,
 }
+
+#[derive(Serialize, Debug)]
+pub struct HeartbeatBulkApiResponse {
+    pub responses: Vec<BulkResponseItem>,
+}
+
+#[derive(Serialize, Debug)]
+#[serde(untagged)]
+pub enum BulkResponsePayload {
+    Data {
+        data: HeartbeatResponse,
+    },
+    #[allow(dead_code)]
+    Errors {
+        errors: Value,
+    },
+}
+
+#[derive(Serialize, Debug)]
+pub struct BulkResponseItem(pub BulkResponsePayload, pub u16);
 
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
 #[diesel(table_name = heartbeats)]
@@ -260,7 +277,11 @@ pub struct SanitizedHeartbeatRequest {
 impl SanitizedHeartbeatRequest {
     pub fn from_request(request: HeartbeatRequest) -> Self {
         // Convert timestamp (seconds since epoch) to DateTime<Utc>
-        let time = DateTime::from_timestamp(request.time as i64, 0).unwrap_or_else(Utc::now);
+        let time = DateTime::from_timestamp(
+            request.time.trunc() as i64,
+            (request.time.fract() * 1e9) as u32,
+        )
+        .unwrap_or_else(Utc::now);
 
         // Handle test heartbeats
         let type_ = if request.entity == "test.txt" {
@@ -269,11 +290,17 @@ impl SanitizedHeartbeatRequest {
             request.type_
         };
 
-        // Fallback to "coding" category
+        // Parse the category
         let category = if let Some(cat) = request.category {
             Some(cat)
         } else {
-            Some("coding".to_string())
+            if type_ == "domain" || type_ == "url" {
+                Some("browsing".to_string())
+            } else if type_ == "file" && request.language.is_some() {
+                Some("coding".to_string())
+            } else {
+                None
+            }
         };
 
         // Convert dependencies and apply limits
@@ -412,19 +439,18 @@ impl NewHeartbeat {
         sanitized.into_new_heartbeat(user_id, ip_address, headers)
     }
 }
-
 impl From<Heartbeat> for HeartbeatResponse {
     fn from(heartbeat: Heartbeat) -> Self {
-        let id = heartbeat.id.to_string();
-        // Convert DateTime<Utc> to timestamp (seconds since epoch)
-        let time = heartbeat.time.timestamp() as f64;
-
         Self {
-            id,
-            entity: heartbeat.entity,
-            type_: heartbeat.type_,
-            time,
+            id: heartbeat.id.to_string(),
         }
+    }
+}
+
+impl From<Heartbeat> for BulkResponseItem {
+    fn from(heartbeat: Heartbeat) -> Self {
+        let response = HeartbeatResponse::from(heartbeat);
+        BulkResponseItem(BulkResponsePayload::Data { data: response }, 201)
     }
 }
 

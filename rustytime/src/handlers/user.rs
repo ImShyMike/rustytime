@@ -71,7 +71,7 @@ async fn process_heartbeat_request(
                         data: heartbeat.into(),
                     };
                     let response_data = Json(HeartbeatApiResponseVariant::Single(response));
-                    Ok((StatusCode::CREATED, response_data).into_response())
+                    Ok((StatusCode::ACCEPTED, response_data).into_response())
                 } else {
                     Err((StatusCode::INTERNAL_SERVER_ERROR, "Internal server error")
                         .into_response())
@@ -91,11 +91,15 @@ async fn process_heartbeat_request(
         match store_heartbeats_in_db(&app_state.db_pool, new_heartbeats).await {
             Ok(heartbeats) => {
                 if heartbeats.is_empty() {
-                    let response_data = Json(HeartbeatApiResponseVariant::Multiple(vec![]));
+                    let response_data = Json(HeartbeatApiResponseVariant::Multiple(
+                        HeartbeatBulkApiResponse { responses: vec![] },
+                    ));
                     Ok((StatusCode::CREATED, response_data).into_response())
                 } else {
                     let response_data = Json(HeartbeatApiResponseVariant::Multiple(
-                        heartbeats.into_iter().map(|h| h.into()).collect(),
+                        HeartbeatBulkApiResponse {
+                            responses: heartbeats.into_iter().map(|h| h.into()).collect(),
+                        },
                     ));
                     Ok((StatusCode::CREATED, response_data).into_response())
                 }
