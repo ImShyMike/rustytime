@@ -10,11 +10,18 @@ declare global {
 			is_admin: boolean;
 		}
 
+		interface ImpersonationInfo {
+			admin_id: number;
+			admin_name: string | null;
+			admin_avatar_url: string | null;
+		}
+
 		interface Locals {
 			auth: {
 				isAuthenticated: boolean;
 				sessionId: string | null;
 				user: AuthUser | null;
+				impersonation: ImpersonationInfo | null;
 			};
 		}
 

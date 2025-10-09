@@ -6,6 +6,8 @@
 	import type { ApexOptions } from 'apexcharts';
 	import type { PageData } from './$types';
 	import { Container, KeyValueList, PageHeading, SectionTitle, StatCard, UserTag } from '$lib';
+	import { PUBLIC_BACKEND_API_URL } from '$env/static/public';
+	import { auth } from '$lib/stores/auth';
 
 	type ApexChartsConstructor = new (element: Element | string, options: ApexOptions) => ApexCharts;
 
@@ -197,6 +199,9 @@
 									<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
 										>API Key</th
 									>
+									<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
+										>Actions</th
+									>
 								</tr>
 							</thead>
 							<tbody class="bg-ctp-mantle divide-y divide-ctp-surface1">
@@ -237,6 +242,24 @@
 											>
 												{user.api_key.substring(0, 16)}...
 											</button>
+										</td>
+										<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1">
+											{#if user.is_admin && (!$auth.impersonation || user.id !== $auth.impersonation.admin_id)}
+												<span class="text-xs uppercase tracking-wide text-ctp-subtext1/80"
+													>Admin</span
+												>
+											{:else}
+												<a
+													href={`${PUBLIC_BACKEND_API_URL}/admin/impersonate/${user.id}`}
+													class="inline-flex items-center justify-center rounded bg-ctp-lavender px-3 py-1 text-xs font-semibold text-ctp-base transition hover:bg-ctp-blue"
+												>
+													{#if $auth.impersonation && user.id === $auth.impersonation.admin_id}
+														Go back
+													{:else}
+														Impersonate
+													{/if}
+												</a>
+											{/if}
 										</td>
 									</tr>
 								{/each}

@@ -1,8 +1,8 @@
-use crate::models::heartbeat::{Heartbeat, LanguageCount, ProjectCount};
-use crate::models::user::User;
-use crate::state::AppState;
-use crate::{db_query, get_db_conn};
+use std::env;
+
 use axum::Json;
+use axum::extract::Path;
+use axum::response::Redirect;
 use axum::{
     Extension,
     extract::State,
@@ -10,6 +10,14 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use serde::Serialize;
+use tower_cookies::Cookies;
+
+use crate::models::heartbeat::{Heartbeat, LanguageCount, ProjectCount};
+use crate::models::session::Session;
+use crate::models::user::User;
+use crate::state::AppState;
+use crate::utils::session::{ImpersonationContext, SessionManager};
+use crate::{db_query, get_db_conn};
 
 #[derive(Serialize)]
 pub struct FormattedDailyActivity {
@@ -34,6 +42,16 @@ pub struct AdminStats {
 pub struct AdminDashboardResponse {
     pub stats: AdminStats,
     pub current_user: User,
+}
+
+#[derive(Serialize)]
+pub struct ImpersonationStatus {
+    pub admin_id: i32,
+    pub admin_name: String,
+    pub admin_avatar_url: String,
+    pub target_id: i32,
+    pub target_name: String,
+    pub target_avatar_url: String,
 }
 
 pub async fn admin_dashboard(
@@ -86,4 +104,102 @@ pub async fn admin_dashboard(
         stats,
         current_user,
     }))
+}
+
+pub async fn impersonate_user(
+    State(app_state): State<AppState>,
+    Path(user_id): Path<i64>,
+    cookies: Cookies,
+    impersonation: Option<Extension<ImpersonationContext>>,
+    user: Option<Extension<User>>,
+) -> Result<Redirect, Response> {
+    let session_user = user
+        .expect("User should be authenticated since middleware validated authentication")
+        .0;
+
+    let frontend_url =
+        env::var("FRONTEND_URL").unwrap_or_else(|_| "http://localhost:5173".to_string());
+
+    let Some(session_id) = SessionManager::get_session_from_cookies(&cookies) else {
+        return Ok(Redirect::to(&format!(
+            "{}/?error=session_missing",
+            frontend_url
+        )));
+    };
+
+    let mut conn = get_db_conn!(app_state);
+
+    let Some(session_data) = db_query!(
+        SessionManager::validate_session(&app_state.db_pool, session_id).await,
+        "Failed to validate session"
+    ) else {
+        return Ok(Redirect::to(&format!(
+            "{}/?error=session_invalid",
+            frontend_url
+        )));
+    };
+
+    let acting_admin = if let Some(ctx) = impersonation.as_ref() {
+        ctx.0.admin.clone()
+    } else if let Some(admin_id) = session_data.impersonated_by {
+        let Some(admin) = db_query!(
+            User::get_by_id(&mut conn, admin_id),
+            "Failed to fetch impersonating admin"
+        ) else {
+            return Err((StatusCode::FORBIDDEN, "Impersonation source not found").into_response());
+        };
+        admin
+    } else {
+        session_user.clone()
+    };
+
+    if session_data
+        .impersonated_by
+        .map(|admin_id| admin_id != acting_admin.id)
+        .unwrap_or(false)
+    {
+        return Err((StatusCode::FORBIDDEN, "Impersonation mismatch").into_response());
+    }
+
+    if !acting_admin.is_admin() {
+        return Err((StatusCode::FORBIDDEN, "No permission").into_response());
+    }
+
+    let Some(target_user) = db_query!(
+        User::get_by_id(&mut conn, user_id as i32),
+        "Failed to fetch target user"
+    ) else {
+        return Err((StatusCode::NOT_FOUND, "User not found").into_response());
+    };
+
+    if target_user.is_admin() && target_user.id != acting_admin.id {
+        return Err((StatusCode::BAD_REQUEST, "Cannot impersonate another admin").into_response());
+    }
+
+    let updated_session = if target_user.id == acting_admin.id {
+        db_query!(
+            Session::clear_impersonation(&mut conn, session_id, &acting_admin),
+            "Failed to clear impersonation"
+        )
+    } else {
+        db_query!(
+            Session::impersonate(&mut conn, session_id, &target_user, acting_admin.id),
+            "Failed to impersonate user"
+        )
+    };
+
+    let session_cookie = SessionManager::create_session_cookie(updated_session.id);
+    cookies.add(session_cookie);
+
+    if target_user.id == acting_admin.id {
+        Ok(Redirect::to(&format!(
+            "{}/?impersonation=cleared",
+            frontend_url
+        )))
+    } else {
+        Ok(Redirect::to(&format!(
+            "{}/?impersonation=active&user={}",
+            frontend_url, target_user.id
+        )))
+    }
 }

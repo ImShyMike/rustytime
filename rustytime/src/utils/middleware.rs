@@ -8,7 +8,7 @@ use reqwest::Method;
 use tower_cookies::Cookies;
 
 use crate::state::AppState;
-use crate::utils::session::SessionManager;
+use crate::utils::session::{ImpersonationContext, SessionManager};
 use tower_http::cors::CorsLayer;
 
 /// Middleware to require authentication
@@ -18,13 +18,20 @@ pub async fn require_auth(
     mut request: Request,
     next: Next,
 ) -> Response {
-    if let Ok(Some(user)) = SessionManager::get_current_user(&cookies, &app_state.db_pool).await {
-        request.extensions_mut().insert(user);
-    } else {
-        return redirect_to_login(request).into_response();
+    match SessionManager::resolve_session(&cookies, &app_state.db_pool).await {
+        Ok(Some(resolved)) => {
+            {
+                let extensions = request.extensions_mut();
+                extensions.insert(resolved.user.clone());
+                if let Some(admin) = resolved.impersonator.clone() {
+                    extensions.insert(ImpersonationContext { admin });
+                }
+            }
+            next.run(request).await
+        }
+        Ok(None) => redirect_to_login(request).into_response(),
+        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response(),
     }
-
-    next.run(request).await
 }
 
 // Middleware to inject the user if authenticated
@@ -49,16 +56,28 @@ pub async fn require_admin(
     mut request: Request,
     next: Next,
 ) -> Response {
-    // check if user is an admin
-    match SessionManager::get_current_user(&cookies, &app_state.db_pool).await {
-        Ok(Some(user)) if user.is_admin() => {
-            // user is authenticated and admin
-            request.extensions_mut().insert(user);
+    match SessionManager::resolve_session(&cookies, &app_state.db_pool).await {
+        Ok(Some(resolved)) => {
+            let is_admin = resolved.user.is_admin()
+                || resolved
+                    .impersonator
+                    .as_ref()
+                    .map(|admin| admin.is_admin())
+                    .unwrap_or(false);
+
+            if !is_admin {
+                return (StatusCode::FORBIDDEN, "Admin access required").into_response();
+            }
+
+            {
+                let extensions = request.extensions_mut();
+                extensions.insert(resolved.user.clone());
+                if let Some(admin) = resolved.impersonator.clone() {
+                    extensions.insert(ImpersonationContext { admin });
+                }
+            }
+
             next.run(request).await
-        }
-        Ok(Some(_)) => {
-            // user is authenticated but not admin
-            (StatusCode::FORBIDDEN, "Admin access required").into_response()
         }
         Ok(None) => {
             // user is not authenticated

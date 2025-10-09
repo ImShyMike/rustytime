@@ -71,7 +71,9 @@
 		});
 	});
 
-	const lastUpdatedProject = $derived.by<EnhancedProject | null>(() => formattedProjects[0] ?? null);
+	const lastUpdatedProject = $derived.by<EnhancedProject | null>(
+		() => formattedProjects[0] ?? null
+	);
 	const lastUpdatedProjectLabel = $derived.by<string>(() => {
 		const project = formattedProjects[0];
 		return project?.lastUpdated ? `Updated ${project.lastUpdated}` : 'Awaiting activity';
@@ -108,7 +110,6 @@
 							subvalue={lastUpdatedProjectLabel}
 						/>
 					{/if}
-					
 				</div>
 
 				<!-- Project List -->

@@ -11,11 +11,13 @@
 	import LucideMoon from '~icons/lucide/moon';
 	import LucideSunMedium from '~icons/lucide/sun-medium';
 	import LucideLogOut from '~icons/lucide/log-out';
+	import LucideUserMinus from '~icons/lucide/user-minus';
 	import LucideChevronsRight from '~icons/lucide/chevrons-right';
 	import LucideMenu from '~icons/lucide/menu';
 	import LucideX from '~icons/lucide/x';
 	import { onMount } from 'svelte';
 	import UserTag from '$lib/components/ui/UserTag.svelte';
+	import { PUBLIC_BACKEND_API_URL } from '$env/static/public';
 
 	let currentTheme: 'light' | 'dark' = 'light';
 	let collapsed: boolean = false;
@@ -153,6 +155,7 @@
 				</div>
 			{/if}
 		</div>
+
 		<div class="flex flex-col justify-between transition-all duration-300 mt-14 md:mt-0">
 			<nav class="space-y-2 flex flex-col transition-all duration-300">
 				<a
@@ -276,5 +279,30 @@
 				</button>
 			{/if}
 		</div>
+
+		{#if $auth.impersonation && $auth.user}
+			<div
+				class="mt-4 rounded-md border border-ctp-yellow/40 bg-ctp-yellow/10 px-3 py-3 text-xs text-ctp-subtext0 transition-all duration-300"
+			>
+				{#if !collapsed}
+					<p class="mb-1 text-sm font-semibold text-ctp-text">
+						Impersonating: {$auth.user.name || 'User'}
+					</p>
+					<p class="mb-3 text-xs">
+						From: {$auth.impersonation.admin_name || 'Admin'}
+					</p>
+				{/if}
+				<a
+					href={`${PUBLIC_BACKEND_API_URL}/admin/impersonate/${$auth.impersonation.admin_id}`}
+					onclick={() => setTimeout(closeMobileSidebar, 100)}
+					class="inline-flex w-full items-center justify-center rounded-md bg-ctp-yellow px-3 py-2 text-sm font-semibold text-ctp-base transition hover:bg-ctp-yellow/80 {collapsed
+						? 'px-0'
+						: ''}"
+				>
+					<LucideUserMinus class="h-5 w-5" />
+					<span class={collapsed ? 'hidden' : 'ml-2'}>Stop impersonating</span>
+				</a>
+			</div>
+		{/if}
 	</div>
 </div>

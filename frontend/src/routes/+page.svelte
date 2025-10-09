@@ -15,7 +15,8 @@
 	const DEFAULT_AUTH: AuthSnapshot = {
 		isAuthenticated: false,
 		sessionId: null,
-		user: null
+		user: null,
+		impersonation: null
 	};
 
 	let authState: AuthSnapshot = $state(data?.auth ?? DEFAULT_AUTH);
@@ -31,7 +32,8 @@
 			authState = {
 				isAuthenticated: state.isAuthenticated,
 				sessionId: state.sessionId,
-				user: state.user
+				user: state.user,
+				impersonation: state.impersonation
 			};
 		});
 

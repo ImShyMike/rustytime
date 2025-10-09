@@ -1,5 +1,6 @@
 use crate::db::connection::DbPool;
 use crate::models::session::Session;
+use crate::models::user::User;
 use chrono::{DateTime, Duration, Utc};
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -7,20 +8,34 @@ use tower_cookies::cookie::SameSite;
 use tower_cookies::{Cookie, Cookies};
 use uuid::Uuid;
 
-use crate::models::user::User;
 use crate::schema::{sessions, users};
 
 pub const SESSION_COOKIE_NAME: &str = "rustytime_session";
 pub const SESSION_DURATION_DAYS: i64 = 30;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SessionData {
+    pub id: Uuid,
     pub user_id: i32,
     pub github_user_id: i64,
     pub expires_at: DateTime<Utc>,
+    pub impersonated_by: Option<i32>,
 }
 
 pub struct SessionManager;
+
+#[derive(Debug, Clone)]
+pub struct ResolvedSession {
+    #[allow(dead_code)]
+    pub session: SessionData,
+    pub user: User,
+    pub impersonator: Option<User>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ImpersonationContext {
+    pub admin: User,
+}
 
 impl SessionManager {
     #[inline(always)]
@@ -90,9 +105,11 @@ impl SessionManager {
             .optional()?;
 
         Ok(session.map(|s| SessionData {
+            id: s.id,
             user_id: s.user_id,
             github_user_id: s.github_user_id,
             expires_at: s.expires_at,
+            impersonated_by: s.impersonated_by,
         }))
     }
 
@@ -122,33 +139,59 @@ impl SessionManager {
     #[allow(dead_code)]
     #[inline(always)]
     pub async fn is_authenticated(cookies: &Cookies, pool: &DbPool) -> bool {
-        if let Some(session_id) = Self::get_session_from_cookies(cookies) {
-            if let Ok(Some(_)) = Self::validate_session(pool, session_id).await {
-                return true;
-            }
-        }
-        false
+        matches!(Self::resolve_session(cookies, pool).await, Ok(Some(_)))
     }
 
     /// Try to get the current user using the session cookie
+    #[allow(dead_code)]
+    #[inline(always)]
     pub async fn get_current_user(
         cookies: &Cookies,
         pool: &DbPool,
     ) -> Result<Option<User>, diesel::result::Error> {
-        if let Some(session_id) = Self::get_session_from_cookies(cookies) {
-            if let Some(session_data) = Self::validate_session(pool, session_id).await? {
-                let mut conn = pool
-                    .get()
-                    .map_err(|_| diesel::result::Error::BrokenTransactionManager)?;
+        Ok(Self::resolve_session(cookies, pool)
+            .await?
+            .map(|resolved| resolved.user))
+    }
 
-                let user = users::table
-                    .find(session_data.user_id)
-                    .first::<User>(&mut conn)
-                    .optional()?;
+    pub async fn resolve_session(
+        cookies: &Cookies,
+        pool: &DbPool,
+    ) -> Result<Option<ResolvedSession>, diesel::result::Error> {
+        let Some(session_id) = Self::get_session_from_cookies(cookies) else {
+            return Ok(None);
+        };
 
-                return Ok(user);
-            }
-        }
-        Ok(None)
+        let Some(session_data) = Self::validate_session(pool, session_id).await? else {
+            return Ok(None);
+        };
+
+        let mut conn = pool
+            .get()
+            .map_err(|_| diesel::result::Error::BrokenTransactionManager)?;
+
+        let user = users::table
+            .find(session_data.user_id)
+            .first::<User>(&mut conn)
+            .optional()?;
+
+        let Some(user) = user else {
+            return Ok(None);
+        };
+
+        let impersonator = if let Some(admin_id) = session_data.impersonated_by {
+            users::table
+                .find(admin_id)
+                .first::<User>(&mut conn)
+                .optional()?
+        } else {
+            None
+        };
+
+        Ok(Some(ResolvedSession {
+            session: session_data,
+            user,
+            impersonator,
+        }))
     }
 }

@@ -6,8 +6,8 @@ use crate::models::heartbeat::{NewHeartbeat, SourceType};
 use crate::models::user::User;
 use chrono::Utc;
 use ipnetwork::{IpNetwork, Ipv4Network};
-use rand::prelude::IndexedRandom;
 use rand::Rng;
+use rand::prelude::IndexedRandom;
 use std::net::Ipv4Addr;
 use tracing::{info, warn};
 
@@ -36,7 +36,10 @@ pub async fn seed_database(pool: &DbPool) -> Result<(), Box<dyn std::error::Erro
         let mut conn = pool.get()?;
 
         if let Some(existing_user) = User::find_by_github_id(&mut conn, -1)? {
-            warn!("⚠️  Dummy user already exists (id: {}), skipping seeding.", existing_user.id);
+            warn!(
+                "⚠️  Dummy user already exists (id: {}), skipping seeding.",
+                existing_user.id
+            );
             return Ok(());
         }
 
@@ -58,7 +61,7 @@ pub async fn seed_database(pool: &DbPool) -> Result<(), Box<dyn std::error::Erro
     info!("✅ Database seeding completed successfully!");
     Ok(())
 }
- 
+
 async fn generate_random_heartbeats(
     pool: &DbPool,
     user_id: i32,
@@ -85,13 +88,13 @@ async fn generate_random_heartbeats(
         batch.push(heartbeat);
 
         if batch.len() == BATCH_SIZE {
-            let current_batch: Vec<_> = batch.drain(..).collect();
+            let current_batch = std::mem::take(&mut batch);
             store_heartbeats_in_db(pool, current_batch).await?;
         }
     }
 
     if !batch.is_empty() {
-        let current_batch: Vec<_> = batch.drain(..).collect();
+        let current_batch = std::mem::take(&mut batch);
         store_heartbeats_in_db(pool, current_batch).await?;
     }
 

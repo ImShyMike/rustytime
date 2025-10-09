@@ -13,12 +13,18 @@ interface RawVerifyResponse {
 		avatar_url: string | null;
 		is_admin: boolean;
 	};
+	impersonation?: {
+		admin_id: number;
+		admin_name: string | null;
+		admin_avatar_url: string | null;
+	} | null;
 }
 
 const DEFAULT_AUTH_STATE: App.Locals['auth'] = {
 	isAuthenticated: false,
 	sessionId: null,
-	user: null
+	user: null,
+	impersonation: null
 };
 
 export const handle: Handle = async ({ event, resolve }) => {
@@ -49,7 +55,8 @@ export const handle: Handle = async ({ event, resolve }) => {
 							name,
 							avatar_url: data.user.avatar_url,
 							is_admin: data.user.is_admin
-						}
+						},
+						impersonation: data.impersonation ?? null
 					};
 				}
 			} // else if (response.status === 401 || response.status === 403) {

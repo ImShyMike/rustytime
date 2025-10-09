@@ -30,6 +30,7 @@ export interface AuthState {
 	isAuthenticated: boolean;
 	isLoading: boolean;
 	error: AuthError | null;
+	impersonation: App.ImpersonationInfo | null;
 }
 
 type AuthSnapshot = App.Locals['auth'];
@@ -37,7 +38,8 @@ type AuthSnapshot = App.Locals['auth'];
 const DEFAULT_AUTH_SNAPSHOT: AuthSnapshot = {
 	isAuthenticated: false,
 	sessionId: null,
-	user: null
+	user: null,
+	impersonation: null
 };
 
 const toState = (snapshot: AuthSnapshot): AuthState => ({
@@ -45,7 +47,8 @@ const toState = (snapshot: AuthSnapshot): AuthState => ({
 	sessionId: snapshot.sessionId,
 	isAuthenticated: snapshot.isAuthenticated,
 	isLoading: false,
-	error: null
+	error: null,
+	impersonation: snapshot.impersonation
 });
 
 // Create auth store
@@ -55,7 +58,8 @@ const createAuthStore = () => {
 		sessionId: null,
 		isAuthenticated: false,
 		isLoading: true,
-		error: null
+		error: null,
+		impersonation: null
 	});
 
 	// Helper function to create auth errors

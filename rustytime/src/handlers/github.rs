@@ -194,6 +194,28 @@ pub async fn verify_session(
                     (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
                 })?;
 
+            let impersonation = if let Some(admin_id) = session_data.impersonated_by {
+                match crate::schema::users::table
+                    .find(admin_id)
+                    .first::<User>(&mut conn)
+                    .optional()
+                {
+                    Ok(Some(admin)) => Some(serde_json::json!({
+                        "admin_id": admin.id,
+                        "admin_name": admin.name,
+                        "admin_avatar_url": admin.avatar_url,
+                    })),
+                    Ok(None) => None,
+                    Err(err) => {
+                        eprintln!("Database error fetching impersonating admin: {}", err);
+                        return Err((StatusCode::INTERNAL_SERVER_ERROR, "Internal server error")
+                            .into_response());
+                    }
+                }
+            } else {
+                None
+            };
+
             Ok(Json(serde_json::json!({
                 "valid": true,
                 "user": {
@@ -203,6 +225,7 @@ pub async fn verify_session(
                     "avatar_url": user.avatar_url,
                     "is_admin": user.is_admin
                 },
+                "impersonation": impersonation,
                 "expires_at": session_data.expires_at
             })))
         }

@@ -37,6 +37,10 @@ impl User {
             .optional()
     }
 
+    pub fn get_by_id(conn: &mut PgConnection, user_id: i32) -> QueryResult<Option<User>> {
+        users::table.find(user_id).first::<User>(conn).optional()
+    }
+
     pub fn create(conn: &mut PgConnection, new_user: &NewUser) -> QueryResult<User> {
         diesel::insert_into(users::table)
             .values(new_user)

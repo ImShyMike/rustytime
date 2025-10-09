@@ -21,7 +21,8 @@
 	const DEFAULT_AUTH: AuthData = {
 		isAuthenticated: false,
 		sessionId: null,
-		user: null
+		user: null,
+		impersonation: null
 	};
 
 	let lastAuthSnapshot = '';

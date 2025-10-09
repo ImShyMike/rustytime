@@ -51,6 +51,7 @@ diesel::table! {
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
         expires_at -> Timestamptz,
+        impersonated_by -> Nullable<Int4>,
     }
 }
 
@@ -72,6 +73,5 @@ diesel::table! {
 
 diesel::joinable!(heartbeats -> users (user_id));
 diesel::joinable!(projects -> users (user_id));
-diesel::joinable!(sessions -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(heartbeats, projects, sessions, users,);

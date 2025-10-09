@@ -4,6 +4,7 @@ use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::models::user::User;
 use crate::schema::sessions;
 use crate::schema::sessions::dsl;
 
@@ -17,6 +18,7 @@ pub struct Session {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub expires_at: DateTime<Utc>,
+    pub impersonated_by: Option<i32>,
 }
 
 #[derive(Insertable, Deserialize, Debug)]
@@ -25,6 +27,7 @@ pub struct NewSession {
     pub user_id: i32,
     pub github_access_token: String,
     pub github_user_id: i64,
+    pub impersonated_by: Option<i32>,
 }
 
 impl Session {
@@ -33,6 +36,7 @@ impl Session {
         dsl::sessions
             .filter(dsl::user_id.eq(user_id))
             .filter(dsl::expires_at.gt(now))
+            .filter(dsl::impersonated_by.is_null())
             .first::<Session>(conn)
             .optional()
     }
@@ -44,6 +48,7 @@ impl Session {
         dsl::sessions
             .filter(dsl::github_user_id.eq(gh_user_id))
             .filter(dsl::expires_at.gt(now))
+            .filter(dsl::impersonated_by.is_null())
             .first::<Session>(conn)
             .optional()
     }
@@ -75,6 +80,7 @@ impl Session {
                 user_id,
                 github_access_token: access_token.to_string(),
                 github_user_id: gh_user_id,
+                impersonated_by: None,
             };
             Self::create(conn, &new_session)
         }
@@ -88,5 +94,36 @@ impl Session {
     #[allow(dead_code)]
     pub fn is_expired(&self) -> bool {
         self.expires_at < Utc::now()
+    }
+
+    pub fn impersonate(
+        conn: &mut PgConnection,
+        session_id: Uuid,
+        target_user: &User,
+        acting_admin_id: i32,
+    ) -> QueryResult<Session> {
+        diesel::update(sessions::table.find(session_id))
+            .set((
+                dsl::user_id.eq(target_user.id),
+                dsl::github_user_id.eq(target_user.github_id),
+                dsl::impersonated_by.eq(Some(acting_admin_id)),
+                dsl::updated_at.eq(now),
+            ))
+            .get_result(conn)
+    }
+
+    pub fn clear_impersonation(
+        conn: &mut PgConnection,
+        session_id: Uuid,
+        admin_user: &User,
+    ) -> QueryResult<Session> {
+        diesel::update(sessions::table.find(session_id))
+            .set((
+                dsl::user_id.eq(admin_user.id),
+                dsl::github_user_id.eq(admin_user.github_id),
+                dsl::impersonated_by.eq::<Option<i32>>(None),
+                dsl::updated_at.eq(now),
+            ))
+            .get_result(conn)
     }
 }
