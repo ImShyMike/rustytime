@@ -156,7 +156,7 @@
 			{/if}
 		</div>
 
-		<div class="flex flex-col justify-between transition-all duration-300 mt-14 md:mt-0">
+		<div class="flex flex-col justify-between transition-all duration-300 mt-0">
 			<nav class="space-y-2 flex flex-col transition-all duration-300">
 				<a
 					href={resolve('/')}
