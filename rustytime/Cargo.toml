@@ -1,7 +1,7 @@
 [package]
 name = "rustytime-server"
 description = "🕒 blazingly fast time tracking for developers"
-version = "0.5.4"
+version = "0.5.5"
 edition = "2024"
 authors = ["ImShyMike"]
 readme = "../README.md"
