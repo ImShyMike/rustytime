@@ -4,7 +4,6 @@ use diesel::prelude::*;
 use diesel::sql_types::{BigInt, Date, Nullable, Text};
 use ipnetwork::IpNetwork;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 use crate::schema::heartbeats;
 use crate::utils::http::parse_user_agent;
@@ -167,11 +166,11 @@ pub enum HeartbeatApiResponseVariant {
 
 #[derive(Serialize, Debug)]
 pub struct HeartbeatResponse {
-    pub id: String,
+    pub id: i64,
     pub entity: String,
     #[serde(rename = "type")]
     pub type_: String,
-    pub time: DateTime<Utc>,
+    pub time: i64,
 }
 
 #[derive(Serialize, Debug)]
@@ -191,7 +190,7 @@ pub struct BulkResponseItem(pub HeartbeatResponse, pub u16);
 #[diesel(table_name = heartbeats)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct Heartbeat {
-    pub id: i32,
+    pub id: i64,
     pub time: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
     pub user_id: i32,
@@ -431,13 +430,19 @@ impl NewHeartbeat {
         sanitized.into_new_heartbeat(user_id, ip_address, headers)
     }
 }
+
 impl From<Heartbeat> for HeartbeatResponse {
     fn from(heartbeat: Heartbeat) -> Self {
+        let time = heartbeat
+            .time
+            .timestamp_nanos_opt()
+            .unwrap_or_else(|| heartbeat.time.timestamp() * 1_000_000_000);
+
         Self {
-            id: heartbeat.id.to_string(),
+            id: heartbeat.id,
             entity: heartbeat.entity,
             type_: heartbeat.type_,
-            time: heartbeat.time,
+            time,
         }
     }
 }

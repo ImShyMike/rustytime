@@ -2,7 +2,7 @@
 
 diesel::table! {
     heartbeats (user_id, time) {
-        id -> Int4,
+        id -> Int8,
         time -> Timestamptz,
         created_at -> Timestamptz,
         user_id -> Int4,
