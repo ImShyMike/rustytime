@@ -170,7 +170,7 @@ pub struct HeartbeatResponse {
     pub entity: String,
     #[serde(rename = "type")]
     pub type_: String,
-    pub time: i64,
+    pub time: f64,
 }
 
 #[derive(Serialize, Debug)]
@@ -433,10 +433,9 @@ impl NewHeartbeat {
 
 impl From<Heartbeat> for HeartbeatResponse {
     fn from(heartbeat: Heartbeat) -> Self {
-        let time = heartbeat
-            .time
-            .timestamp_nanos_opt()
-            .unwrap_or_else(|| heartbeat.time.timestamp() * 1_000_000_000);
+        let seconds = heartbeat.time.timestamp() as f64;
+        let fractional = heartbeat.time.timestamp_subsec_nanos() as f64 / 1e9;
+        let time = seconds + fractional;
 
         Self {
             id: heartbeat.id,
