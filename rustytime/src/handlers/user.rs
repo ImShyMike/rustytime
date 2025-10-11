@@ -237,7 +237,7 @@ pub async fn store_heartbeats_in_db(
 
             let inserted_ids: Vec<i64> = diesel::insert_into(heartbeats::table)
                 .values(&new_heartbeats)
-                .on_conflict((heartbeats::user_id, heartbeats::entity, heartbeats::time))
+                .on_conflict((heartbeats::user_id, heartbeats::time))
                 .do_update()
                 .set(heartbeats::time.eq(excluded(heartbeats::time)))
                 .returning(heartbeats::id)
