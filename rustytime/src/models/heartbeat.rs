@@ -41,6 +41,11 @@ fn truncate_optional_string(s: Option<String>, max_length: usize) -> Option<Stri
     s.map(|s| truncate_string(s, max_length))
 }
 
+#[inline(always)]
+fn heartbeat_time_to_f64(time: DateTime<Utc>) -> f64 {
+    time.timestamp() as f64 + time.timestamp_subsec_nanos() as f64 / 1e9
+}
+
 pub struct SourceType;
 
 impl SourceType {
@@ -185,18 +190,6 @@ pub struct HeartbeatBulkApiResponse {
 
 #[derive(Serialize, Debug)]
 pub struct BulkResponseItem(pub HeartbeatResponse, pub u16);
-
-#[derive(Debug, Clone)]
-pub struct StoredHeartbeat {
-    pub heartbeat: Heartbeat,
-    pub status: u16,
-}
-
-impl From<StoredHeartbeat> for BulkResponseItem {
-    fn from(value: StoredHeartbeat) -> Self {
-        BulkResponseItem(HeartbeatResponse::from(value.heartbeat), value.status)
-    }
-}
 
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
 #[diesel(table_name = heartbeats)]
@@ -443,15 +436,22 @@ impl NewHeartbeat {
 
 impl From<Heartbeat> for HeartbeatResponse {
     fn from(heartbeat: Heartbeat) -> Self {
-        let seconds = heartbeat.time.timestamp() as f64;
-        let fractional = heartbeat.time.timestamp_subsec_nanos() as f64 / 1e9;
-        let time = seconds + fractional;
-
         Self {
             id: heartbeat.id,
             entity: heartbeat.entity,
             type_: heartbeat.type_,
-            time,
+            time: heartbeat_time_to_f64(heartbeat.time),
+        }
+    }
+}
+
+impl From<(i64, NewHeartbeat)> for HeartbeatResponse {
+    fn from((id, heartbeat): (i64, NewHeartbeat)) -> Self {
+        Self {
+            id,
+            entity: heartbeat.entity,
+            type_: heartbeat.type_,
+            time: heartbeat_time_to_f64(heartbeat.time),
         }
     }
 }
