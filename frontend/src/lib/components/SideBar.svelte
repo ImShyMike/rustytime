@@ -17,7 +17,7 @@
 	import LucideX from '~icons/lucide/x';
 	import { onMount } from 'svelte';
 	import UserTag from '$lib/components/ui/UserTag.svelte';
-	import { PUBLIC_BACKEND_API_URL } from '$env/static/public';
+	import { impersonateUser } from '$lib/utils/admin';
 
 	let currentTheme: 'light' | 'dark' = 'light';
 	let collapsed: boolean = false;
@@ -292,16 +292,16 @@
 						From: {$auth.impersonation.admin_name || 'Admin'}
 					</p>
 				{/if}
-				<a
-					href={`${PUBLIC_BACKEND_API_URL}/admin/impersonate/${$auth.impersonation.admin_id}`}
-					onclick={() => setTimeout(closeMobileSidebar, 100)}
-					class="inline-flex w-full items-center justify-center rounded-md bg-ctp-yellow px-3 py-2 text-sm font-semibold text-ctp-base transition hover:bg-ctp-yellow/80 {collapsed
+				<button
+					onclick={() =>
+						setTimeout(closeMobileSidebar, 100) && impersonateUser($auth.impersonation!.admin_id)}
+					class="cursor-pointer inline-flex w-full items-center justify-center rounded-md bg-ctp-yellow px-3 py-2 text-sm font-semibold text-ctp-base transition hover:bg-ctp-yellow/80 {collapsed
 						? 'px-0'
 						: ''}"
 				>
 					<LucideUserMinus class="h-5 w-5" />
 					<span class={collapsed ? 'hidden' : 'ml-2'}>Stop impersonating</span>
-				</a>
+				</button>
 			</div>
 		{/if}
 	</div>

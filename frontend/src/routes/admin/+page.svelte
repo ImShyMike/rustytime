@@ -6,8 +6,8 @@
 	import type { ApexOptions } from 'apexcharts';
 	import type { PageData } from './$types';
 	import { Container, KeyValueList, PageHeading, SectionTitle, StatCard, UserTag } from '$lib';
-	import { PUBLIC_BACKEND_API_URL } from '$env/static/public';
 	import { auth } from '$lib/stores/auth';
+	import { impersonateUser } from '$lib/utils/admin';
 
 	type ApexChartsConstructor = new (element: Element | string, options: ApexOptions) => ApexCharts;
 
@@ -68,6 +68,7 @@
 					const options = createDateBarChartOptions(
 						adminData.stats.daily_activity,
 						[],
+						'Heartbeats',
 						false,
 						theme
 					);
@@ -249,16 +250,16 @@
 													>Admin</span
 												>
 											{:else}
-												<a
-													href={`${PUBLIC_BACKEND_API_URL}/admin/impersonate/${user.id}`}
-													class="inline-flex items-center justify-center rounded bg-ctp-lavender px-3 py-1 text-xs font-semibold text-ctp-base transition hover:bg-ctp-blue"
+												<button
+													onclick={() => impersonateUser(user.id)}
+													class="cursor-pointer inline-flex items-center justify-center rounded bg-ctp-lavender px-3 py-1 text-xs font-semibold text-ctp-base transition hover:bg-ctp-blue"
 												>
 													{#if $auth.impersonation && user.id === $auth.impersonation.admin_id}
 														Go back
 													{:else}
 														Impersonate
 													{/if}
-												</a>
+												</button>
 											{/if}
 										</td>
 									</tr>

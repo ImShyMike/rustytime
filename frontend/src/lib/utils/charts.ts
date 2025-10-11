@@ -204,6 +204,7 @@ export function createDateBarChartOptions(
 		count: number;
 	}[],
 	colors: string[],
+	seriesName: string = 'Time Spent',
 	horizontal: boolean = true,
 	theme: 'light' | 'dark' = 'dark'
 ): ApexOptions {
@@ -214,7 +215,7 @@ export function createDateBarChartOptions(
 	return {
 		series: [
 			{
-				name: 'Time Spent',
+				name: seriesName,
 				data: data.map((item) => item.count)
 			}
 		],

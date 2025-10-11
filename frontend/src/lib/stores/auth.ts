@@ -2,7 +2,6 @@ import { browser } from '$app/environment';
 import { invalidateAll } from '$app/navigation';
 import { writable } from 'svelte/store';
 import { api, ApiError, setGlobalErrorCallback } from '../utils/api.js';
-
 export interface User {
 	id: number;
 	github_id: number;
