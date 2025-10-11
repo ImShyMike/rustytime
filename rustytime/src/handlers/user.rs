@@ -14,10 +14,11 @@ use crate::utils::http::extract_client_ip_cloudflare;
 
 use crate::db::connection::DbPool;
 use crate::get_db_conn;
-use crate::models::heartbeat::Heartbeat;
 use crate::models::heartbeat::*;
+use crate::models::heartbeat::{Heartbeat, StoredHeartbeat};
 use crate::models::project::get_or_create_project_id;
 use crate::schema::heartbeats;
+use crate::schema::heartbeats::dsl as heartbeats_dsl;
 use crate::state::AppState;
 use crate::utils::auth::{get_user_id_from_api_key, get_valid_api_key};
 use crate::utils::time::{TimeFormat, human_readable_duration};
@@ -65,13 +66,18 @@ async fn process_heartbeat_request(
         );
 
         match store_heartbeats_in_db(&app_state.db_pool, vec![new_heartbeat]).await {
-            Ok(mut heartbeats) => {
-                if let Some(heartbeat) = heartbeats.pop() {
+            Ok(mut stored_results) => {
+                if let Some(StoredHeartbeat { heartbeat, status }) = stored_results.pop() {
                     let response = HeartbeatApiResponse {
-                        data: heartbeat.into(),
+                        data: HeartbeatResponse::from(heartbeat),
+                    };
+                    let http_status = if status == 201 {
+                        StatusCode::CREATED
+                    } else {
+                        StatusCode::ACCEPTED
                     };
                     let response_data = Json(HeartbeatApiResponseVariant::Single(response));
-                    Ok((StatusCode::ACCEPTED, response_data).into_response())
+                    Ok((http_status, response_data).into_response())
                 } else {
                     Err((StatusCode::INTERNAL_SERVER_ERROR, "Internal server error")
                         .into_response())
@@ -89,19 +95,25 @@ async fn process_heartbeat_request(
             .collect();
 
         match store_heartbeats_in_db(&app_state.db_pool, new_heartbeats).await {
-            Ok(heartbeats) => {
-                if heartbeats.is_empty() {
+            Ok(stored_results) => {
+                if stored_results.is_empty() {
                     let response_data = Json(HeartbeatApiResponseVariant::Multiple(
                         HeartbeatBulkApiResponse { responses: vec![] },
                     ));
                     Ok((StatusCode::CREATED, response_data).into_response())
                 } else {
+                    let has_new = stored_results.iter().any(|stored| stored.status == 201);
+                    let http_status = if has_new {
+                        StatusCode::CREATED
+                    } else {
+                        StatusCode::ACCEPTED
+                    };
                     let response_data = Json(HeartbeatApiResponseVariant::Multiple(
                         HeartbeatBulkApiResponse {
-                            responses: heartbeats.into_iter().map(|h| h.into()).collect(),
+                            responses: stored_results.into_iter().map(Into::into).collect(),
                         },
                     ));
-                    Ok((StatusCode::CREATED, response_data).into_response())
+                    Ok((http_status, response_data).into_response())
                 }
             }
             Err(e) => {
@@ -216,7 +228,7 @@ pub async fn get_statusbar_today(
 pub async fn store_heartbeats_in_db(
     pool: &DbPool,
     new_heartbeats: Vec<NewHeartbeat>,
-) -> Result<Vec<Heartbeat>, diesel::result::Error> {
+) -> Result<Vec<StoredHeartbeat>, diesel::result::Error> {
     let pool = pool.clone();
     tokio::task::spawn_blocking(move || {
         let mut connection = pool.get().expect("Failed to get DB connection from pool");
@@ -238,15 +250,37 @@ pub async fn store_heartbeats_in_db(
                 }
             }
 
-            match diesel::insert_into(heartbeats::table)
-                .values(&new_heartbeats)
-                .on_conflict_do_nothing()
-                .get_results(conn)
-            {
-                Ok(heartbeats) => Ok(heartbeats),
-                Err(diesel::result::Error::NotFound) => Ok(vec![]),
-                Err(e) => Err(e),
+            let mut results = Vec::with_capacity(new_heartbeats.len());
+
+            for heartbeat in new_heartbeats {
+                let key_user_id = heartbeat.user_id;
+                let key_time = heartbeat.time;
+
+                match diesel::insert_into(heartbeats::table)
+                    .values(&heartbeat)
+                    .on_conflict_do_nothing()
+                    .returning(Heartbeat::as_returning())
+                    .get_result::<Heartbeat>(conn)
+                {
+                    Ok(inserted) => results.push(StoredHeartbeat {
+                        heartbeat: inserted,
+                        status: 201,
+                    }),
+                    Err(diesel::result::Error::NotFound) => {
+                        let existing = heartbeats_dsl::heartbeats
+                            .find((key_user_id, key_time))
+                            .first::<Heartbeat>(conn)?;
+
+                        results.push(StoredHeartbeat {
+                            heartbeat: existing,
+                            status: 201,
+                        });
+                    }
+                    Err(err) => return Err(err),
+                }
             }
+
+            Ok(results)
         })
     })
     .await

@@ -186,6 +186,18 @@ pub struct HeartbeatBulkApiResponse {
 #[derive(Serialize, Debug)]
 pub struct BulkResponseItem(pub HeartbeatResponse, pub u16);
 
+#[derive(Debug, Clone)]
+pub struct StoredHeartbeat {
+    pub heartbeat: Heartbeat,
+    pub status: u16,
+}
+
+impl From<StoredHeartbeat> for BulkResponseItem {
+    fn from(value: StoredHeartbeat) -> Self {
+        BulkResponseItem(HeartbeatResponse::from(value.heartbeat), value.status)
+    }
+}
+
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
 #[diesel(table_name = heartbeats)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
@@ -284,14 +296,12 @@ impl SanitizedHeartbeatRequest {
         // Parse the category
         let category = if let Some(cat) = request.category {
             Some(cat)
+        } else if type_ == "domain" || type_ == "url" {
+            Some("browsing".to_string())
+        } else if type_ == "file" && request.language.is_some() {
+            Some("coding".to_string())
         } else {
-            if type_ == "domain" || type_ == "url" {
-                Some("browsing".to_string())
-            } else if type_ == "file" && request.language.is_some() {
-                Some("coding".to_string())
-            } else {
-                None
-            }
+            None
         };
 
         // Convert dependencies and apply limits
