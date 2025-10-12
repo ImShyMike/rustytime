@@ -7,7 +7,7 @@
 		"directory": ".svelte-kit/cloudflare"
 	},
 	"compatibility_date": "2025-09-01",
-	"compatibility_flags": ["nodejs_compat"],
+	"compatibility_flags": [],
 	"placement": {
 		"mode": "smart"
 	},

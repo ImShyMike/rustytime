@@ -1,6 +1,7 @@
 import tailwindcss from '@tailwindcss/vite';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig, loadEnv } from 'vite';
+import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 import Icons from 'unplugin-icons/vite';
 import { resolve } from 'path';
 
@@ -11,6 +12,28 @@ export default defineConfig(({ mode }) => {
 		plugins: [
 			tailwindcss(),
 			sveltekit(),
+			SvelteKitPWA({
+				strategies: 'generateSW', // or 'injectManifest'
+				manifest: {
+					name: 'rustytime',
+					short_name: 'rustytime',
+					description: '🕒 blazingly fast time tracking for developers',
+					theme_color: '#b4befe',
+					icons: [
+					{
+						src: 'pwa-192x192.png',
+						sizes: '192x192',
+						type: 'image/png'
+					},
+					{
+						src: 'pwa-512x512.png',
+						sizes: '512x512',
+						type: 'image/png'
+					}
+					]
+				},
+				devOptions: { enabled: true }
+			}),
 			Icons({
 				autoInstall: true,
 				compiler: 'svelte'

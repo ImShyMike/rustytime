@@ -51,6 +51,7 @@
 	<link rel="canonical" href={canonicalUrl} />
 	<title>{SITE_TITLE}</title>
 	<meta name="description" content={SITE_DESCRIPTION} />
+
 	<meta property="og:type" content="website" />
 	<meta property="og:site_name" content={SITE_TITLE} />
 	<meta property="og:title" content={SITE_TITLE} />
@@ -58,6 +59,7 @@
 	<meta property="og:url" content={canonicalUrl} />
 	<meta property="og:image" content={ogImageUrl} />
 	<meta property="og:image:alt" content="rustytime logo" />
+
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="twitter:title" content={SITE_TITLE} />
 	<meta name="twitter:description" content={SITE_DESCRIPTION} />
