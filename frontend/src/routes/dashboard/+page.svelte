@@ -42,7 +42,7 @@
 	$effect(() => {
 		if (dashboardData && dashboardData.api_key) {
 			config = `[settings]
-api_url = "https://api-rustytime.shymike.dev/api/v1"
+api_url = "https://rustytime.shymike.dev/api/v1"
 api_key = ${dashboardData.api_key}`;
 		} else {
 			config = '';
@@ -181,7 +181,7 @@ api_key = ${dashboardData.api_key}`;
 					{/if}
 					<div class="flex flex-col">
 						<div class="flex items-center gap-2">
-							<UserTag is_admin={dashboardData.is_admin} />
+							<UserTag admin_level={dashboardData.admin_level} />
 							<p class="font-bold text-lg text-ctp-text">{dashboardData.username}</p>
 						</div>
 						<p class="text-ctp-subtext1">User ID: {dashboardData.user_id}</p>

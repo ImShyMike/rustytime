@@ -197,9 +197,11 @@
 									<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
 										>Type</th
 									>
-									<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
-										>API Key</th
-									>
+									{#if adminData.stats.all_users[0].api_key}
+										<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
+											>API Key</th
+										>
+									{/if}
 									<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
 										>Actions</th
 									>
@@ -207,9 +209,10 @@
 							</thead>
 							<tbody class="bg-ctp-mantle divide-y divide-ctp-surface1">
 								{#each [...adminData.stats.all_users].sort((a, b) => {
-									if (a.is_admin === b.is_admin) return (a.id ?? 0) - (b.id ?? 0);
-									return a.is_admin ? -1 : 1;
-								}) as user (user.github_id)}
+									const adminDiff = (b.admin_level ?? 0) - (a.admin_level ?? 0);
+									if (adminDiff !== 0) return adminDiff;
+									return a.id - b.id;
+								}) as user (user.id)}
 									<tr>
 										<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1">{user.id}</td>
 										<td class="px-6 py-4 whitespace-nowrap">
@@ -233,21 +236,23 @@
 											>{new Date(user.created_at).toLocaleString('en-US', { timeZone: 'UTC' })}</td
 										>
 										<td class="px-6 py-4 whitespace-nowrap">
-											<UserTag is_admin={user.is_admin} />
+											<UserTag admin_level={user.admin_level} />
 										</td>
-										<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1 font-mono">
-											<button
-												onclick={() => navigator.clipboard.writeText(user.api_key)}
-												class="cursor-pointer hover:bg-ctp-base px-2 py-1 rounded"
-												title="Click to copy full API key"
-											>
-												{user.api_key.substring(0, 16)}...
-											</button>
-										</td>
+										{#if user.api_key}
+											<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1 font-mono">
+												<button
+													onclick={() => navigator.clipboard.writeText(user.api_key!)}
+													class="cursor-pointer hover:bg-ctp-base px-2 py-1 rounded"
+													title="Click to copy full API key"
+												>
+													{user.api_key.substring(0, 16)}...
+												</button>
+											</td>
+										{/if}
 										<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1">
-											{#if user.is_admin && (!$auth.impersonation || user.id !== $auth.impersonation.admin_id)}
+											{#if user.admin_level >= $auth.user?.admin_level! && (!$auth.impersonation || user.id !== $auth.impersonation.admin_id)}
 												<span class="text-xs uppercase tracking-wide text-ctp-subtext1/80"
-													>Admin</span
+													>Nothing</span
 												>
 											{:else}
 												<button

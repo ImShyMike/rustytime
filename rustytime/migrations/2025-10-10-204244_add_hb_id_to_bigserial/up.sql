@@ -1,4 +1,4 @@
--- 0. Decompress all compressed chunks
+-- Decompress all compressed chunks
 DO $$
 DECLARE
     r RECORD;
@@ -17,13 +17,13 @@ BEGIN
 END
 $$;
 
--- 1. Disable compression temporarily
+-- Disable compression temporarily
 ALTER TABLE heartbeats SET (timescaledb.compress = false);
 
--- 2. Change column type from INTEGER -> BIGINT
+-- Change column type from INTEGER -> BIGINT
 ALTER TABLE heartbeats ALTER COLUMN id TYPE BIGINT;
 
--- 3. Ensure the sequence exists and is attached
+-- Ensure the sequence exists and is attached
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'heartbeats_id_seq') THEN
@@ -34,5 +34,5 @@ $$;
 
 ALTER TABLE heartbeats ALTER COLUMN id SET DEFAULT nextval('heartbeats_id_seq');
 
--- 4. Re-enable compression
+-- Re-enable compression
 ALTER TABLE heartbeats SET (timescaledb.compress = true);

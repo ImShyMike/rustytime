@@ -14,9 +14,9 @@ interface AdminStats {
 		name: string | null;
 		avatar_url: string | null;
 		created_at: string;
-		api_key: string;
+		api_key: string | undefined;
 		github_id: number;
-		is_admin: boolean;
+		admin_level: number;
 	}>;
 }
 

@@ -64,7 +64,7 @@ diesel::table! {
         #[max_length = 200]
         avatar_url -> Varchar,
         api_key -> Uuid,
-        is_admin -> Bool,
+        admin_level -> Int2,
         is_banned -> Bool,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,

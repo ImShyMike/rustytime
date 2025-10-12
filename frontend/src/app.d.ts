@@ -7,7 +7,7 @@ declare global {
 			github_id: number;
 			name: string | null;
 			avatar_url: string | null;
-			is_admin: boolean;
+			admin_level: number;
 		}
 
 		interface ImpersonationInfo {

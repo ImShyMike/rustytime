@@ -1,11 +1,17 @@
 <script lang="ts">
-	export let is_admin;
+	export let admin_level: number;
+
+	const ADMIN_LEVEL_MAP: Record<number, string[]> = {
+		0: ['User', 'bg-ctp-overlay2 text-ctp-crust'],
+		1: ['Administrator', 'bg-ctp-red-400 text-ctp-crust'],
+		2: ['Owner', 'bg-ctp-mauve-400 text-ctp-crust']
+	};
 </script>
 
 <span
-	class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {is_admin
-		? 'bg-ctp-red-400 text-ctp-crust'
-		: 'bg-ctp-overlay2 text-ctp-crust'} items-center h-6"
+	class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {ADMIN_LEVEL_MAP[
+		admin_level
+	][1]} items-center h-6"
 >
-	{is_admin ? 'Admin' : 'User'}
+	{ADMIN_LEVEL_MAP[admin_level][0] || 'User'}
 </span>

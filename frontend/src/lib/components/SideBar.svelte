@@ -147,7 +147,7 @@
 				{/if}
 				<div class={collapsed ? 'hidden' : ''}>
 					<div class="flex flex-row items-center gap-1 align-middle">
-						<UserTag is_admin={$auth.user.is_admin} />
+						<UserTag admin_level={$auth.user.admin_level} />
 					</div>
 					<h2 class="{getNameSizeClass($auth.user.name)} text-subtext1 font-bold">
 						{$auth.user.name || 'User'}
@@ -196,7 +196,7 @@
 						class={collapsed ? 'hidden' : 'ml-2'}>Projects</span
 					>
 				</a>
-				{#if $auth.user?.is_admin}
+				{#if $auth.user?.admin_level && $auth.user.admin_level >= 1}
 					<a
 						href={resolve('/admin')}
 						onclick={() => setTimeout(closeMobileSidebar, 100)}

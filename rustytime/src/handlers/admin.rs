@@ -14,7 +14,7 @@ use tower_cookies::Cookies;
 
 use crate::models::heartbeat::{Heartbeat, LanguageCount, ProjectCount};
 use crate::models::session::Session;
-use crate::models::user::User;
+use crate::models::user::{User, PartialUser};
 use crate::state::AppState;
 use crate::utils::session::{ImpersonationContext, SessionManager};
 use crate::{db_query, get_db_conn};
@@ -35,7 +35,7 @@ pub struct AdminStats {
     pub top_languages: Vec<LanguageCount>,
     pub top_projects: Vec<ProjectCount>,
     pub daily_activity: Vec<FormattedDailyActivity>,
-    pub all_users: Vec<User>,
+    pub all_users: Vec<PartialUser>,
 }
 
 #[derive(Serialize)]
@@ -76,6 +76,22 @@ pub async fn admin_dashboard(
         "Failed to fetch daily activity"
     );
     let all_users = db_query!(User::list_all_users(&mut conn), "Failed to fetch users");
+    let include_api_key = current_user.admin_level > 1;
+
+    let partial_users = all_users
+        .iter()
+        .map(|user| PartialUser {
+            id: user.id,
+            github_id: user.github_id,
+            name: user.name.clone(),
+            avatar_url: user.avatar_url.clone(),
+            admin_level: user.admin_level,
+            is_banned: user.is_banned,
+            api_key: include_api_key.then_some(user.api_key.clone()),
+            created_at: user.created_at,
+            updated_at: user.updated_at,
+        })
+        .collect();
 
     // convert to formatted versions
     let daily_activity: Vec<FormattedDailyActivity> = raw_daily_activity
@@ -97,7 +113,7 @@ pub async fn admin_dashboard(
         top_languages: db_query!(Heartbeat::get_top_languages(&mut conn, 10)),
         top_projects: db_query!(Heartbeat::get_top_projects(&mut conn, 10)),
         daily_activity,
-        all_users,
+        all_users: partial_users,
     };
 
     Ok(Json(AdminDashboardResponse {
@@ -172,7 +188,7 @@ pub async fn impersonate_user(
         return Err((StatusCode::NOT_FOUND, "User not found").into_response());
     };
 
-    if target_user.is_admin() && target_user.id != acting_admin.id {
+    if acting_admin.admin_level <= target_user.admin_level && acting_admin.id != target_user.id {
         return Err((StatusCode::BAD_REQUEST, "Cannot impersonate another admin").into_response());
     }
 

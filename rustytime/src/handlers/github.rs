@@ -223,7 +223,7 @@ pub async fn verify_session(
                     "github_id": user.github_id,
                     "username": user.name,
                     "avatar_url": user.avatar_url,
-                    "is_admin": user.is_admin
+                    "admin_level": user.admin_level
                 },
                 "impersonation": impersonation,
                 "expires_at": session_data.expires_at

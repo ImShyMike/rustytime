@@ -24,7 +24,7 @@ pub struct DashboardResponse {
     api_key: String,
     total_heartbeats: i64,
     human_readable_total: String,
-    is_admin: bool,
+    admin_level: i16,
     dev_mode: bool,
     projects: Vec<UsageStat>,
     editors: Vec<UsageStat>,
@@ -94,7 +94,7 @@ pub async fn dashboard(
             TimeFormat::NoDays,
         )
         .human_readable,
-        is_admin: user.is_admin,
+        admin_level: user.admin_level,
         dev_mode: cfg!(debug_assertions),
         projects: dashboard_stats.top_projects,
         editors: dashboard_stats.top_editors,

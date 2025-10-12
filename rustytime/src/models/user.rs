@@ -13,7 +13,20 @@ pub struct User {
     pub name: String,
     pub avatar_url: String,
     pub api_key: Uuid,
-    pub is_admin: bool,
+    pub admin_level: i16,
+    pub is_banned: bool,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct PartialUser {
+    pub id: i32,
+    pub github_id: i64,
+    pub name: String,
+    pub avatar_url: String,
+    pub api_key: Option<Uuid>,
+    pub admin_level: i16,
     pub is_banned: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -25,7 +38,7 @@ pub struct NewUser {
     pub github_id: i64,
     pub name: String,
     pub avatar_url: String,
-    pub is_admin: bool,
+    pub admin_level: i16,
     pub is_banned: bool,
 }
 
@@ -71,7 +84,7 @@ impl User {
                 github_id,
                 name: username.to_string(),
                 avatar_url: avatar_url.to_string(),
-                is_admin: total_users == 0, // make the first real user an admin
+                admin_level: if total_users == 0 { 1 } else { 0 }, // make the first real user an admin
                 is_banned: false,
             };
             Self::create(conn, &new_user)
@@ -79,7 +92,7 @@ impl User {
     }
 
     pub fn is_admin(&self) -> bool {
-        self.is_admin
+        self.admin_level > 0
     }
 
     pub fn list_all_users(conn: &mut PgConnection) -> QueryResult<Vec<User>> {
@@ -89,7 +102,7 @@ impl User {
     #[allow(dead_code)]
     pub fn list_admins(conn: &mut PgConnection) -> QueryResult<Vec<User>> {
         users::table
-            .filter(users::is_admin.eq(true))
+            .filter(users::admin_level.gt(0))
             .load::<User>(conn)
     }
 

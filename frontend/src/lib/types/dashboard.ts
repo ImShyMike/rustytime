@@ -16,7 +16,7 @@ export interface DashboardResponse {
 	api_key: string;
 	total_heartbeats: number;
 	human_readable_total: string;
-	is_admin: boolean;
+	admin_level: number;
 	dev_mode: boolean;
 	projects: UsageStat[];
 	editors: UsageStat[];

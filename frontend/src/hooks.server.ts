@@ -11,7 +11,7 @@ interface RawVerifyResponse {
 		username?: string | null;
 		name?: string | null;
 		avatar_url: string | null;
-		is_admin: boolean;
+		admin_level: number;
 	};
 	impersonation?: {
 		admin_id: number;
@@ -54,7 +54,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 							github_id: data.user.github_id,
 							name,
 							avatar_url: data.user.avatar_url,
-							is_admin: data.user.is_admin
+							admin_level: data.user.admin_level
 						},
 						impersonation: data.impersonation ?? null
 					};

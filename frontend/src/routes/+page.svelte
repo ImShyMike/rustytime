@@ -102,7 +102,7 @@
 							Welcome, {authState.user.name || 'User'}!
 						</h2>
 						<div class="flex flex-row items-center gap-1 align-middle">
-							<UserTag is_admin={authState.user.is_admin} />
+							<UserTag admin_level={authState.user.admin_level} />
 							<p class="text-subtext0">User ID: {authState.user.id}</p>
 						</div>
 					</div>
@@ -117,7 +117,7 @@
 							Go to Dashboard
 						</a>
 
-						{#if authState.user.is_admin}
+						{#if authState.user.admin_level >= 1}
 							<a
 								href={resolve('/admin')}
 								class="inline-block bg-ctp-red-400 hover:bg-ctp-red-500 text-ctp-base font-semibold py-3 px-6 rounded-lg"
