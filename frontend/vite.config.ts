@@ -13,7 +13,12 @@ export default defineConfig(({ mode }) => {
 			tailwindcss(),
 			sveltekit(),
 			SvelteKitPWA({
-				strategies: 'generateSW', // or 'injectManifest'
+				strategies: 'generateSW',
+				workbox: {
+					globPatterns: [
+					'client/**/*.{js,css,ico,png,svg,webp,woff,woff2,webmanifest}'
+					]
+				},
 				manifest: {
 					name: 'rustytime',
 					short_name: 'rustytime',
