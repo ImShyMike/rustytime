@@ -3,7 +3,7 @@
 
 	const ADMIN_LEVEL_MAP: Record<number, string[]> = {
 		0: ['User', 'bg-ctp-overlay2 text-ctp-crust'],
-		1: ['Administrator', 'bg-ctp-red-400 text-ctp-crust'],
+		1: ['Admin', 'bg-ctp-red-400 text-ctp-crust'],
 		2: ['Owner', 'bg-ctp-mauve-400 text-ctp-crust']
 	};
 </script>
