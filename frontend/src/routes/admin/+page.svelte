@@ -8,7 +8,6 @@
 	import { Container, KeyValueList, PageHeading, SectionTitle, StatCard, UserTag } from '$lib';
 	import { auth } from '$lib/stores/auth';
 	import { impersonateUser } from '$lib/utils/admin';
-	import { tick } from 'svelte';
 
 	type ApexChartsConstructor = new (element: Element | string, options: ApexOptions) => ApexCharts;
 
@@ -34,8 +33,6 @@
 
 	async function initializeCharts() {
 		if (!adminData) return;
-
-		await tick();
 
 		try {
 			const apexchartsValue = $apexcharts;
@@ -251,9 +248,7 @@
 											</td>
 										{/if}
 										<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1">
-											{#if $auth.user?.admin_level !== undefined &&
-												user.admin_level >= $auth.user.admin_level &&
-												(!$auth.impersonation || user.id !== $auth.impersonation.admin_id)}
+											{#if $auth.user?.admin_level !== undefined && user.admin_level >= $auth.user.admin_level && (!$auth.impersonation || user.id !== $auth.impersonation.admin_id)}
 												<span class="text-xs uppercase tracking-wide text-ctp-subtext1/80"
 													>Nothing</span
 												>

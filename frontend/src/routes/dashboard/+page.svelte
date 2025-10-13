@@ -2,7 +2,7 @@
 	import { createPieChartOptions, createBarChartOptions } from '$lib/utils/charts';
 	import LucideCopy from '~icons/lucide/copy';
 	import LucideCopyCheck from '~icons/lucide/copy-check';
-	import { onMount, tick } from 'svelte';
+	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 	import { apexcharts } from '$lib/stores/apexcharts';
 	import type ApexCharts from 'apexcharts';
@@ -51,8 +51,6 @@ api_key = ${dashboardData.api_key}`;
 
 	async function initializeCharts() {
 		if (!dashboardData) return;
-
-		await tick();
 
 		try {
 			const apexchartsValue = $apexcharts;
