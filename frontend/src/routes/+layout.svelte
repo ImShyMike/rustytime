@@ -58,7 +58,7 @@
 	<meta property="og:image" content={ogImageUrl} />
 	<meta property="og:image:alt" content="rustytime logo" />
 
-	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:card" content="summary" />
 	<meta name="twitter:title" content={SITE_TITLE} />
 	<meta name="twitter:description" content={SITE_DESCRIPTION} />
 	<meta name="twitter:image" content={ogImageUrl} />

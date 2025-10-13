@@ -66,7 +66,7 @@ export function handleAuthEffect<T = unknown>(params: AuthEffectParams<T>) {
 		return;
 	}
 
-	if (requireAdmin && user && !user.is_admin) {
+	if (requireAdmin && user && user.admin_level < 1) {
 		if (typeof window !== 'undefined') {
 			const target = resolve('/dashboard');
 			if (window.location.pathname !== target) {

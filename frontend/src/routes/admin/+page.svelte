@@ -73,7 +73,7 @@
 						theme
 					);
 					activityChart = new ApexCharts(activityElement, options);
-					activityChart.render();
+					await activityChart.render();
 				}
 			}
 		} catch (error) {

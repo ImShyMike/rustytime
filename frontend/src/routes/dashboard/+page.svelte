@@ -89,7 +89,7 @@ api_key = ${dashboardData.api_key}`;
 						theme
 					);
 					projectsChart = new ApexCharts(projectsElement, options);
-					projectsChart.render();
+					await projectsChart.render();
 				}
 			}
 
@@ -102,7 +102,7 @@ api_key = ${dashboardData.api_key}`;
 					}
 					const options = createPieChartOptions(dashboardData.languages.slice(0, 8), [], theme);
 					languagesChart = new ApexCharts(languagesElement, options);
-					languagesChart.render();
+					await languagesChart.render();
 				}
 			}
 
@@ -115,7 +115,7 @@ api_key = ${dashboardData.api_key}`;
 					}
 					const options = createPieChartOptions(dashboardData.editors.slice(0, 8), [], theme);
 					editorsChart = new ApexCharts(editorsElement, options);
-					editorsChart.render();
+					await editorsChart.render();
 				}
 			}
 
@@ -132,7 +132,7 @@ api_key = ${dashboardData.api_key}`;
 						theme
 					);
 					osChart = new ApexCharts(osElement, options);
-					osChart.render();
+					await osChart.render();
 				}
 			}
 		} catch (error) {
@@ -284,10 +284,10 @@ api_key = ${dashboardData.api_key}`;
 							<textarea
 								id="api-setup"
 								readonly
-								value={config}
 								rows="3"
 								class="resize-none text-text block w-full pr-14 px-2 py-2 border border-ctp-surface1 rounded-md bg-ctp-surface0/70 text-sm font-mono"
-							></textarea>
+								>{config}</textarea
+							>
 							<button
 								onclick={() => copySetup()}
 								aria-label="Copy setup to clipboard"

@@ -1,35 +1,39 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="manifest" href="/manifest.webmanifest">
-    <meta name="application-name" content="rustytime">
-    <meta name="theme-color" content="#b4befe">
-    <meta name="color-scheme" content="light dark">
-    <meta name="msapplication-square70x70logo" content="/pwa/mstile-icon-128.png">
-    <meta name="msapplication-square150x150logo" content="/pwa/mstile-icon-270.png">
-    <meta name="msapplication-square310x310logo" content="/pwa/mstile-icon-558.png">
-    <meta name="msapplication-wide310x150logo" content="/pwa/mstile-icon-558-270.png">
-  </head>
-  <body data-sveltekit-preload-data="hover">
-    %sveltekit.head%
-    <script>
-      (function() {
-        const savedTheme = localStorage.getItem('theme');
-        const prefersDark =
-          window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const theme =
-          savedTheme === 'light' || savedTheme === 'dark' ?
-          savedTheme :
-          prefersDark ?
-          'dark' :
-          'light';
-        if (theme === 'dark') {
-          document.documentElement.classList.add('mocha');
-        }
-      })();
-    </script>
-    <div style="display: contents">%sveltekit.body%</div>
-  </body>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="manifest" href="/manifest.webmanifest" />
+		<meta name="application-name" content="rustytime" />
+		<meta name="theme-color" content="#b4befe" />
+		<meta name="color-scheme" content="light dark" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+		<meta name="apple-mobile-web-app-title" content="rustytime" />
+		<meta name="msapplication-square70x70logo" content="/pwa/mstile-icon-128.png" />
+		<meta name="msapplication-square150x150logo" content="/pwa/mstile-icon-270.png" />
+		<meta name="msapplication-square310x310logo" content="/pwa/mstile-icon-558.png" />
+		<meta name="msapplication-wide310x150logo" content="/pwa/mstile-icon-558-270.png" />
+		<link rel="apple-touch-icon" href="/pwa/apple-icon-180.png" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		%sveltekit.head%
+		<script>
+			(function () {
+				const savedTheme = localStorage.getItem('theme');
+				const prefersDark =
+					window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+				const theme =
+					savedTheme === 'light' || savedTheme === 'dark'
+						? savedTheme
+						: prefersDark
+							? 'dark'
+							: 'light';
+				if (theme === 'dark') {
+					document.documentElement.classList.add('mocha');
+				}
+			})();
+		</script>
+		<div style="display: contents">%sveltekit.body%</div>
+	</body>
 </html>
