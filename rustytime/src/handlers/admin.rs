@@ -14,7 +14,7 @@ use tower_cookies::Cookies;
 
 use crate::models::heartbeat::{Heartbeat, LanguageCount, ProjectCount};
 use crate::models::session::Session;
-use crate::models::user::{User, PartialUser};
+use crate::models::user::{PartialUser, User};
 use crate::state::AppState;
 use crate::utils::session::{ImpersonationContext, SessionManager};
 use crate::{db_query, get_db_conn};

@@ -10,7 +10,10 @@ use axum::{
     body::Body,
     http::{Request, Response},
 };
-use std::{net::SocketAddr, time::Duration};
+use sentry::integrations::tower::{NewSentryLayer, SentryHttpLayer};
+use std::{env, net::SocketAddr, time::Duration};
+use tokio::runtime::Builder;
+use tower::ServiceBuilder;
 use tower_cookies::CookieManagerLayer;
 use tower_http::{
     compression::CompressionLayer, decompression::DecompressionLayer, limit::RequestBodyLimitLayer,
@@ -26,15 +29,35 @@ use utils::logging::init_tracing;
 use utils::middleware::cors_layer;
 
 use crate::routes::create_app_router;
+use crate::utils::logging::init_sentry;
 
-#[tokio::main]
-async fn main() {
+fn main() {
     // load environment variables from .env file
     dotenvy::dotenv().ok();
 
     // logging stuff
     init_tracing();
 
+    // initialize sentry if DSN is configured
+    let sentry_guard = init_sentry();
+    let sentry_enabled = sentry_guard.is_some();
+
+    let runtime = Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .unwrap_or_else(|err| {
+            error!("❌ Failed to build Tokio runtime: {}", err);
+            std::process::exit(1);
+        });
+
+    runtime.block_on(async_main(sentry_enabled));
+
+    if let Some(guard) = sentry_guard {
+        guard.close(None);
+    }
+}
+
+async fn async_main(sentry_enabled: bool) {
     let version = env!("CARGO_PKG_VERSION");
     info!("🚀 Starting the rustytime (v{}) server...", version);
 
@@ -68,7 +91,7 @@ async fn main() {
     let app_state = AppState::new(pool, github_client);
 
     // create the main application router
-    let app = create_app_router(app_state)
+    let mut app = create_app_router(app_state)
         .layer(CookieManagerLayer::new())
         .layer(cors_layer()) // add CORS
         .layer(CompressionLayer::new().gzip(true)) // enable gzip
@@ -99,8 +122,16 @@ async fn main() {
                 ),
         );
 
+    if sentry_enabled {
+        app = app.layer(
+            ServiceBuilder::new()
+                .layer(NewSentryLayer::<Request<Body>>::new_from_top())
+                .layer(SentryHttpLayer::new().enable_transaction()),
+        );
+    }
+
     // bind to address
-    let port = std::env::var("PORT")
+    let port = env::var("PORT")
         .unwrap_or_else(|_| "3000".to_string())
         .parse::<u16>()
         .unwrap_or(3000);
