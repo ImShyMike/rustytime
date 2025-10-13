@@ -2,7 +2,7 @@
 	import { createPieChartOptions, createBarChartOptions } from '$lib/utils/charts';
 	import LucideCopy from '~icons/lucide/copy';
 	import LucideCopyCheck from '~icons/lucide/copy-check';
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { browser } from '$app/environment';
 	import { apexcharts } from '$lib/stores/apexcharts';
 	import type ApexCharts from 'apexcharts';
@@ -52,6 +52,8 @@ api_key = ${dashboardData.api_key}`;
 	async function initializeCharts() {
 		if (!dashboardData) return;
 
+		await tick();
+
 		try {
 			const apexchartsValue = $apexcharts;
 			if (!isApexChartsConstructor(apexchartsValue)) {
@@ -89,7 +91,7 @@ api_key = ${dashboardData.api_key}`;
 						theme
 					);
 					projectsChart = new ApexCharts(projectsElement, options);
-					await projectsChart.render();
+					projectsChart.render();
 				}
 			}
 
@@ -102,7 +104,7 @@ api_key = ${dashboardData.api_key}`;
 					}
 					const options = createPieChartOptions(dashboardData.languages.slice(0, 8), [], theme);
 					languagesChart = new ApexCharts(languagesElement, options);
-					await languagesChart.render();
+					languagesChart.render();
 				}
 			}
 
@@ -115,7 +117,7 @@ api_key = ${dashboardData.api_key}`;
 					}
 					const options = createPieChartOptions(dashboardData.editors.slice(0, 8), [], theme);
 					editorsChart = new ApexCharts(editorsElement, options);
-					await editorsChart.render();
+					editorsChart.render();
 				}
 			}
 
@@ -132,7 +134,7 @@ api_key = ${dashboardData.api_key}`;
 						theme
 					);
 					osChart = new ApexCharts(osElement, options);
-					await osChart.render();
+					osChart.render();
 				}
 			}
 		} catch (error) {
