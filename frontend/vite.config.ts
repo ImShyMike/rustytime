@@ -15,9 +15,7 @@ export default defineConfig(({ mode }) => {
 			SvelteKitPWA({
 				strategies: 'generateSW',
 				workbox: {
-					globPatterns: [
-					'client/**/*.{js,css,ico,png,svg,webp,woff,woff2,webmanifest}'
-					]
+					globPatterns: ['client/**/*.{js,css,ico,png,svg,webp,woff,woff2,webmanifest}']
 				},
 				manifest: {
 					name: 'rustytime',
@@ -25,16 +23,16 @@ export default defineConfig(({ mode }) => {
 					description: '🕒 blazingly fast time tracking for developers',
 					theme_color: '#b4befe',
 					icons: [
-					{
-						src: 'pwa-192x192.png',
-						sizes: '192x192',
-						type: 'image/png'
-					},
-					{
-						src: 'pwa-512x512.png',
-						sizes: '512x512',
-						type: 'image/png'
-					}
+						{
+							src: 'pwa-192x192.png',
+							sizes: '192x192',
+							type: 'image/png'
+						},
+						{
+							src: 'pwa-512x512.png',
+							sizes: '512x512',
+							type: 'image/png'
+						}
 					]
 				},
 				devOptions: { enabled: true }
