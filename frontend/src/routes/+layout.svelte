@@ -11,9 +11,7 @@
 	const SITE_TITLE = 'rustytime';
 	const SITE_DESCRIPTION = 'Blazingly fast time tracking for developers.';
 	const SITE_URL = 'https://rustytime.shymike.dev';
-
-	const ogImagePath = favicon.startsWith('/') ? favicon : `/${favicon}`;
-	const ogImageUrl = `${SITE_URL}${ogImagePath}`;
+	const ogImageUrl = `${SITE_URL}/og-image.png`;
 
 	const canonicalUrl = $derived(`${SITE_URL}${page.url.pathname}${page.url.search}`);
 
