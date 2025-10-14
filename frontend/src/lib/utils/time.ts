@@ -18,6 +18,10 @@ const RELATIVE_DIVISIONS: Array<{ amount: number; unit: Intl.RelativeTimeFormatU
 ];
 
 export const formatRelativeTime = (from: Date, to = new Date()): string => {
+	if (isNaN(from.getTime()) || isNaN(to.getTime())) {
+		return 'Unknown';
+	}
+
 	let duration = (from.getTime() - to.getTime()) / 1000;
 
 	for (const division of RELATIVE_DIVISIONS) {
