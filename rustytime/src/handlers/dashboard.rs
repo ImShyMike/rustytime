@@ -82,11 +82,8 @@ pub async fn dashboard(
         username: user.name,
         user_id: user.id,
         github_id: session_data.github_user_id,
-        created_at: user.created_at.format("%Y-%m-%d %H:%M:%S UTC").to_string(),
-        expires_at: session_data
-            .expires_at
-            .format("%Y-%m-%d %H:%M:%S UTC")
-            .to_string(),
+        created_at: user.created_at.to_rfc3339(),
+        expires_at: session_data.expires_at.to_rfc3339(),
         api_key: user.api_key.to_string(),
         total_heartbeats,
         human_readable_total: human_readable_duration(
