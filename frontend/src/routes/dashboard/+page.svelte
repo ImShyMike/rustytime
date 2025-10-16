@@ -42,7 +42,7 @@
 	$effect(() => {
 		if (dashboardData && dashboardData.api_key) {
 			config = `[settings]
-api_url = "https://rustytime.shymike.dev/api/v1"
+api_url = "https://api-rustytime.shymike.dev/api/v1"
 api_key = ${dashboardData.api_key}`;
 		} else {
 			config = '';
