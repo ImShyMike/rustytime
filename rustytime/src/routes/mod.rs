@@ -9,9 +9,11 @@ use crate::utils::middleware;
 use axum::{
     Router, http::StatusCode, middleware as axum_middleware, response::IntoResponse, routing::get,
 };
+use axum_prometheus::PrometheusMetricLayer;
 
 /// Create the main application router
 pub fn create_app_router(app_state: AppState) -> Router {
+    let (prometheus_layer, metric_handle) = PrometheusMetricLayer::pair();
     Router::new()
         // public routes
         .merge(public_routes())
@@ -25,6 +27,8 @@ pub fn create_app_router(app_state: AppState) -> Router {
         .merge(create_admin_routes(app_state.clone()))
         // API routes
         .nest("/api/v1", api::create_api_router())
+        // metrics endpoint
+        .route("/metrics", get(|| async move { metric_handle.render() }))
         // catch-all fallback for unmatched routes (must be last)
         .fallback(not_found)
         // inject application state
@@ -34,6 +38,7 @@ pub fn create_app_router(app_state: AppState) -> Router {
             app_state,
             middleware::track_metrics,
         ))
+        .layer(prometheus_layer)
 }
 
 /// Handler for unmatched routes
