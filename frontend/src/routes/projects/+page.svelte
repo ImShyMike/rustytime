@@ -5,7 +5,8 @@
 	import LucideGithub from '~icons/lucide/github';
 	import LucideExternalLink from '~icons/lucide/external-link';
 	import StatCard from '$lib/components/ui/StatCard.svelte';
-	import { formatRelativeTime, creationDateFormatter } from '$lib/utils/time';
+	import { creationDateFormatter } from '$lib/utils/time';
+	import RelativeTime from '$lib/components/ui/RelativeTime.svelte';
 
 	interface Props {
 		data: PageData;
@@ -13,7 +14,7 @@
 
 	type EnhancedProject = Project & {
 		createdAtFormatted: string;
-		lastUpdated: string | null;
+		lastUpdated: Date | null;
 		lastUpdatedExact: string | null;
 		repoLabel: string | null;
 	};
@@ -21,6 +22,8 @@
 	let { data }: Props = $props();
 
 	const projectsData = data.projectsData;
+
+	let lastUpdatedAt = $state(new Date());
 
 	const formatRepoLabel = (repoUrl: string): string => {
 		try {
@@ -63,7 +66,7 @@
 				...project,
 				createdAtFormatted:
 					isCreatedAtValid && createdDate ? creationDateFormatter.format(createdDate) : 'Unknown',
-				lastUpdated: isUpdatedAtValid && updatedDate ? formatRelativeTime(updatedDate) : null,
+				lastUpdated: updatedDate,
 				lastUpdatedExact:
 					isUpdatedAtValid && updatedDate ? creationDateFormatter.format(updatedDate) : null,
 				repoLabel: project.repo_url ? formatRepoLabel(project.repo_url) : null
@@ -154,7 +157,7 @@
 											class="text-xs text-ctp-overlay1"
 											title={project.lastUpdatedExact ?? undefined}
 										>
-											Last updated {project.lastUpdated}
+											Last updated <RelativeTime datetime={project.lastUpdated} updateInterval={60000} />
 										</span>
 									{/if}
 								</div>
@@ -172,4 +175,9 @@
 			{/if}
 		</div>
 	</div>
+	{#if lastUpdatedAt}
+		<div class="text-center text-ctp-subtext0/85 hover:text-ctp-subtext1 text-sm mb-4" title={lastUpdatedAt.toLocaleString()}>
+			Last updated <RelativeTime datetime={lastUpdatedAt} />
+		</div>
+	{/if}
 {/if}

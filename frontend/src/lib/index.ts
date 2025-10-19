@@ -8,3 +8,4 @@ export { default as SectionTitle } from './components/ui/SectionTitle.svelte';
 export { default as SideBar } from './components/SideBar.svelte';
 export { default as StatCard } from './components/ui/StatCard.svelte';
 export { default as UserTag } from './components/ui/UserTag.svelte';
+export { default as RelativeTime } from './components/ui/RelativeTime.svelte';

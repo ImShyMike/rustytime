@@ -3,12 +3,12 @@
 	import { page } from '$app/state';
 	import { auth } from '$lib/stores/auth';
 	import { AuthErrorWarning, Meta, SideBar } from '$lib';
-	import PUBLIC_SITE_URL, { PUBLIC_BACKEND_API_URL } from '$env/static/public';
+	import { PUBLIC_BACKEND_API_URL } from '$env/static/public';
 
 	const props = $props();
 	let { children, data } = props;
 
-	const canonicalUrl = $derived(`${PUBLIC_SITE_URL}${page.url.pathname}${page.url.search}`);
+	const canonicalUrl = $derived(`${PUBLIC_BACKEND_API_URL}${page.url.pathname}${page.url.search}`);
 
 	type AuthData = App.PageData['auth'];
 	const DEFAULT_AUTH: AuthData = {
@@ -43,7 +43,7 @@
 	name='rustytime'
 	title='rustytime'
 	description='Blazingly fast time tracking for developers'
-	image={`${PUBLIC_SITE_URL}/og-image.png`}
+	image={`${PUBLIC_BACKEND_API_URL}/og-image.png`}
 	url={PUBLIC_BACKEND_API_URL}
 	canonical={canonicalUrl}
 	imageAlt="rustytime logo"

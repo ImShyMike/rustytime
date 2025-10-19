@@ -10,6 +10,7 @@
 	import type { PageData } from './$types';
 	import { Container, PageHeading, SectionTitle, StatCard, UserTag } from '$lib';
 	import { formatRelativeTime } from '$lib/utils/time';
+	import RelativeTime from '$lib/components/ui/RelativeTime.svelte';
 
 	type ApexChartsConstructor = new (element: Element | string, options: ApexOptions) => ApexCharts;
 
@@ -23,6 +24,8 @@
 
 	// Get dashboard data from server-side load
 	const dashboardData = data.dashboardData;
+
+	let lastUpdatedAt = $state(new Date());
 
 	let projectsChart: ApexCharts | null = null;
 	let languagesChart: ApexCharts | null = null;
@@ -308,4 +311,9 @@ api_key = ${dashboardData.api_key}`;
 			</Container>
 		</div>
 	</div>
+	{#if lastUpdatedAt}
+		<div class="text-center text-ctp-subtext0/85 hover:text-ctp-subtext1 text-sm mb-4" title={lastUpdatedAt.toLocaleString()}>
+			Last updated <RelativeTime datetime={lastUpdatedAt} />
+		</div>
+	{/if}
 {/if}

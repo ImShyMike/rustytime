@@ -8,6 +8,7 @@
 	import { Container, KeyValueList, PageHeading, SectionTitle, StatCard, UserTag } from '$lib';
 	import { auth } from '$lib/stores/auth';
 	import { impersonateUser } from '$lib/utils/admin';
+	import RelativeTime from '$lib/components/ui/RelativeTime.svelte';
 
 	type ApexChartsConstructor = new (element: Element | string, options: ApexOptions) => ApexCharts;
 
@@ -22,6 +23,8 @@
 
 	// Get admin data from server-side load
 	const adminData = data.adminData;
+
+	let lastUpdatedAt = $state(new Date());
 
 	let activityChart: ApexCharts | null = null;
 
@@ -281,4 +284,9 @@
 			{/if}
 		</div>
 	</div>
+	{#if lastUpdatedAt}
+		<div class="text-center text-ctp-subtext0/85 hover:text-ctp-subtext1 text-sm mb-4" title={lastUpdatedAt.toLocaleString()}>
+			Last updated <RelativeTime datetime={lastUpdatedAt} />
+		</div>
+	{/if}
 {/if}
