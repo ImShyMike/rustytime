@@ -5,7 +5,7 @@
 	import LucideGithub from '~icons/lucide/github';
 	import LucideExternalLink from '~icons/lucide/external-link';
 	import StatCard from '$lib/components/ui/StatCard.svelte';
-	import { creationDateFormatter } from '$lib/utils/time';
+	import { formatRelativeTime, creationDateFormatter } from '$lib/utils/time';
 	import RelativeTime from '$lib/components/ui/RelativeTime.svelte';
 
 	interface Props {
@@ -79,7 +79,7 @@
 	);
 	const lastUpdatedProjectLabel = $derived.by<string>(() => {
 		const project = formattedProjects[0];
-		return project?.lastUpdated ? `Updated ${project.lastUpdated}` : 'Awaiting activity';
+		return project?.lastUpdated ? `Updated ${formatRelativeTime(project.lastUpdated)}` : 'Awaiting activity';
 	});
 
 	const projectCount = $derived(formattedProjects.length);
