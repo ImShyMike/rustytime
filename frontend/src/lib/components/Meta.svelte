@@ -9,7 +9,7 @@
 		locale?: string;
 		twitterSite?: string | null;
 		url?: string | null;
-        canonical?: string | null;
+		canonical?: string | null;
 		imageAlt?: string | null;
 		maskIcon?: string | null;
 		maskIconColor?: string | null;
@@ -31,7 +31,7 @@
 	const locale = props.locale ?? 'en_US';
 	const twitterSite = props.twitterSite ?? '@rustytime';
 	const url = props.url ?? null;
-    const canonical = props.canonical ?? null;
+	const canonical = props.canonical ?? null;
 	const imageAlt = props.imageAlt ?? null;
 	const maskIcon = props.maskIcon ?? '/favicon.svg';
 	const maskIconColor = props.maskIconColor ?? null;
@@ -52,16 +52,15 @@
 	<meta property="og:locale" content={locale} />
 	<meta property="og:type" content="website" />
 	<meta property="og:site_name" content={name} />
-    <link rel="canonical" href={canonical} />
+	<link rel="canonical" href={canonical} />
 	{#if twitterSite}
 		<meta name="twitter:site" content={twitterSite} />
 	{/if}
 	{#if url}
 		<meta property="og:url" content={url} />
 	{/if}
-	<title>{computedTitle}</title>
 	<meta property="og:title" content={computedTitle} />
-    <meta name="application-name" content={name} />
+	<meta name="application-name" content={name} />
 	<meta name="twitter:title" content={computedTitle} />
 	{#if description}
 		<meta name="description" content={description} />
@@ -80,11 +79,11 @@
 		<meta name="twitter:card" content="summary" />
 	{/if}
 	<meta name="theme-color" content={color} />
-    <meta name="color-scheme" content="dark light" />
+	<meta name="color-scheme" content="dark light" />
 	<meta name="msapplication-TileColor" content={color} />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content={name} />
+	<meta name="apple-mobile-web-app-capable" content="yes" />
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+	<meta name="apple-mobile-web-app-title" content={name} />
 	{#if maskIcon}
 		{#if maskColor}
 			<link rel="mask-icon" href={maskIcon} color={maskColor} />

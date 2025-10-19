@@ -40,9 +40,8 @@
 </script>
 
 <Meta
-	name='rustytime'
-	title='rustytime'
-	description='Blazingly fast time tracking for developers'
+	name="rustytime"
+	description="Blazingly fast time tracking for developers"
 	image={`${PUBLIC_BACKEND_API_URL}/og-image.png`}
 	url={PUBLIC_BACKEND_API_URL}
 	canonical={canonicalUrl}

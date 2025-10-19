@@ -79,7 +79,9 @@
 	);
 	const lastUpdatedProjectLabel = $derived.by<string>(() => {
 		const project = formattedProjects[0];
-		return project?.lastUpdated ? `Updated ${formatRelativeTime(project.lastUpdated)}` : 'Awaiting activity';
+		return project?.lastUpdated
+			? `Updated ${formatRelativeTime(project.lastUpdated)}`
+			: 'Awaiting activity';
 	});
 
 	const projectCount = $derived(formattedProjects.length);
@@ -157,7 +159,10 @@
 											class="text-xs text-ctp-overlay1"
 											title={project.lastUpdatedExact ?? undefined}
 										>
-											Last updated <RelativeTime datetime={project.lastUpdated} updateInterval={60000} />
+											Last updated <RelativeTime
+												datetime={project.lastUpdated}
+												updateInterval={60000}
+											/>
 										</span>
 									{/if}
 								</div>
@@ -176,7 +181,10 @@
 		</div>
 	</div>
 	{#if lastUpdatedAt}
-		<div class="text-center text-ctp-subtext0/85 hover:text-ctp-subtext1 text-sm mb-4" title={lastUpdatedAt.toLocaleString()}>
+		<div
+			class="text-center text-ctp-subtext0/85 hover:text-ctp-subtext1 text-sm mb-4"
+			title={lastUpdatedAt.toLocaleString()}
+		>
 			Last updated <RelativeTime datetime={lastUpdatedAt} />
 		</div>
 	{/if}
