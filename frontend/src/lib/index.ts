@@ -2,6 +2,7 @@ export { default as AuthErrorWarning } from './components/notification/AuthError
 export { default as Container } from './components/ui/Container.svelte';
 export { default as KeyValueList } from './components/ui/KeyValueList.svelte';
 export { default as Logo } from './components/images/Logo.svelte';
+export { default as Meta } from './components/Meta.svelte';
 export { default as PageHeading } from './components/ui/PageHeading.svelte';
 export { default as SectionTitle } from './components/ui/SectionTitle.svelte';
 export { default as SideBar } from './components/SideBar.svelte';

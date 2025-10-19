@@ -1,19 +1,14 @@
 <script lang="ts">
 	import '../app.css';
-	import favicon from '$lib/assets/rustytime.svg';
 	import { page } from '$app/state';
 	import { auth } from '$lib/stores/auth';
-	import { AuthErrorWarning, SideBar } from '$lib';
+	import { AuthErrorWarning, Meta, SideBar } from '$lib';
+	import PUBLIC_SITE_URL, { PUBLIC_BACKEND_API_URL } from '$env/static/public';
 
 	const props = $props();
 	let { children, data } = props;
 
-	const SITE_TITLE = 'rustytime';
-	const SITE_DESCRIPTION = 'Blazingly fast time tracking for developers.';
-	const SITE_URL = 'https://rustytime.shymike.dev';
-	const ogImageUrl = `${SITE_URL}/og-image.png`;
-
-	const canonicalUrl = $derived(`${SITE_URL}${page.url.pathname}${page.url.search}`);
+	const canonicalUrl = $derived(`${PUBLIC_SITE_URL}${page.url.pathname}${page.url.search}`);
 
 	type AuthData = App.PageData['auth'];
 	const DEFAULT_AUTH: AuthData = {
@@ -44,25 +39,15 @@
 	});
 </script>
 
-<svelte:head>
-	<link rel="icon" href={favicon} />
-	<link rel="canonical" href={canonicalUrl} />
-	<title>{SITE_TITLE}</title>
-	<meta name="description" content={SITE_DESCRIPTION} />
-
-	<meta property="og:type" content="website" />
-	<meta property="og:site_name" content={SITE_TITLE} />
-	<meta property="og:title" content={SITE_TITLE} />
-	<meta property="og:description" content={SITE_DESCRIPTION} />
-	<meta property="og:url" content={canonicalUrl} />
-	<meta property="og:image" content={ogImageUrl} />
-	<meta property="og:image:alt" content="rustytime logo" />
-
-	<meta name="twitter:card" content="summary" />
-	<meta name="twitter:title" content={SITE_TITLE} />
-	<meta name="twitter:description" content={SITE_DESCRIPTION} />
-	<meta name="twitter:image" content={ogImageUrl} />
-</svelte:head>
+<Meta
+	name='rustytime'
+	title='rustytime'
+	description='Blazingly fast time tracking for developers'
+	image={`${PUBLIC_SITE_URL}/og-image.png`}
+	url={PUBLIC_BACKEND_API_URL}
+	canonical={canonicalUrl}
+	imageAlt="rustytime logo"
+/>
 
 <div class="app-container flex h-screen bg-mantle">
 	<div class="error-warning-container fixed top-0 left-0 right-0 z-50">
