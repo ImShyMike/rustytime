@@ -2093,7 +2093,7 @@ checksum = "8a0d197bd2c9dc6e53b84da9556a69ba4cdfab8619eb41a8bd1cc2027a0f6b1d"
 
 [[package]]
 name = "rustytime-server"
-version = "0.7.3"
+version = "0.7.4"
 dependencies = [
  "axum",
  "axum-prometheus",
@@ -2197,6 +2197,7 @@ dependencies = [
  "sentry-contexts",
  "sentry-core",
  "sentry-debug-images",
+ "sentry-log",
  "sentry-panic",
  "sentry-tower",
  "sentry-tracing",
@@ -2262,6 +2263,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dc85b59c1dfb19912bfba1af73a592e2e5548cae241a79ecb805afab3333d04c"
 dependencies = [
  "findshlibs",
+ "sentry-core",
+]
+
+[[package]]
+name = "sentry-log"
+version = "0.45.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "912fea629a3fc7bfcb97f7bde31a5c815df8526ba19088dcef3ae32ea1e25418"
+dependencies = [
+ "bitflags",
+ "log",
  "sentry-core",
 ]
 

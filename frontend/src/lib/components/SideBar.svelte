@@ -3,6 +3,7 @@
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import { auth } from '$lib/stores/auth';
+	import { initializeTheme, theme, toggleTheme } from '$lib/stores/theme';
 	import LucideLogIn from '~icons/lucide/log-in';
 	import LucideHouse from '~icons/lucide/house';
 	import LucideGauge from '~icons/lucide/gauge';
@@ -19,7 +20,6 @@
 	import UserTag from '$lib/components/ui/UserTag.svelte';
 	import { impersonateUser } from '$lib/utils/admin';
 
-	let currentTheme: 'light' | 'dark' = 'light';
 	let collapsed: boolean = false;
 	let buttonMode: boolean = false;
 	let showMobileSidebar: boolean = false;
@@ -35,18 +35,6 @@
 	function toggleCollapse() {
 		collapsed = !collapsed;
 		localStorage.setItem('sidebar_collapsed', collapsed ? '1' : '0');
-	}
-
-	function switchTheme() {
-		if (currentTheme === 'light') {
-			document.documentElement.classList.add('mocha');
-			currentTheme = 'dark';
-			localStorage.setItem('theme', 'dark');
-		} else {
-			document.documentElement.classList.remove('mocha');
-			currentTheme = 'light';
-			localStorage.setItem('theme', 'light');
-		}
 	}
 
 	function getNameSizeClass(name: string | null): string {
@@ -81,12 +69,7 @@
 	};
 
 	onMount(() => {
-		const savedTheme = localStorage.getItem('theme');
-		if (savedTheme === 'dark') {
-			currentTheme = 'dark';
-		} else {
-			currentTheme = 'light';
-		}
+		initializeTheme();
 
 		const savedCollapsed = localStorage.getItem('sidebar_collapsed');
 		if (savedCollapsed === '1') {
@@ -245,10 +228,10 @@
 				class="absolute {collapsed
 					? 'bottom-18'
 					: 'bottom-6'} left-6 cursor-pointer rounded-md items-center inline-flex hover:text-blue"
-				onclick={switchTheme}
+				onclick={toggleTheme}
 				aria-label="Toggle theme"
 			>
-				{#if currentTheme === 'light'}
+				{#if $theme === 'light'}
 					<LucideMoon class="w-8 h-8 text-subtext0" />
 				{:else}
 					<LucideSunMedium class="w-8 h-8 text-subtext0" />

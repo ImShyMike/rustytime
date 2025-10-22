@@ -32,6 +32,7 @@ pub fn init_sentry() -> Option<ClientInitGuard> {
             .ok()
             .and_then(|value| parse_env_bool(&value))
             .unwrap_or(true),
+        enable_logs: true,
         ..ClientOptions::default()
     };
 

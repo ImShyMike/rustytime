@@ -4,6 +4,7 @@ import type { ProjectsResponse } from '$lib/types/projects';
 import { redirect, error } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async (event) => {
+	event.depends('app:projects');
 	try {
 		// Fetch projects data on the server
 		const projectsData = await serverApi.get<ProjectsResponse>('/page/projects', event);

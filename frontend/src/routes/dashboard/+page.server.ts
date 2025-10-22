@@ -4,6 +4,7 @@ import type { DashboardResponse } from '$lib/types/dashboard';
 import { redirect, error } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async (event) => {
+	event.depends('app:dashboard');
 	try {
 		// Fetch dashboard data on the server
 		const dashboardData = await serverApi.get<DashboardResponse>('/page/dashboard', event);

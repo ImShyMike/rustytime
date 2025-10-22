@@ -4,6 +4,7 @@ import type { AdminResponse } from '$lib/types/admin';
 import { redirect, error } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async (event) => {
+	event.depends('app:admin');
 	try {
 		// Fetch admin data on the server
 		const adminData = await serverApi.get<AdminResponse>('/admin', event);
