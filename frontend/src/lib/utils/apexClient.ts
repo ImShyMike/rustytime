@@ -84,7 +84,7 @@ export async function ensureBarChart({
 			grid: options.grid,
 			legend: options.legend
 		},
-		false,
+		true,
 		true
 	);
 	chart.updateSeries(options.series as ChartSeries, true);
@@ -125,7 +125,7 @@ export async function ensurePieChart({
 			plotOptions: options.plotOptions,
 			grid: options.grid
 		},
-		false,
+		true,
 		true
 	);
 	chart.updateSeries(options.series as ChartSeries, true);
@@ -171,7 +171,7 @@ export async function ensureDateBarChart({
 			grid: options.grid,
 			legend: options.legend
 		},
-		false,
+		true,
 		true
 	);
 	chart.updateSeries(options.series as ChartSeries, true);

@@ -47,8 +47,7 @@ export function createPieChartOptions(
 			height: 350,
 			background: 'transparent',
 			animations: {
-				enabled: true,
-				speed: 800
+				enabled: false
 			}
 		},
 		labels: data.map((item) => item.name),
@@ -125,8 +124,7 @@ export function createBarChartOptions(
 			height: 350,
 			background: 'transparent',
 			animations: {
-				enabled: true,
-				speed: 800
+				enabled: false
 			},
 			toolbar: {
 				show: false
@@ -228,8 +226,7 @@ export function createDateBarChartOptions(
 			height: 350,
 			background: 'transparent',
 			animations: {
-				enabled: true,
-				speed: 800
+				enabled: false
 			},
 			toolbar: {
 				show: false
