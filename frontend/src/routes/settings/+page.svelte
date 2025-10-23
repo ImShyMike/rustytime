@@ -1,4 +1,4 @@
-<script lang="ts">;
+<script lang="ts">
 	import type { PageData } from './$types';
 	import { Container, PageScaffold, SectionTitle } from '$lib';
 	import LucideCopy from '~icons/lucide/copy';

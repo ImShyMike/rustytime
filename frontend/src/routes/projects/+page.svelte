@@ -109,7 +109,6 @@
 	const repoCount = $derived(
 		formattedProjects.filter((project) => Boolean(project.repo_url)).length
 	);
-
 </script>
 
 <svelte:head>

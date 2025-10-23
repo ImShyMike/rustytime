@@ -1,3 +1,3 @@
 export interface SettingsResponse {
-    api_key: string | undefined;
+	api_key: string | undefined;
 }

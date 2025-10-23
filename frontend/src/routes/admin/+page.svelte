@@ -98,7 +98,6 @@
 			console.error('Failed to initialize ApexCharts:', error);
 		}
 	}
-
 </script>
 
 <svelte:head>
@@ -234,14 +233,9 @@
 									<td class="px-6 py-4 whitespace-nowrap">
 										<div class="flex items-center">
 											{#if user.avatar_url}
-												<img
-													src={user.avatar_url}
-													alt="Avatar"
-													class="h-8 w-8 rounded-full mr-3"
-												/>
+												<img src={user.avatar_url} alt="Avatar" class="h-8 w-8 rounded-full mr-3" />
 											{/if}
-											<span class="text-sm font-medium text-ctp-text"
-												>{user.name || 'Unknown'}</span
+											<span class="text-sm font-medium text-ctp-text">{user.name || 'Unknown'}</span
 											>
 										</div>
 									</td>
