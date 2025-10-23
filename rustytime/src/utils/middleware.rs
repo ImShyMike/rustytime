@@ -2,7 +2,7 @@ use axum::{
     extract::{Request, State},
     http::{HeaderValue, StatusCode},
     middleware::Next,
-    response::{IntoResponse, Redirect, Response},
+    response::{IntoResponse, Response},
 };
 use reqwest::Method;
 use tower_cookies::Cookies;
@@ -29,7 +29,7 @@ pub async fn require_auth(
             }
             next.run(request).await
         }
-        Ok(None) => redirect_to_login(request).into_response(),
+        Ok(None) => (StatusCode::UNAUTHORIZED, "Authentication required").into_response(),
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response(),
     }
 }
@@ -81,32 +81,10 @@ pub async fn require_admin(
         }
         Ok(None) => {
             // user is not authenticated
-            redirect_to_login(request).into_response()
+            (StatusCode::UNAUTHORIZED, "Authentication required").into_response()
         }
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response(),
     }
-}
-
-fn redirect_to_login(request: Request) -> Redirect {
-    let current_path = request
-        .uri()
-        .path_and_query()
-        .map(|pq| pq.as_str())
-        .unwrap_or("/");
-
-    // validate the current_path
-    let safe_path = if current_path.starts_with("/") {
-        current_path
-    } else {
-        "/"
-    };
-
-    let redirect_url = format!(
-        "/auth/github/login?redirect={}",
-        urlencoding::encode(safe_path)
-    );
-
-    Redirect::to(&redirect_url)
 }
 
 /// Middleware to track request metrics

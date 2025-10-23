@@ -2,13 +2,12 @@ pub mod admin;
 pub mod api;
 pub mod github;
 
-use crate::handlers;
 use crate::handlers::homepage::home_page;
+use crate::handlers::{self, admin::admin_dashboard};
 use crate::state::AppState;
 use crate::utils::middleware;
-use axum::{
-    Router, http::StatusCode, middleware as axum_middleware, response::IntoResponse, routing::get,
-};
+use axum::routing::get;
+use axum::{Router, http::StatusCode, middleware as axum_middleware, response::IntoResponse};
 use axum_prometheus::PrometheusMetricLayer;
 
 /// Create the main application router
@@ -57,7 +56,8 @@ fn protected_routes(app_state: AppState) -> Router<AppState> {
             "/page",
             Router::new()
                 .route("/dashboard", get(handlers::dashboard::dashboard))
-                .route("/projects", get(handlers::projects::projects_dashboard)),
+                .route("/projects", get(handlers::projects::projects_dashboard))
+                .route("/settings", get(handlers::settings::settings_page)),
         )
         .layer(axum_middleware::from_fn_with_state(
             app_state,
@@ -77,6 +77,7 @@ fn protected_routes(app_state: AppState) -> Router<AppState> {
 /// Admin routes that require admin privileges
 pub fn create_admin_routes(app_state: AppState) -> Router<AppState> {
     Router::new()
+        .nest("/page", Router::new().route("/admin", get(admin_dashboard)))
         .nest("/admin", admin::admin_routes(app_state.clone()))
         .layer(axum_middleware::from_fn_with_state(
             app_state,

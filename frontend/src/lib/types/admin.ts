@@ -1,6 +1,4 @@
-import { type User } from '$lib/stores/auth';
-
-interface AdminStats {
+export interface AdminResponse {
 	total_users: number;
 	total_heartbeats: number;
 	heartbeats_last_hour: number;
@@ -18,10 +16,4 @@ interface AdminStats {
 		github_id: number;
 		admin_level: number;
 	}>;
-}
-
-export interface AdminResponse {
-	stats: AdminStats;
-	current_user: User;
-	auth_url: string | null;
 }

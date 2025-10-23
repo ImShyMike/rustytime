@@ -11,7 +11,6 @@
 		url?: string | null;
 		canonical?: string | null;
 		imageAlt?: string | null;
-		maskIcon?: string | null;
 		maskIconColor?: string | null;
 		appleIcon?: string | null;
 		favicon32?: string | null;
@@ -33,7 +32,6 @@
 	const url = props.url ?? null;
 	const canonical = props.canonical ?? null;
 	const imageAlt = props.imageAlt ?? null;
-	const maskIcon = props.maskIcon ?? '/favicon.svg';
 	const maskIconColor = props.maskIconColor ?? null;
 	const appleIcon = props.appleIcon ?? '/pwa/apple-icon-180.png';
 	const favicon32 = props.favicon32 ?? '/favicon.svg';
@@ -84,13 +82,6 @@
 	<meta name="apple-mobile-web-app-capable" content="yes" />
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 	<meta name="apple-mobile-web-app-title" content={name} />
-	{#if maskIcon}
-		{#if maskColor}
-			<link rel="mask-icon" href={maskIcon} color={maskColor} />
-		{:else}
-			<link rel="mask-icon" href={maskIcon} />
-		{/if}
-	{/if}
 	{#if appleIcon}
 		<link rel="apple-touch-icon" sizes="180x180" href={appleIcon} />
 	{/if}

@@ -26,7 +26,7 @@ pub struct FormattedDailyActivity {
 }
 
 #[derive(Serialize)]
-pub struct AdminStats {
+pub struct AdminDashboardResponse {
     pub total_users: i64,
     pub total_heartbeats: i64,
     pub heartbeats_last_hour: i64,
@@ -36,12 +36,6 @@ pub struct AdminStats {
     pub top_projects: Vec<ProjectCount>,
     pub daily_activity: Vec<FormattedDailyActivity>,
     pub all_users: Vec<PartialUser>,
-}
-
-#[derive(Serialize)]
-pub struct AdminDashboardResponse {
-    pub stats: AdminStats,
-    pub current_user: User,
 }
 
 #[derive(Serialize)]
@@ -76,7 +70,7 @@ pub async fn admin_dashboard(
         "Failed to fetch daily activity"
     );
     let all_users = db_query!(User::list_all_users(&mut conn), "Failed to fetch users");
-    let include_api_key = current_user.admin_level > 1;
+    let include_api_key = current_user.is_owner();
 
     let partial_users = all_users
         .iter()
@@ -102,8 +96,8 @@ pub async fn admin_dashboard(
         })
         .collect();
 
-    // fetch all statistics
-    let stats = AdminStats {
+    // fetch all statistics and return response
+    Ok(Json(AdminDashboardResponse {
         total_users: db_query!(User::count_total_users(&mut conn, false)),
         total_heartbeats: db_query!(Heartbeat::count_total_heartbeats(&mut conn)),
         heartbeats_last_hour: db_query!(Heartbeat::count_heartbeats_last_hour(&mut conn)),
@@ -114,11 +108,6 @@ pub async fn admin_dashboard(
         top_projects: db_query!(Heartbeat::get_top_projects(&mut conn, 10)),
         daily_activity,
         all_users: partial_users,
-    };
-
-    Ok(Json(AdminDashboardResponse {
-        stats,
-        current_user,
     }))
 }
 

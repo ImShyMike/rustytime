@@ -14,6 +14,7 @@
 	import LucideLogOut from '~icons/lucide/log-out';
 	import LucideUserMinus from '~icons/lucide/user-minus';
 	import LucideChevronsRight from '~icons/lucide/chevrons-right';
+	import LucideSettings from '~icons/lucide/settings'
 	import LucideMenu from '~icons/lucide/menu';
 	import LucideX from '~icons/lucide/x';
 	import { onMount } from 'svelte';
@@ -191,6 +192,21 @@
 					>
 						<LucideWrench class="w-6 h-6 inline" /><span class={collapsed ? 'hidden' : 'ml-2'}
 							>Admin</span
+						>
+					</a>
+				{/if}
+				{#if $auth.isAuthenticated && $auth.user}
+					<a
+						href={resolve('/settings')}
+						onclick={() => setTimeout(closeMobileSidebar, 100)}
+						data-sveltekit-preload-data="hover"
+						class="w-full text-left cursor-pointer py-2 rounded-md items-center inline-flex {page.url
+							.pathname === '/settings'
+							? 'bg-surface0/70 text-lavender'
+							: 'hover:bg-surface1/50'} {collapsed ? 'justify-center' : 'px-3'}"
+					>
+						<LucideSettings class="w-6 h-6 inline" /><span class={collapsed ? 'hidden' : 'ml-2'}
+							>Settings</span
 						>
 					</a>
 				{/if}

@@ -21,7 +21,6 @@ pub struct DashboardResponse {
     github_id: i64,
     created_at: String,
     expires_at: String,
-    api_key: String,
     total_heartbeats: i64,
     human_readable_total: String,
     admin_level: i16,
@@ -84,7 +83,6 @@ pub async fn dashboard(
         github_id: session_data.github_user_id,
         created_at: user.created_at.to_rfc3339(),
         expires_at: session_data.expires_at.to_rfc3339(),
-        api_key: user.api_key.to_string(),
         total_heartbeats,
         human_readable_total: human_readable_duration(
             dashboard_stats.total_time,

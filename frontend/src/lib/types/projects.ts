@@ -1,5 +1,3 @@
-import { type User } from '$lib/stores/auth';
-
 export interface Project {
 	id: number;
 	name: string;
@@ -11,7 +9,5 @@ export interface Project {
 }
 
 export interface ProjectsResponse {
-	auth_url: string | null;
-	current_user: User;
 	projects: Project[];
 }

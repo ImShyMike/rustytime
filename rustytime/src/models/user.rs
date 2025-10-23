@@ -95,6 +95,10 @@ impl User {
         self.admin_level > 0
     }
 
+    pub fn is_owner(&self) -> bool {
+        self.admin_level > 1
+    }
+
     pub fn list_all_users(conn: &mut PgConnection) -> QueryResult<Vec<User>> {
         users::table.load::<User>(conn)
     }

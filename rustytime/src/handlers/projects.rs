@@ -27,7 +27,6 @@ pub struct Project {
 #[derive(Serialize)]
 pub struct ProjectsDashboardResponse {
     pub projects: Vec<Project>,
-    pub current_user: User,
 }
 
 /// Handler for the projects dashboard page
@@ -64,8 +63,5 @@ pub async fn projects_dashboard(
         })
         .collect();
 
-    Ok(Json(ProjectsDashboardResponse {
-        projects,
-        current_user,
-    }))
+    Ok(Json(ProjectsDashboardResponse { projects }))
 }

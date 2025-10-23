@@ -9,10 +9,6 @@ export const load: PageServerLoad = async (event) => {
 		// Fetch projects data on the server
 		const projectsData = await serverApi.get<ProjectsResponse>('/page/projects', event);
 
-		if (projectsData && projectsData.auth_url) {
-			throw redirect(302, '/?auth_error=unauthorized');
-		}
-
 		return {
 			projectsData
 		};

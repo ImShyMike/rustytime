@@ -89,7 +89,7 @@
 				ChartCtor: ApexCharts,
 				chart: activityChart,
 				elementId: 'activity-chart',
-				data: adminData.stats.daily_activity,
+				data: adminData.daily_activity,
 				theme,
 				seriesName: 'Heartbeats',
 				horizontal: false
@@ -111,22 +111,22 @@
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
 			<StatCard
 				title="Total Users"
-				value={adminData.stats.total_users}
+				value={adminData.total_users}
 				valueClass="text-3xl font-bold text-ctp-blue-600"
 			/>
 			<StatCard
 				title="Total Heartbeats"
-				value={adminData.stats.total_heartbeats.toLocaleString()}
+				value={adminData.total_heartbeats.toLocaleString()}
 				valueClass="text-3xl font-bold text-ctp-green-600"
 			/>
 			<StatCard
 				title="Last 24h"
-				value={adminData.stats.heartbeats_last_24h.toLocaleString()}
+				value={adminData.heartbeats_last_24h.toLocaleString()}
 				valueClass="text-3xl font-bold text-ctp-mauve-600"
 			/>
 			<StatCard
 				title="Requests/sec"
-				value={adminData.stats.requests_per_second}
+				value={adminData.requests_per_second}
 				valueClass="text-3xl font-bold text-ctp-peach-600"
 			/>
 		</div>
@@ -134,11 +134,11 @@
 		<!-- Top Lists -->
 		<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
 			<!-- Top Languages -->
-			{#if adminData.stats.top_projects.length !== 0}
+			{#if adminData.top_projects.length !== 0}
 				<Container>
 					<SectionTitle className="mb-2">Top Languages</SectionTitle>
 					<KeyValueList
-						items={adminData.stats.top_languages.slice(0, 10).map((lang) => ({
+						items={adminData.top_languages.slice(0, 10).map((lang) => ({
 							id: lang.language,
 							label: lang.language,
 							value: lang.count.toLocaleString()
@@ -154,11 +154,11 @@
 			{/if}
 
 			<!-- Top Projects -->
-			{#if adminData.stats.top_projects.length !== 0}
+			{#if adminData.top_projects.length !== 0}
 				<Container>
 					<SectionTitle className="mb-2">Top Projects</SectionTitle>
 					<KeyValueList
-						items={adminData.stats.top_projects.slice(0, 10).map((project) => ({
+						items={adminData.top_projects.slice(0, 10).map((project) => ({
 							id: project.project,
 							label: project.project,
 							value: project.count.toLocaleString(),
@@ -176,7 +176,7 @@
 		</div>
 
 		<!-- Daily Activity Chart -->
-		{#if adminData.stats.daily_activity.length > 0}
+		{#if adminData.daily_activity.length > 0}
 			<Container className="mb-4">
 				<SectionTitle className="mb-4">Daily Activity (Past Week)</SectionTitle>
 
@@ -186,12 +186,12 @@
 			<Container
 				className="flex flex-col items-center gap-4 border border-dashed border-ctp-surface0/80 py-12 text-center mb-4"
 			>
-				<p class="text-lg font-semibold text-ctp-text">No activity data available</p>
+				<p class="text-lg font-semibold text-ctp-text">No recent activity data available</p>
 			</Container>
 		{/if}
 
 		<!-- User List -->
-		{#if adminData.stats.all_users.length > 0}
+		{#if adminData.all_users.length > 0}
 			<Container>
 				<SectionTitle className="mb-4">All Users</SectionTitle>
 				<div class="overflow-x-auto">
@@ -213,7 +213,7 @@
 								<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
 									>Type</th
 								>
-								{#if adminData.stats.all_users[0].api_key}
+								{#if adminData.all_users[0].api_key}
 									<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
 										>API Key</th
 									>
@@ -224,7 +224,7 @@
 							</tr>
 						</thead>
 						<tbody class="bg-ctp-mantle divide-y divide-ctp-surface1">
-							{#each [...adminData.stats.all_users].sort((a, b) => {
+							{#each [...adminData.all_users].sort((a, b) => {
 								const adminDiff = (b.admin_level ?? 0) - (a.admin_level ?? 0);
 								if (adminDiff !== 0) return adminDiff;
 								return a.id - b.id;

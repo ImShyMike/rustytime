@@ -1,16 +1,15 @@
 import type { PageServerLoad } from './$types';
 import { serverApi, ServerApiError } from '$lib/utils/serverApi';
-import type { AdminResponse } from '$lib/types/admin';
+import type { SettingsResponse } from '$lib/types/settings';
 import { redirect, error } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async (event) => {
-	event.depends('app:admin');
 	try {
-		// Fetch admin data on the server
-		const adminData = await serverApi.get<AdminResponse>('/page/admin', event);
+		// Fetch settings data on the server
+		const settingsData = await serverApi.get<SettingsResponse>('/page/settings', event);
 
 		return {
-			adminData
+			settingsData
 		};
 	} catch (err) {
 		// Re-throw SvelteKit redirects
@@ -29,7 +28,7 @@ export const load: PageServerLoad = async (event) => {
 		}
 
 		// For unexpected errors
-		console.error('Unexpected error in admin load:', err);
+		console.error('Unexpected error in dashboard load:', err);
 		throw error(500, 'Internal server error');
 	}
 };
