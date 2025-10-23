@@ -10,7 +10,7 @@
 
 	let { data }: Props = $props();
 
-	let settingsData = $state(data.settingsData);
+	let settingsData = $state(data);
 
 	let config: string = $state('');
 	let copied: boolean = $state(false);

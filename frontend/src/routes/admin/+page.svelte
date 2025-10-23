@@ -19,7 +19,7 @@
 
 	let { data }: Props = $props();
 
-	let adminData = $state(data.adminData);
+	let adminData = $state(data);
 	let lastUpdatedAt = $state(new Date());
 
 	let activityChart: ApexCharts | null = null;
@@ -41,7 +41,7 @@
 	});
 
 	$effect(() => {
-		const payload = data.adminData;
+		const payload = data;
 		adminData = payload;
 		if (payload) {
 			lastUpdatedAt = new Date();

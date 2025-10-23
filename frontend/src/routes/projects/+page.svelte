@@ -23,7 +23,7 @@
 
 	let { data }: Props = $props();
 
-	let projectsData = $state(data.projectsData);
+	let projectsData = $state(data);
 
 	const refreshProjectsData = async () => {
 		await invalidate('app:projects');
@@ -39,7 +39,7 @@
 	});
 
 	$effect(() => {
-		const payload = data.projectsData;
+		const payload = data;
 		projectsData = payload;
 		if (payload) {
 			lastUpdatedAt = new Date();
