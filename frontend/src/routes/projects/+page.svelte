@@ -92,6 +92,8 @@
 					isUpdatedAtValid && updatedDate ? creationDateFormatter.format(updatedDate) : null,
 				repoLabel: project.repo_url ? formatRepoLabel(project.repo_url) : null
 			} satisfies EnhancedProject;
+		}).sort((a, b) => {
+			return b.total_seconds - a.total_seconds;
 		});
 	});
 
