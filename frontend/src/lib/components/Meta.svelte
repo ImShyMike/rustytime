@@ -13,10 +13,6 @@
 		imageAlt?: string | null;
 		maskIconColor?: string | null;
 		appleIcon?: string | null;
-		favicon32?: string | null;
-		favicon32Type?: string | null;
-		favicon16?: string | null;
-		favicon16Type?: string | null;
 		children?: () => unknown;
 	}>();
 	const renderChildren = props.children;
@@ -34,10 +30,6 @@
 	const imageAlt = props.imageAlt ?? null;
 	const maskIconColor = props.maskIconColor ?? null;
 	const appleIcon = props.appleIcon ?? '/pwa/apple-icon-180.png';
-	const favicon32 = props.favicon32 ?? '/favicon.svg';
-	const favicon32Type = props.favicon32Type ?? 'image/svg+xml';
-	const favicon16 = props.favicon16 ?? '/favicon.ico';
-	const favicon16Type = props.favicon16Type ?? 'image/x-icon';
 
 	const makeTitle = (pageTitle: string, siteName: string) =>
 		pageTitle === siteName ? pageTitle : `${pageTitle} - ${siteName}`;
@@ -84,20 +76,6 @@
 	<meta name="apple-mobile-web-app-title" content={name} />
 	{#if appleIcon}
 		<link rel="apple-touch-icon" sizes="180x180" href={appleIcon} />
-	{/if}
-	{#if favicon32}
-		{#if favicon32Type}
-			<link rel="icon" type={favicon32Type} sizes="32x32" href={favicon32} />
-		{:else}
-			<link rel="icon" sizes="32x32" href={favicon32} />
-		{/if}
-	{/if}
-	{#if favicon16}
-		{#if favicon16Type}
-			<link rel="icon" type={favicon16Type} sizes="16x16" href={favicon16} />
-		{:else}
-			<link rel="icon" sizes="16x16" href={favicon16} />
-		{/if}
 	{/if}
 	{#if manifest}
 		<link rel="manifest" href={manifest} />
