@@ -81,7 +81,7 @@ pub async fn admin_dashboard(
             avatar_url: user.avatar_url.clone(),
             admin_level: user.admin_level,
             is_banned: user.is_banned,
-            api_key: include_api_key.then_some(user.api_key.clone()),
+            api_key: include_api_key.then_some(user.api_key),
             created_at: user.created_at,
             updated_at: user.updated_at,
         })
@@ -240,7 +240,11 @@ pub async fn change_user_admin_level(
     }
 
     if target_user.admin_level >= current_user.admin_level {
-        return Err((StatusCode::BAD_REQUEST, "Cannot change admin level of equal or higher admin").into_response());
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "Cannot change admin level of equal or higher admin",
+        )
+            .into_response());
     }
 
     db_query!(

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { tick } from 'svelte';
 	import { browser } from '$app/environment';
+	import { PUBLIC_BACKEND_API_URL } from '$env/static/public';
 	import { invalidate } from '$app/navigation';
 	import { apexcharts } from '$lib/stores/apexcharts';
 	import { theme } from '$lib/stores/theme';
@@ -34,7 +35,7 @@
 		}
 
 		try {
-			const response = await fetch(`/admin/admin_level/${userId}/${targetLevel}`, {
+			const response = await fetch(`${PUBLIC_BACKEND_API_URL}/admin/admin_level/${userId}/${targetLevel}`, {
 				method: 'GET',
 				credentials: 'include'
 			});
