@@ -28,6 +28,41 @@
 		await invalidate('app:admin');
 	};
 
+	const changeAdminLevel = async (userId: number, targetLevel: number) => {
+		if (!browser || targetLevel < 0) {
+			return;
+		}
+
+		try {
+			const response = await fetch(`/admin/admin_level/${userId}/${targetLevel}`, {
+				method: 'GET',
+				credentials: 'include'
+			});
+
+			if (!response.ok) {
+				throw new Error(await response.text());
+			}
+
+			await refreshAdminData();
+		} catch (error) {
+			console.error('Failed to update admin level:', error);
+		}
+	};
+
+	const promoteUser = async (userId: number, currentLevel: number | null | undefined) => {
+		const nextLevel = (currentLevel ?? 0) + 1;
+		await changeAdminLevel(userId, nextLevel);
+	};
+
+	const demoteUser = async (userId: number, currentLevel: number | null | undefined) => {
+		const nextLevel = Math.max(0, (currentLevel ?? 0) - 1);
+		if (nextLevel === (currentLevel ?? 0)) {
+			return;
+		}
+
+		await changeAdminLevel(userId, nextLevel);
+	};
+
 	function destroyCharts() {
 		activityChart = destroyChart(activityChart);
 	}
@@ -265,16 +300,41 @@
 												>Nothing</span
 											>
 										{:else}
-											<button
-												onclick={() => impersonateUser(user.id)}
-												class="cursor-pointer inline-flex items-center justify-center rounded bg-ctp-lavender px-3 py-1 text-xs font-semibold text-ctp-base transition hover:bg-ctp-blue"
-											>
-												{#if $auth.impersonation && user.id === $auth.impersonation.admin_id}
-													Go back
-												{:else}
-													Impersonate
+											<div class="flex flex-wrap items-center gap-2">
+												<button
+													onclick={() => impersonateUser(user.id)}
+													class="cursor-pointer inline-flex items-center justify-center rounded bg-ctp-lavender px-3 py-1 text-xs font-semibold text-ctp-base transition hover:bg-ctp-blue"
+												>
+													{#if $auth.impersonation && user.id === $auth.impersonation.admin_id}
+														Go back
+													{:else}
+														Impersonate
+													{/if}
+												</button>
+
+												{#if $auth.user?.admin_level === undefined ||
+														($auth.user.admin_level ?? 0) > ((user.admin_level ?? 0) + 1)}
+													<button
+														class="cursor-pointer inline-flex items-center justify-center rounded bg-ctp-green px-3 py-1 text-xs font-semibold text-ctp-base transition hover:bg-ctp-teal"
+														onclick={() => {
+															void promoteUser(user.id, user.admin_level);
+														}}
+													>
+														Promote
+													</button>
 												{/if}
-											</button>
+
+												{#if (user.admin_level ?? 0) > 0}
+													<button
+														class="cursor-pointer inline-flex items-center justify-center rounded bg-ctp-red px-3 py-1 text-xs font-semibold text-ctp-base transition hover:bg-ctp-maroon"
+														onclick={() => {
+															void demoteUser(user.id, user.admin_level);
+														}}
+													>
+														Demote
+													</button>
+												{/if}
+											</div>
 										{/if}
 									</td>
 								</tr>

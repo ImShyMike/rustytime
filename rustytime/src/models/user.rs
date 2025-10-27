@@ -120,4 +120,14 @@ impl User {
             users::table.count().get_result(conn)
         }
     }
+
+    pub fn set_admin_level(
+        conn: &mut PgConnection,
+        user_id: i32,
+        new_level: i16,
+    ) -> QueryResult<usize> {
+        diesel::update(users::table.find(user_id))
+            .set(users::admin_level.eq(new_level))
+            .execute(conn)
+    }
 }
