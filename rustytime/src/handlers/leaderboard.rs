@@ -57,21 +57,21 @@ pub async fn leaderboard_page(
         daily: LeaderboardData {
             generated_at: daily_data
                 .first()
-                .map(|l| l.created_at)
+                .map(|l| l.updated_at)
                 .unwrap_or_else(Utc::now),
             entries: daily,
         },
         weekly: LeaderboardData {
             generated_at: weekly_data
                 .first()
-                .map(|l| l.created_at)
+                .map(|l| l.updated_at)
                 .unwrap_or_else(Utc::now),
             entries: weekly,
         },
         all_time: LeaderboardData {
             generated_at: all_time_data
                 .first()
-                .map(|l| l.created_at)
+                .map(|l| l.updated_at)
                 .unwrap_or_else(Utc::now),
             entries: all_time,
         },
