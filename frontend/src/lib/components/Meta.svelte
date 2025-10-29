@@ -11,7 +11,6 @@
 		url?: string | null;
 		canonical?: string | null;
 		imageAlt?: string | null;
-		maskIconColor?: string | null;
 		appleIcon?: string | null;
 		children?: () => unknown;
 	}>();
@@ -28,14 +27,12 @@
 	const url = props.url ?? null;
 	const canonical = props.canonical ?? null;
 	const imageAlt = props.imageAlt ?? null;
-	const maskIconColor = props.maskIconColor ?? null;
 	const appleIcon = props.appleIcon ?? '/pwa/apple-icon-180.png';
 
 	const makeTitle = (pageTitle: string, siteName: string) =>
 		pageTitle === siteName ? pageTitle : `${pageTitle} - ${siteName}`;
 
 	const computedTitle = $derived(makeTitle(title, name));
-	const maskColor = $derived(maskIconColor ?? color);
 </script>
 
 <svelte:head>
