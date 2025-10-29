@@ -35,7 +35,7 @@ export const formatRelativeTime = (from: Date, to = new Date()): string => {
 	return '';
 };
 
-export const formatDuration = (seconds: number): string => {
+export const formatDuration = (seconds: number, includeSeconds: boolean = true): string => {
 	if (!Number.isFinite(seconds) || seconds <= 0) {
 		return '-';
 	}
@@ -56,8 +56,10 @@ export const formatDuration = (seconds: number): string => {
 		parts.push(`${minutes}m`);
 	}
 
-	if (parts.length === 0 || secs > 0) {
-		parts.push(`${secs}s`);
+	if (includeSeconds || (minutes === 0 && hours === 0)) {
+		if (parts.length === 0 || secs > 0) {
+			parts.push(`${secs}s`);
+		}
 	}
 
 	return parts.join(' ');

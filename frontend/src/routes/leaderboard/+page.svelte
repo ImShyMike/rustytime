@@ -108,8 +108,8 @@
 										<span class="font-medium text-text overflow-hidden text-ellipsis whitespace-nowrap">{entry.user_name}</span>
 									</div>
 								</td>
-								<td class="px-6 py-4 text-right font-mono text-lg text-text">
-									{formatDuration(entry.total_seconds)}
+								<td class="px-6 py-4 text-right font-mono text-lg text-text" title={formatDuration(entry.total_seconds)}>
+									{formatDuration(entry.total_seconds, false)}
 								</td>
 							</tr>
 						{/each}
