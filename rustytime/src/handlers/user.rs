@@ -4,7 +4,6 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use chrono::Utc;
 use diesel::prelude::*;
-use diesel::upsert::excluded;
 use ipnetwork::IpNetwork;
 use serde_json::json;
 use std::net::IpAddr;
@@ -22,6 +21,7 @@ use crate::schema::heartbeats;
 use crate::state::AppState;
 use crate::utils::auth::{get_user_id_from_api_key, get_valid_api_key};
 use crate::utils::time::{TimeFormat, human_readable_duration};
+use std::collections::{HashMap, hash_map};
 
 const MAX_HEARTBEATS_PER_REQUEST: usize = 25;
 
@@ -217,7 +217,7 @@ pub async fn get_statusbar_today(
 /// Store heartbeats in the database and return them
 pub async fn store_heartbeats_in_db(
     pool: &DbPool,
-    mut new_heartbeats: Vec<NewHeartbeat>,
+    new_heartbeats: Vec<NewHeartbeat>,
 ) -> Result<Vec<HeartbeatResponse>, diesel::result::Error> {
     let pool = pool.clone();
 
@@ -225,7 +225,12 @@ pub async fn store_heartbeats_in_db(
         let mut connection = pool.get().expect("Failed to get DB connection from pool");
 
         connection.transaction(|conn| {
-            for heartbeat in &mut new_heartbeats {
+            let mut keys_to_insert = Vec::new();
+            let mut heartbeat_keys = Vec::new();
+            let mut seen = HashMap::new();
+            let mut deduplicated = Vec::new();
+
+            for mut heartbeat in new_heartbeats {
                 if heartbeat.project_id.is_none() {
                     if let Some(project_name) = heartbeat.project.as_ref() {
                         let project_id =
@@ -233,20 +238,40 @@ pub async fn store_heartbeats_in_db(
                         heartbeat.project_id = Some(project_id);
                     }
                 }
+
+                let key = (heartbeat.user_id, heartbeat.time);
+                heartbeat_keys.push(key);
+
+                if let hash_map::Entry::Vacant(e) = seen.entry(key) {
+                    e.insert(());
+                    deduplicated.push(heartbeat);
+                    keys_to_insert.push(key);
+                }
             }
 
-            let inserted_ids: Vec<i64> = diesel::insert_into(heartbeats::table)
-                .values(&new_heartbeats)
+            diesel::insert_into(heartbeats::table)
+                .values(&deduplicated)
                 .on_conflict((heartbeats::user_id, heartbeats::time))
-                .do_update()
-                .set(heartbeats::time.eq(excluded(heartbeats::time)))
-                .returning(heartbeats::id)
-                .get_results(conn)?;
+                .do_nothing()
+                .execute(conn)?;
 
-            let responses = inserted_ids
+            let unique_keys: Vec<_> = seen.keys().copied().collect();
+            let mut heartbeat_cache: HashMap<(i32, chrono::DateTime<Utc>), Heartbeat> =
+                HashMap::new();
+            for (uid, t) in unique_keys {
+                let hb = heartbeats::table
+                    .filter(heartbeats::user_id.eq(uid))
+                    .filter(heartbeats::time.eq(t))
+                    .first::<Heartbeat>(conn)?;
+                heartbeat_cache.insert((uid, t), hb);
+            }
+
+            let responses: Vec<HeartbeatResponse> = heartbeat_keys
                 .into_iter()
-                .zip(new_heartbeats.into_iter())
-                .map(HeartbeatResponse::from)
+                .map(|key| {
+                    let hb = heartbeat_cache.get(&key).unwrap().clone();
+                    HeartbeatResponse::from(hb)
+                })
                 .collect();
 
             Ok(responses)

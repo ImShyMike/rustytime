@@ -8,7 +8,16 @@ use std::sync::Mutex;
 
 use crate::schema::projects;
 
-static PROJECT_CACHE: Lazy<Mutex<HashMap<(i32, String), i32>>> =
+use std::time::SystemTime;
+
+struct CachedProjectId {
+    id: i32,
+    cached_at: SystemTime,
+}
+
+const TTL_SECONDS: u64 = 600; // 10 minutes
+
+static PROJECT_CACHE: Lazy<Mutex<HashMap<(i32, String), CachedProjectId>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
 
 #[derive(Insertable)]
@@ -53,10 +62,24 @@ pub fn get_or_create_project_id(
     project_name: &str,
     repo_url_param: Option<&str>,
 ) -> QueryResult<i32> {
+    let now = SystemTime::now();
     {
-        let cache = PROJECT_CACHE.lock().unwrap();
-        if let Some(&cached_id) = cache.get(&(user_id_param, project_name.to_string())) {
-            return Ok(cached_id);
+        let mut cache = PROJECT_CACHE.lock().unwrap();
+        cache.retain(|_, v| {
+            v.cached_at
+                .elapsed()
+                .map(|e| e.as_secs() < TTL_SECONDS)
+                .unwrap_or(false)
+        });
+        if let Some(cached) = cache.get(&(user_id_param, project_name.to_string())) {
+            if cached
+                .cached_at
+                .elapsed()
+                .map(|e| e.as_secs() < TTL_SECONDS)
+                .unwrap_or(false)
+            {
+                return Ok(cached.id);
+            }
         }
     }
 
@@ -71,7 +94,8 @@ pub fn get_or_create_project_id(
     let inserted_id: i32 = insert_into(projects)
         .values(&new_project)
         .on_conflict((user_id, name))
-        .do_nothing()
+        .do_update()
+        .set(updated_at.eq(diesel::dsl::now))
         .returning(id)
         .get_result(conn)
         .or_else(|_| {
@@ -82,10 +106,13 @@ pub fn get_or_create_project_id(
                 .first(conn)
         })?;
 
-    PROJECT_CACHE
-        .lock()
-        .unwrap()
-        .insert((user_id_param, project_name.to_string()), inserted_id);
+    PROJECT_CACHE.lock().unwrap().insert(
+        (user_id_param, project_name.to_string()),
+        CachedProjectId {
+            id: inserted_id,
+            cached_at: now,
+        },
+    );
 
     Ok(inserted_id)
 }

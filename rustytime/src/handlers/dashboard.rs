@@ -31,7 +31,7 @@ pub struct DashboardResponse {
     languages: Vec<UsageStat>,
 }
 
-/// Handler for the dashboard page (will likely be done using svelteKit later)
+/// Handler for the dashboard page
 pub async fn dashboard(
     State(app_state): State<AppState>,
     cookies: Cookies,
@@ -41,7 +41,7 @@ pub async fn dashboard(
     if user.is_none() {
         return Err((
             StatusCode::INTERNAL_SERVER_ERROR,
-            "This should not happen D:",
+            "User should be authenticated since middleware validated authentication",
         )
             .into_response());
     }
@@ -57,7 +57,7 @@ pub async fn dashboard(
     ) else {
         return Err((
             StatusCode::INTERNAL_SERVER_ERROR,
-            "This should not happen D:",
+            "User should be authenticated since middleware validated authentication",
         )
             .into_response());
     };
