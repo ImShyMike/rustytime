@@ -193,7 +193,6 @@
 		<!-- Dashboard Statistics -->
 		{#if dashboardData.projects.length || dashboardData.languages.length || dashboardData.editors.length || dashboardData.operating_systems.length}
 			<Container className="mb-4">
-				<SectionTitle level="h2" className="mb-3 text-lavender">Dashboard Statistics</SectionTitle>
 				<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 					<!-- Top Projects (Horizontal Bar Chart) -->
 					<div>

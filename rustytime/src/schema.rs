@@ -32,6 +32,20 @@ diesel::table! {
 }
 
 diesel::table! {
+    leaderboards (id) {
+        id -> Int4,
+        user_id -> Int4,
+        #[max_length = 20]
+        period_type -> Varchar,
+        period_date -> Date,
+        total_seconds -> Int8,
+        rank -> Int4,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     projects (id) {
         id -> Int4,
         user_id -> Int4,
@@ -72,6 +86,7 @@ diesel::table! {
 }
 
 diesel::joinable!(heartbeats -> users (user_id));
+diesel::joinable!(leaderboards -> users (user_id));
 diesel::joinable!(projects -> users (user_id));
 
-diesel::allow_tables_to_appear_in_same_query!(heartbeats, projects, sessions, users,);
+diesel::allow_tables_to_appear_in_same_query!(heartbeats, leaderboards, projects, sessions, users,);

@@ -35,10 +35,13 @@
 		}
 
 		try {
-			const response = await fetch(`${PUBLIC_BACKEND_API_URL}/admin/admin_level/${userId}/${targetLevel}`, {
-				method: 'GET',
-				credentials: 'include'
-			});
+			const response = await fetch(
+				`${PUBLIC_BACKEND_API_URL}/admin/admin_level/${userId}/${targetLevel}`,
+				{
+					method: 'GET',
+					credentials: 'include'
+				}
+			);
 
 			if (!response.ok) {
 				throw new Error(await response.text());
@@ -228,10 +231,10 @@
 		<!-- User List -->
 		{#if adminData.all_users.length > 0}
 			<Container>
-				<SectionTitle className="mb-4">All Users</SectionTitle>
-				<div class="overflow-x-auto">
-					<table class="min-w-full divide-y divide-gray-200">
-						<thead class="bg-ctp-base">
+				<SectionTitle className="mb-4">Users</SectionTitle>
+				<div class="overflow-hidden rounded-lg border border-surface0 bg-mantle">
+					<table class="w-full">
+						<thead class="border-b border-surface0 bg-surface0">
 							<tr>
 								<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
 									>Id</th
@@ -258,13 +261,13 @@
 								>
 							</tr>
 						</thead>
-						<tbody class="bg-ctp-mantle divide-y divide-ctp-surface1">
+						<tbody>
 							{#each [...adminData.all_users].sort((a, b) => {
 								const adminDiff = (b.admin_level ?? 0) - (a.admin_level ?? 0);
 								if (adminDiff !== 0) return adminDiff;
 								return a.id - b.id;
 							}) as user (user.id)}
-								<tr>
+								<tr class="border-b border-surface0 last:border-0 hover:bg-surface0/50">
 									<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1">{user.id}</td>
 									<td class="px-6 py-4 whitespace-nowrap">
 										<div class="flex items-center">
@@ -301,7 +304,7 @@
 												>Nothing</span
 											>
 										{:else}
-											<div class="flex flex-wrap items-center gap-2">
+											<div class="flex items-center gap-2">
 												<button
 													onclick={() => impersonateUser(user.id)}
 													class="cursor-pointer inline-flex items-center justify-center rounded bg-ctp-lavender px-3 py-1 text-xs font-semibold text-ctp-base transition hover:bg-ctp-blue"
@@ -313,8 +316,7 @@
 													{/if}
 												</button>
 
-												{#if $auth.user?.admin_level === undefined ||
-														($auth.user.admin_level ?? 0) > ((user.admin_level ?? 0) + 1)}
+												{#if $auth.user?.admin_level === undefined || ($auth.user.admin_level ?? 0) > (user.admin_level ?? 0) + 1}
 													<button
 														class="cursor-pointer inline-flex items-center justify-center rounded bg-ctp-green px-3 py-1 text-xs font-semibold text-ctp-base transition hover:bg-ctp-teal"
 														onclick={() => {

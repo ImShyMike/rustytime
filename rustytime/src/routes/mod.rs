@@ -57,7 +57,8 @@ fn protected_routes(app_state: AppState) -> Router<AppState> {
             Router::new()
                 .route("/dashboard", get(handlers::dashboard::dashboard))
                 .route("/projects", get(handlers::projects::projects_dashboard))
-                .route("/settings", get(handlers::settings::settings_page)),
+                .route("/settings", get(handlers::settings::settings_page))
+                .route("/leaderboard", get(handlers::leaderboard::leaderboard_page)),
         )
         .layer(axum_middleware::from_fn_with_state(
             app_state,

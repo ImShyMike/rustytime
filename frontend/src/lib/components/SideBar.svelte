@@ -17,6 +17,7 @@
 	import LucideSettings from '~icons/lucide/settings';
 	import LucideMenu from '~icons/lucide/menu';
 	import LucideX from '~icons/lucide/x';
+	import LucideTrophy from '~icons/lucide/trophy';
 	import { onMount } from 'svelte';
 	import UserTag from '$lib/components/ui/UserTag.svelte';
 	import { impersonateUser } from '$lib/utils/admin';
@@ -178,6 +179,19 @@
 				>
 					<LucideLayoutDashboard class="w-6 h-6 inline" /><span
 						class={collapsed ? 'hidden' : 'ml-2'}>Projects</span
+					>
+				</a>
+				<a
+					href={resolve('/leaderboard')}
+					onclick={() => setTimeout(closeMobileSidebar, 100)}
+					data-sveltekit-preload-data="hover"
+					class="w-full text-left cursor-pointer py-2 rounded-md items-center inline-flex {page.url
+						.pathname === '/leaderboard'
+						? 'bg-surface0/70 text-lavender'
+						: 'hover:bg-surface1/50'} {collapsed ? 'justify-center' : 'px-3'}"
+				>
+					<LucideTrophy class="w-6 h-6 inline" /><span class={collapsed ? 'hidden' : 'ml-2'}
+						>Leaderboard</span
 					>
 				</a>
 				{#if $auth.user?.admin_level && $auth.user.admin_level >= 1}

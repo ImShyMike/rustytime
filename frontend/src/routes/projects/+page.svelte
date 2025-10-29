@@ -77,24 +77,26 @@
 			return [];
 		}
 
-		return sortedProjects.map((project) => {
-			const createdDate = project.created_at ? new Date(project.created_at) : null;
-			const updatedDate = project.updated_at ? new Date(project.updated_at) : null;
-			const isCreatedAtValid = createdDate && !Number.isNaN(createdDate.getTime());
-			const isUpdatedAtValid = updatedDate && !Number.isNaN(updatedDate.getTime());
+		return sortedProjects
+			.map((project) => {
+				const createdDate = project.created_at ? new Date(project.created_at) : null;
+				const updatedDate = project.updated_at ? new Date(project.updated_at) : null;
+				const isCreatedAtValid = createdDate && !Number.isNaN(createdDate.getTime());
+				const isUpdatedAtValid = updatedDate && !Number.isNaN(updatedDate.getTime());
 
-			return {
-				...project,
-				createdAtFormatted:
-					isCreatedAtValid && createdDate ? creationDateFormatter.format(createdDate) : 'Unknown',
-				lastUpdated: updatedDate,
-				lastUpdatedExact:
-					isUpdatedAtValid && updatedDate ? creationDateFormatter.format(updatedDate) : null,
-				repoLabel: project.repo_url ? formatRepoLabel(project.repo_url) : null
-			} satisfies EnhancedProject;
-		}).sort((a, b) => {
-			return b.total_seconds - a.total_seconds;
-		});
+				return {
+					...project,
+					createdAtFormatted:
+						isCreatedAtValid && createdDate ? creationDateFormatter.format(createdDate) : 'Unknown',
+					lastUpdated: updatedDate,
+					lastUpdatedExact:
+						isUpdatedAtValid && updatedDate ? creationDateFormatter.format(updatedDate) : null,
+					repoLabel: project.repo_url ? formatRepoLabel(project.repo_url) : null
+				} satisfies EnhancedProject;
+			})
+			.sort((a, b) => {
+				return b.total_seconds - a.total_seconds;
+			});
 	});
 
 	const lastUpdatedProject = $derived.by<EnhancedProject | null>(

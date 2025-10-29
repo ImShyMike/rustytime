@@ -88,7 +88,12 @@ async fn async_main(sentry_enabled: bool) {
     info!("✅ GitHub OAuth client created");
 
     // create application state
-    let app_state = AppState::new(pool, github_client);
+    let app_state = AppState::new(pool.clone(), github_client);
+
+    // start leaderboard generator
+    let leaderboard_generator = db::leaderboard::LeaderboardGenerator::new(pool);
+    leaderboard_generator.start().await;
+    info!("✅ Leaderboard generator started");
 
     // create the main application router
     let mut app = create_app_router(app_state)

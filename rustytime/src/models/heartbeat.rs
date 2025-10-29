@@ -1,7 +1,7 @@
 use axum::http::HeaderMap;
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
-use diesel::sql_types::{BigInt, Date, Nullable, Text};
+use diesel::sql_types::{BigInt, Date, Int4, Nullable, Text};
 use ipnetwork::IpNetwork;
 use serde::{Deserialize, Serialize};
 
@@ -42,7 +42,7 @@ fn truncate_optional_string(s: Option<String>, max_length: usize) -> Option<Stri
 }
 
 #[inline(always)]
-fn heartbeat_time_to_f64(time: DateTime<Utc>) -> f64 {
+pub fn heartbeat_time_to_f64(time: DateTime<Utc>) -> f64 {
     time.timestamp() as f64 + time.timestamp_subsec_nanos() as f64 / 1e9
 }
 
@@ -52,6 +52,14 @@ impl SourceType {
     pub const DIRECT_ENTRY: &'static str = "direct_entry";
     #[allow(dead_code)]
     pub const SEEDING: &'static str = "seeding";
+}
+
+#[derive(QueryableByName)]
+pub struct UserDurationRow {
+    #[diesel(sql_type = Int4)]
+    pub user_id: i32,
+    #[diesel(sql_type = BigInt)]
+    pub total_seconds: i64,
 }
 
 #[derive(QueryableByName)]
@@ -578,6 +586,43 @@ impl Heartbeat {
             .get_result::<DurationResult>(conn)?;
 
         Ok(result.total_seconds)
+    }
+
+    /// Calculate total durations for all users between start_time and end_time
+    pub fn get_all_user_durations(
+        conn: &mut PgConnection,
+        start_time: DateTime<Utc>,
+        end_time: DateTime<Utc>,
+    ) -> QueryResult<Vec<UserDurationRow>> {
+        let sql = r#"
+            WITH capped_diffs AS (
+                SELECT
+                    user_id,
+                    CASE
+                        WHEN LAG(time) OVER (PARTITION BY user_id ORDER BY time) IS NULL THEN 0
+                        ELSE LEAST(EXTRACT(EPOCH FROM (time - LAG(time) OVER (PARTITION BY user_id ORDER BY time))), $3)
+                    END as diff
+                FROM heartbeats
+                WHERE time >= $1
+                  AND time < $2
+                  AND time IS NOT NULL
+                ORDER BY user_id, time ASC
+            )
+            SELECT
+                user_id,
+                COALESCE(SUM(diff), 0)::bigint as total_seconds
+            FROM capped_diffs
+            GROUP BY user_id
+            ORDER BY total_seconds DESC
+        "#;
+
+        let results: Vec<UserDurationRow> = diesel::sql_query(sql)
+            .bind::<diesel::sql_types::Timestamptz, _>(start_time)
+            .bind::<diesel::sql_types::Timestamptz, _>(end_time)
+            .bind::<diesel::sql_types::Int4, _>(TIMEOUT_SECONDS)
+            .load(conn)?;
+
+        Ok(results)
     }
 
     /// Calculate total duration in seconds using SQL
