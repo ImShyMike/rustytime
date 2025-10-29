@@ -26,27 +26,29 @@
 	const hasFooterSlot = Boolean($$slots.footer);
 </script>
 
-<div class={`bg-ctp-mantle ${wrapperClass}`.trim()}>
-	<div class={`max-w-6xl mx-auto py-4 2xl:py-12 px-3 ${contentClass}`.trim()}>
-		{#if hasHeadingSlot}
-			<slot name="heading" />
-		{:else}
-			<PageHeading {title} />
-		{/if}
+<div class={`bg-ctp-mantle min-h-screen flex flex-col ${wrapperClass}`.trim()}>
+	<div class="flex-grow">
+		<div class={`max-w-6xl mx-auto py-4 2xl:py-12 px-3 ${contentClass}`.trim()}>
+			{#if hasHeadingSlot}
+				<slot name="heading" />
+			{:else}
+				<PageHeading {title} />
+			{/if}
 
-		<slot />
-	</div>
-</div>
-
-{#if showLastUpdated}
-	{#if hasFooterSlot}
-		<slot name="footer" {lastUpdatedAt} />
-	{:else if lastUpdatedAt}
-		<div
-			class="text-center text-ctp-subtext0/85 hover:text-ctp-subtext1 text-sm mb-4"
-			title={lastUpdatedAt.toLocaleString()}
-		>
-			Last updated <RelativeTime datetime={lastUpdatedAt} />
+			<slot />
 		</div>
+	</div>
+
+	{#if showLastUpdated}
+		{#if hasFooterSlot}
+			<slot name="footer" {lastUpdatedAt} />
+		{:else if lastUpdatedAt}
+			<div
+				class="text-center text-ctp-subtext0/70 hover:text-ctp-subtext1 text-sm mb-4"
+				title={lastUpdatedAt.toLocaleString()}
+			>
+				Last updated <RelativeTime datetime={lastUpdatedAt} />
+			</div>
+		{/if}
 	{/if}
-{/if}
+</div>
