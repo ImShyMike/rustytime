@@ -63,7 +63,7 @@
 			</div>
 
 			<p class="text-xs text-ctp-overlay1" title={new Date(currentData.generated_at).toLocaleString()}>
-				<RelativeTime datetime={new Date(currentData.generated_at)} />
+				Regenerated <RelativeTime datetime={new Date(currentData.generated_at)} />
 			</p>
 		</div>
 
