@@ -84,7 +84,7 @@ impl User {
                 github_id,
                 name: username.to_string(),
                 avatar_url: avatar_url.to_string(),
-                admin_level: if total_users == 0 { 1 } else { 0 }, // make the first real user an admin
+                admin_level: if total_users == 0 { 2 } else { 0 }, // make the first real user an owner
                 is_banned: false,
             };
             Self::create(conn, &new_user)
