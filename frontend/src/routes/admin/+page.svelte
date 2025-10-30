@@ -13,6 +13,7 @@
 	import { Container, KeyValueList, PageScaffold, SectionTitle, StatCard, UserTag } from '$lib';
 	import { auth } from '$lib/stores/auth';
 	import { impersonateUser } from '$lib/utils/admin';
+	import { safeText } from '$lib/utils/text';
 
 	interface Props {
 		data: PageData;
@@ -177,8 +178,8 @@
 					<SectionTitle className="mb-2">Top Languages</SectionTitle>
 					<KeyValueList
 						items={adminData.top_languages.slice(0, 10).map((lang) => ({
-							id: lang.language,
-							label: lang.language,
+							id: safeText(lang.language),
+							label: safeText(lang.language),
 							value: lang.count.toLocaleString()
 						}))}
 					></KeyValueList>
@@ -197,8 +198,8 @@
 					<SectionTitle className="mb-2">Top Projects</SectionTitle>
 					<KeyValueList
 						items={adminData.top_projects.slice(0, 10).map((project) => ({
-							id: project.project,
-							label: project.project,
+							id: safeText(project.project),
+							label: safeText(project.project),
 							value: project.count.toLocaleString(),
 							labelClass: 'truncate'
 						}))}
@@ -243,13 +244,10 @@
 									>User</th
 								>
 								<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
-									>GitHub ID</th
+									>Type</th
 								>
 								<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
 									>Created (UTC)</th
-								>
-								<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
-									>Type</th
 								>
 								{#if adminData.all_users[0].api_key}
 									<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
@@ -274,19 +272,16 @@
 											{#if user.avatar_url}
 												<img src={user.avatar_url} alt="Avatar" class="h-8 w-8 rounded-full mr-3" />
 											{/if}
-											<span class="text-sm font-medium text-ctp-text">{user.name || 'Unknown'}</span
+											<a class="text-sm font-medium text-ctp-text" href={user.name ? `https://github.com/${user.name}` : undefined} target="_blank" rel="noopener noreferrer">{user.name || 'Unknown'}</a
 											>
 										</div>
 									</td>
-									<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1"
-										>{user.github_id}</td
-									>
-									<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1"
-										>{new Date(user.created_at).toLocaleString('en-US', { timeZone: 'UTC' })}</td
-									>
 									<td class="px-6 py-4 whitespace-nowrap">
 										<UserTag admin_level={user.admin_level} />
 									</td>
+									<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1"
+										>{new Date(user.created_at).toLocaleString('en-US', { timeZone: 'UTC' })}</td
+									>
 									{#if user.api_key}
 										<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1 font-mono">
 											<button

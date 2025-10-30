@@ -9,6 +9,7 @@
 	import StatCard from '$lib/components/ui/StatCard.svelte';
 	import { formatRelativeTime, creationDateFormatter } from '$lib/utils/time';
 	import RelativeTime from '$lib/components/ui/RelativeTime.svelte';
+	import { safeText } from '$lib/utils/text';
 
 	interface Props {
 		data: PageData;
@@ -133,7 +134,7 @@
 				{#if lastUpdatedProject}
 					<StatCard
 						title="Last updated project"
-						value={lastUpdatedProject.name ?? 'Unknown project'}
+						value={safeText(lastUpdatedProject.name)}
 						subvalue={lastUpdatedProjectLabel}
 					/>
 				{/if}
@@ -146,7 +147,7 @@
 						<div class="flex items-start justify-between gap-3">
 							<div class="flex items-center gap-3">
 								<SectionTitle level="h2" size="md" className="text-ctp-text"
-									>{project.name}</SectionTitle
+									>{safeText(project.name)}</SectionTitle
 								>
 							</div>
 						</div>

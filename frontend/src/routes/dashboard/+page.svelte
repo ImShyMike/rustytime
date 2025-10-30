@@ -16,6 +16,7 @@
 	import { setupVisibilityRefresh } from '$lib/utils/refresh';
 	import { Container, PageScaffold, SectionTitle, StatCard, UserTag } from '$lib';
 	import RelativeTime from '$lib/components/ui/RelativeTime.svelte';
+	import { safeGraphData, safeText } from '$lib/utils/text';
 	interface Props {
 		data: PageData;
 	}
@@ -95,10 +96,10 @@
 
 			const ApexCharts = apexchartsValue;
 
-			const topProjects = dashboardData.projects.slice(0, 8);
-			const topLanguages = dashboardData.languages.slice(0, 8);
-			const topEditors = dashboardData.editors.slice(0, 8);
-			const topOperatingSystems = dashboardData.operating_systems.slice(0, 8);
+			const topProjects = safeGraphData(dashboardData.projects.slice(0, 8));
+			const topLanguages = safeGraphData(dashboardData.languages.slice(0, 8));
+			const topEditors = safeGraphData(dashboardData.editors.slice(0, 8));
+			const topOperatingSystems = safeGraphData(dashboardData.operating_systems.slice(0, 8));
 
 			projectsChart = await ensureBarChart({
 				ChartCtor: ApexCharts,
@@ -170,22 +171,22 @@
 		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
 			<StatCard
 				title="Total Time"
-				value={dashboardData.human_readable_total}
+				value={dashboardData?.human_readable_total || 'None'}
 				valueClass="text-xl font-semibold text-ctp-text"
 			/>
 			<StatCard
 				title="Top Project"
-				value={dashboardData.projects.at(0)?.name || 'None'}
+				value={safeText(dashboardData?.projects?.[0]?.name) || 'None'}
 				valueClass="text-xl font-semibold text-ctp-text"
 			/>
 			<StatCard
 				title="Top Language"
-				value={dashboardData.languages.at(0)?.name || 'None'}
+				value={safeText(dashboardData?.languages?.[0]?.name) || 'None'}
 				valueClass="text-xl font-semibold text-ctp-text"
 			/>
 			<StatCard
 				title="Total Heartbeats"
-				value={dashboardData.total_heartbeats.toLocaleString()}
+				value={dashboardData?.total_heartbeats ? dashboardData.total_heartbeats.toLocaleString() : '0'}
 				valueClass="text-xl font-semibold text-ctp-text"
 			/>
 		</div>
