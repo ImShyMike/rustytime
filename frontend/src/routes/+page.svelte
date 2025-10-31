@@ -7,6 +7,7 @@
 	import { Logo, UserTag } from '$lib';
 
 	import LucideGithub from '~icons/lucide/github';
+	import Avatar from '$lib/components/ui/Avatar.svelte';
 
 	const props = $props();
 	let { data } = props;
@@ -95,11 +96,7 @@
 			<div class="text-center">
 				<div class="flex items-center justify-center gap-4 mb-6">
 					{#if authState.user.avatar_url}
-						<img
-							src={authState.user.avatar_url}
-							alt="Profile"
-							class="w-16 h-16 rounded-full border-2 border-ctp-green-500"
-						/>
+						<Avatar url={authState.user.avatar_url} size={64} />
 					{/if}
 					<div class="self-start text-left break-words sm:w-auto w-[min-content] max-w-full">
 						<h2 class="text-2xl text-subtext1 font-bold">

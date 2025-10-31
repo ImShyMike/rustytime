@@ -45,6 +45,7 @@
 	},
 	"dependencies": {
 		"@catppuccin/tailwindcss": "^1.0.0",
+		"@prgm/sveltekit-progress-bar": "^3.0.2",
 		"apexcharts": "^5.3.5"
 	}
 }

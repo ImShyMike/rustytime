@@ -78,7 +78,7 @@ const createAuthStore = () => {
 			if (!browser) return;
 
 			try {
-				const data = await api.get<{ auth_url: string }>('/auth/github/login');
+				const data = await api.get<{ auth_url: string }>('/auth/github/login', fetch);
 
 				if (data.auth_url) {
 					window.location.href = data.auth_url;
@@ -93,7 +93,7 @@ const createAuthStore = () => {
 			if (!browser) return;
 
 			try {
-				await api.get('/auth/github/logout');
+				await api.get('/auth/github/logout', fetch);
 
 				set(toState(DEFAULT_AUTH_SNAPSHOT));
 				await invalidateAll();

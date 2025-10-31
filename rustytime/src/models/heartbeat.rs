@@ -494,35 +494,6 @@ impl Heartbeat {
             .get_result(conn)
     }
 
-    pub fn get_top_languages(
-        conn: &mut PgConnection,
-        limit: i64,
-    ) -> QueryResult<Vec<LanguageCount>> {
-        diesel::sql_query(
-            "SELECT language, COUNT(*) as count 
-             FROM heartbeats 
-             WHERE language IS NOT NULL 
-             GROUP BY language 
-             ORDER BY count DESC 
-             LIMIT $1",
-        )
-        .bind::<BigInt, _>(limit)
-        .load::<LanguageCount>(conn)
-    }
-
-    pub fn get_top_projects(conn: &mut PgConnection, limit: i64) -> QueryResult<Vec<ProjectCount>> {
-        diesel::sql_query(
-            "SELECT project, COUNT(*) as count 
-             FROM heartbeats 
-             WHERE project IS NOT NULL 
-             GROUP BY project 
-             ORDER BY count DESC 
-             LIMIT $1",
-        )
-        .bind::<BigInt, _>(limit)
-        .load::<ProjectCount>(conn)
-    }
-
     pub fn get_daily_activity_last_week(
         conn: &mut PgConnection,
     ) -> QueryResult<Vec<DailyActivity>> {

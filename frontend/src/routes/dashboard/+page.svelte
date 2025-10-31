@@ -17,13 +17,14 @@
 	import { Container, PageScaffold, SectionTitle, StatCard, UserTag } from '$lib';
 	import RelativeTime from '$lib/components/ui/RelativeTime.svelte';
 	import { safeGraphData, safeText } from '$lib/utils/text';
+	import Avatar from '$lib/components/ui/Avatar.svelte';
 	interface Props {
 		data: PageData;
 	}
 
 	let { data }: Props = $props();
 
-	let dashboardData = $state(data.dashboardData);
+	let dashboardData = $state(data);
 	let lastUpdatedAt = $state(new Date());
 
 	let projectsChart: ApexCharts | null = null;
@@ -51,7 +52,7 @@
 	});
 
 	$effect(() => {
-		const payload = data.dashboardData;
+		const payload = data;
 		dashboardData = payload;
 		if (payload) {
 			lastUpdatedAt = new Date();
@@ -146,13 +147,7 @@
 		<Container className="pb-1 mb-4">
 			<div class="flex items-center gap-4 mb-4">
 				{#if dashboardData.avatar_url}
-					<img
-						src={dashboardData.avatar_url}
-						alt="Avatar"
-						width="80"
-						height="80"
-						class="rounded-full border-2 border-ctp-green-500"
-					/>
+					<Avatar url={dashboardData.avatar_url} size={80} />
 				{/if}
 				<div class="flex flex-col">
 					<div class="flex items-center gap-2">
@@ -186,7 +181,9 @@
 			/>
 			<StatCard
 				title="Total Heartbeats"
-				value={dashboardData?.total_heartbeats ? dashboardData.total_heartbeats.toLocaleString() : '0'}
+				value={dashboardData?.total_heartbeats
+					? dashboardData.total_heartbeats.toLocaleString()
+					: '0'}
 				valueClass="text-xl font-semibold text-ctp-text"
 			/>
 		</div>

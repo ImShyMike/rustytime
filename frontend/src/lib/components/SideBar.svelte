@@ -21,6 +21,7 @@
 	import { onMount } from 'svelte';
 	import UserTag from '$lib/components/ui/UserTag.svelte';
 	import { impersonateUser } from '$lib/utils/admin';
+	import Avatar from './ui/Avatar.svelte';
 
 	let collapsed: boolean = false;
 	let buttonMode: boolean = false;
@@ -122,13 +123,7 @@
 		>
 			{#if $auth.user}
 				{#if $auth.user.avatar_url}
-					<img
-						src={$auth.user.avatar_url}
-						alt="Profile"
-						class="{collapsed
-							? 'h-8 w-8'
-							: 'h-16 w-16'} transition-all duration-300 rounded-full border-2 border-ctp-green-500"
-					/>
+					<Avatar url={$auth.user.avatar_url} size={collapsed ? 32 : 64} />
 				{/if}
 				<div class={collapsed ? 'hidden' : ''}>
 					<div class="flex flex-row items-center gap-1 align-middle">

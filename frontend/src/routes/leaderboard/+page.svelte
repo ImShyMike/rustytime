@@ -62,7 +62,10 @@
 				{/each}
 			</div>
 
-			<p class="text-xs text-ctp-overlay1" title={new Date(currentData.generated_at).toLocaleString()}>
+			<p
+				class="text-xs text-ctp-overlay1"
+				title={new Date(currentData.generated_at).toLocaleString()}
+			>
 				Regenerated <RelativeTime datetime={new Date(currentData.generated_at)} />
 			</p>
 		</div>
@@ -74,8 +77,12 @@
 				<table class="w-full table-fixed">
 					<thead class="border-b border-surface0 bg-surface0">
 						<tr>
-							<th class="w-24 pl-6 py-3 text-left text-xs font-medium uppercase text-subtext0">Rank</th>
-							<th class="w-56 pl-0 pr-6 py-3 text-left text-xs font-medium uppercase text-subtext0">User</th>
+							<th class="w-24 pl-6 py-3 text-left text-xs font-medium uppercase text-subtext0"
+								>Rank</th
+							>
+							<th class="w-56 pl-0 pr-6 py-3 text-left text-xs font-medium uppercase text-subtext0"
+								>User</th
+							>
 							<th class="px-6 py-3 text-right text-xs font-medium uppercase text-subtext0"
 								>Time Coded</th
 							>
@@ -105,10 +112,16 @@
 											alt={entry.user_name}
 											class="h-8 w-8 rounded-full border border-surface0"
 										/>
-										<span class="font-medium text-text overflow-hidden text-ellipsis whitespace-nowrap">{entry.user_name}</span>
+										<span
+											class="font-medium text-text overflow-hidden text-ellipsis whitespace-nowrap"
+											>{entry.user_name}</span
+										>
 									</div>
 								</td>
-								<td class="px-6 py-4 text-right font-mono text-lg text-text" title={formatDuration(entry.total_seconds)}>
+								<td
+									class="px-6 py-4 text-right font-mono text-lg text-text"
+									title={formatDuration(entry.total_seconds)}
+								>
 									{formatDuration(entry.total_seconds, false)}
 								</td>
 							</tr>

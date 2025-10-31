@@ -4,6 +4,7 @@
 	import { auth } from '$lib/stores/auth';
 	import { AuthErrorWarning, Meta, SideBar } from '$lib';
 	import { PUBLIC_BACKEND_API_URL } from '$env/static/public';
+	import { ProgressBar } from '@prgm/sveltekit-progress-bar';
 
 	const props = $props();
 	let { children, data } = props;
@@ -47,6 +48,8 @@
 	canonical={canonicalUrl}
 	imageAlt="rustytime logo"
 />
+
+<ProgressBar class="text-ctp-lavender" />
 
 <div class="app-container flex h-screen bg-mantle">
 	<div class="error-warning-container fixed top-0 left-0 right-0 z-50">

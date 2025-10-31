@@ -10,10 +10,9 @@
 	import type { PageData } from './$types';
 	import { destroyChart, ensureDateBarChart, isApexChartsConstructor } from '$lib/utils/apexClient';
 	import { setupVisibilityRefresh } from '$lib/utils/refresh';
-	import { Container, KeyValueList, PageScaffold, SectionTitle, StatCard, UserTag } from '$lib';
+	import { Container, PageScaffold, SectionTitle, StatCard, UserTag } from '$lib';
 	import { auth } from '$lib/stores/auth';
 	import { impersonateUser } from '$lib/utils/admin';
-	import { safeText } from '$lib/utils/text';
 
 	interface Props {
 		data: PageData;
@@ -147,71 +146,34 @@
 {#if adminData}
 	<PageScaffold title="Admin Dashboard" {lastUpdatedAt}>
 		<!-- System Statistics -->
-		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
 			<StatCard
 				title="Total Users"
 				value={adminData.total_users}
 				valueClass="text-3xl font-bold text-ctp-blue-600"
 			/>
 			<StatCard
-				title="Total Heartbeats"
-				value={adminData.total_heartbeats.toLocaleString()}
-				valueClass="text-3xl font-bold text-ctp-green-600"
+				title="Requests/sec"
+				value={adminData.requests_per_second}
+				valueClass="text-3xl font-bold text-ctp-peach-600"
+			/>
+			<StatCard
+				title="Last hour"
+				value={adminData.heartbeats_last_hour.toLocaleString()}
+				valueClass="text-3xl font-bold text-ctp-lavender-600"
 			/>
 			<StatCard
 				title="Last 24h"
 				value={adminData.heartbeats_last_24h.toLocaleString()}
 				valueClass="text-3xl font-bold text-ctp-mauve-600"
 			/>
-			<StatCard
-				title="Requests/sec"
-				value={adminData.requests_per_second}
-				valueClass="text-3xl font-bold text-ctp-peach-600"
-			/>
-		</div>
-
-		<!-- Top Lists -->
-		<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-			<!-- Top Languages -->
-			{#if adminData.top_projects.length !== 0}
-				<Container>
-					<SectionTitle className="mb-2">Top Languages</SectionTitle>
-					<KeyValueList
-						items={adminData.top_languages.slice(0, 10).map((lang) => ({
-							id: safeText(lang.language),
-							label: safeText(lang.language),
-							value: lang.count.toLocaleString()
-						}))}
-					></KeyValueList>
-				</Container>
-			{:else}
-				<Container
-					className="flex flex-col items-center gap-4 border border-dashed border-ctp-surface0/80 py-12 text-center"
-				>
-					<p class="text-lg font-semibold text-ctp-text">No language data available</p>
-				</Container>
-			{/if}
-
-			<!-- Top Projects -->
-			{#if adminData.top_projects.length !== 0}
-				<Container>
-					<SectionTitle className="mb-2">Top Projects</SectionTitle>
-					<KeyValueList
-						items={adminData.top_projects.slice(0, 10).map((project) => ({
-							id: safeText(project.project),
-							label: safeText(project.project),
-							value: project.count.toLocaleString(),
-							labelClass: 'truncate'
-						}))}
-					></KeyValueList>
-				</Container>
-			{:else}
-				<Container
-					className="flex flex-col items-center gap-4 border border-dashed border-ctp-surface0/80 py-12 text-center"
-				>
-					<p class="text-lg font-semibold text-ctp-text">No project data available</p>
-				</Container>
-			{/if}
+			<div class="md:col-span-2 lg:col-span-1">
+				<StatCard
+					title="Total Heartbeats"
+					value={adminData.total_heartbeats.toLocaleString()}
+					valueClass="text-3xl font-bold text-ctp-green-600"
+				/>
+			</div>
 		</div>
 
 		<!-- Daily Activity Chart -->
@@ -272,7 +234,11 @@
 											{#if user.avatar_url}
 												<img src={user.avatar_url} alt="Avatar" class="h-8 w-8 rounded-full mr-3" />
 											{/if}
-											<a class="text-sm font-medium text-ctp-text" href={user.name ? `https://github.com/${user.name}` : undefined} target="_blank" rel="noopener noreferrer">{user.name || 'Unknown'}</a
+											<a
+												class="text-sm font-medium text-ctp-text"
+												href={user.name ? `https://github.com/${user.name}` : undefined}
+												target="_blank"
+												rel="noopener noreferrer">{user.name || 'Unknown'}</a
 											>
 										</div>
 									</td>

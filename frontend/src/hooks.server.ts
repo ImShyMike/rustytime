@@ -59,13 +59,13 @@ export const handle: Handle = async ({ event, resolve }) => {
 						impersonation: data.impersonation ?? null
 					};
 				}
-			} // else if (response.status === 401 || response.status === 403) {
-			// 	// ignore if unauthorized
-			// }
+			}
 		} catch (error) {
 			console.error('SSR auth verification failed', error);
 		}
 	}
 
-	return resolve(event);
+	return resolve(event, {
+		filterSerializedResponseHeaders: (name) => name === 'content-type'
+	});
 };

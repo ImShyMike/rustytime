@@ -12,7 +12,7 @@ use axum::{
 use serde::Serialize;
 use tower_cookies::Cookies;
 
-use crate::models::heartbeat::{Heartbeat, LanguageCount, ProjectCount};
+use crate::models::heartbeat::Heartbeat;
 use crate::models::session::Session;
 use crate::models::user::{PartialUser, User};
 use crate::state::AppState;
@@ -32,8 +32,6 @@ pub struct AdminDashboardResponse {
     pub heartbeats_last_hour: i64,
     pub heartbeats_last_24h: i64,
     pub requests_per_second: f64,
-    pub top_languages: Vec<LanguageCount>,
-    pub top_projects: Vec<ProjectCount>,
     pub daily_activity: Vec<FormattedDailyActivity>,
     pub all_users: Vec<PartialUser>,
 }
@@ -104,8 +102,6 @@ pub async fn admin_dashboard(
         heartbeats_last_24h: db_query!(Heartbeat::count_heartbeats_last_24h(&mut conn)),
         requests_per_second: (app_state.metrics.get_metrics().requests_per_second * 1000.0).round()
             / 1000.0,
-        top_languages: db_query!(Heartbeat::get_top_languages(&mut conn, 10)),
-        top_projects: db_query!(Heartbeat::get_top_projects(&mut conn, 10)),
         daily_activity,
         all_users: partial_users,
     }))
