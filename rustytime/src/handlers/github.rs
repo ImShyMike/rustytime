@@ -68,16 +68,12 @@ pub async fn login(State(app_state): State<AppState>, cookies: Cookies) -> Json<
     // check if in production for cookie security settings
     let is_production = SessionManager::is_production_env();
 
-    let mut cookie_builder = tower_cookies::Cookie::build(("rustytime_oauth_state", csrf_token_secret))
+    let mut cookie = tower_cookies::Cookie::build(("rustytime_oauth_state", csrf_token_secret))
         .path("/")
-        .http_only(true);
-
-    // in production, use SameSite::None for cross-origin OAuth flow
-    let mut cookie = if is_production {
-        cookie_builder.secure(true).same_site(tower_cookies::cookie::SameSite::None).build()
-    } else {
-        cookie_builder.secure(false).same_site(tower_cookies::cookie::SameSite::Lax).build()
-    };
+        .http_only(true)
+        .secure(is_production) // only secure in production
+        .same_site(tower_cookies::cookie::SameSite::Lax)
+        .build();
 
     cookie.set_expires(time::OffsetDateTime::now_utc() + time::Duration::minutes(10));
     cookies.add(cookie);

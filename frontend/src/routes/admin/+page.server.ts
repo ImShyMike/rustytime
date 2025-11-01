@@ -1,13 +1,14 @@
-import type { PageLoad } from './$types';
+import type { PageServerLoad } from './$types';
 import type { AdminResponse } from '$lib/types/admin';
 import { createApi, ApiError } from '$lib/utils/api';
 import { redirect, error } from '@sveltejs/kit';
 
-export const load: PageLoad = async ({ fetch, depends }) => {
+export const load: PageServerLoad = async ({ fetch, depends, request }) => {
 	depends('app:admin');
 
 	try {
-		const api = createApi(fetch);
+		const cookieHeader = request.headers.get('cookie') || undefined;
+		const api = createApi(fetch, cookieHeader);
 		return await api.get<AdminResponse>('/page/admin');
 	} catch (e) {
 		console.error('Error loading admin page data:', e);

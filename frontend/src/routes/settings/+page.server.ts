@@ -1,11 +1,12 @@
-import type { PageLoad } from './$types';
+import type { PageServerLoad } from './$types';
 import type { SettingsResponse } from '$lib/types/settings';
 import { createApi, ApiError } from '$lib/utils/api';
 import { redirect, error } from '@sveltejs/kit';
 
-export const load: PageLoad = async ({ fetch }) => {
+export const load: PageServerLoad = async ({ fetch, request }) => {
 	try {
-		const api = createApi(fetch);
+		const cookieHeader = request.headers.get('cookie') || undefined;
+		const api = createApi(fetch, cookieHeader);
 		return await api.get<SettingsResponse>('/page/settings');
 	} catch (e) {
 		console.error('Error loading settings page data:', e);

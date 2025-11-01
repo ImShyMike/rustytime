@@ -1,13 +1,14 @@
-import type { PageLoad } from './$types';
+import type { PageServerLoad } from './$types';
 import type { LeaderboardResponse } from '$lib/types/leaderboard';
 import { createApi, ApiError } from '$lib/utils/api';
 import { redirect, error } from '@sveltejs/kit';
 
-export const load: PageLoad = async ({ fetch, depends }) => {
+export const load: PageServerLoad = async ({ fetch, depends, request }) => {
 	depends('app:leaderboard');
 
 	try {
-		const api = createApi(fetch);
+		const cookieHeader = request.headers.get('cookie');
+		const api = createApi(fetch, cookieHeader || undefined);
 		return await api.get<LeaderboardResponse>('/page/leaderboard');
 	} catch (e) {
 		console.error('Error loading leaderboard page data:', e);

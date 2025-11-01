@@ -14,12 +14,22 @@ export class ApiError extends Error {
 	}
 }
 
-export function createApi(fetchFn: typeof globalThis.fetch) {
+export function createApi(fetchFn: typeof globalThis.fetch, cookieHeader?: string) {
 	async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
 		const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
+		const headers: HeadersInit = {
+			'Content-Type': 'application/json',
+			...(options.headers || {})
+		};
+
+		// Forward cookies in SSR context
+		if (cookieHeader) {
+			(headers as Record<string, string>)['Cookie'] = cookieHeader;
+		}
+
 		const res = await fetchFn(url, {
 			credentials: 'include',
-			headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+			headers,
 			...options
 		});
 
