@@ -72,7 +72,10 @@ impl SessionManager {
         if is_production {
             let domain =
                 std::env::var("COOKIE_DOMAIN").unwrap_or_else(|_| ".shymike.dev".to_string());
-            cookie_builder = cookie_builder.domain(domain).secure(true).same_site(tower_cookies::cookie::SameSite::Lax);
+            cookie_builder = cookie_builder
+                .domain(domain)
+                .secure(true)
+                .same_site(tower_cookies::cookie::SameSite::Lax);
         } else {
             // in development, don't set secure for localhost
             cookie_builder = cookie_builder.secure(false);
@@ -127,7 +130,10 @@ impl SessionManager {
         if is_production {
             let domain =
                 std::env::var("COOKIE_DOMAIN").unwrap_or_else(|_| ".shymike.dev".to_string());
-            cookie_builder = cookie_builder.domain(domain).secure(true).same_site(tower_cookies::cookie::SameSite::Lax);
+            cookie_builder = cookie_builder
+                .domain(domain)
+                .secure(true)
+                .same_site(tower_cookies::cookie::SameSite::Lax);
         } else {
             cookie_builder = cookie_builder.secure(false);
         }
