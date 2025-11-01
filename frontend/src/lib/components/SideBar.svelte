@@ -117,13 +117,13 @@
 		<div
 			class="flex items-center gap-4 transition-all duration-300 {$auth.user
 				? collapsed
-					? 'justify-center mb-3'
+					? 'justify-center mb-4'
 					: 'justify-start mb-6'
 				: ''}"
 		>
 			{#if $auth.user}
 				{#if $auth.user.avatar_url}
-					<Avatar url={$auth.user.avatar_url} size={collapsed ? 32 : 64} />
+					<Avatar url={$auth.user.avatar_url} size={collapsed ? 48 : 64} />
 				{/if}
 				<div class={collapsed ? 'hidden' : ''}>
 					<div class="flex flex-row items-center gap-1 align-middle">

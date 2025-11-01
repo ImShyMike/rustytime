@@ -67,7 +67,7 @@
 					{#if authState.user.avatar_url}
 						<Avatar url={authState.user.avatar_url} size={64} />
 					{/if}
-					<div class="self-start text-left break-words sm:w-auto w-[min-content] max-w-full">
+					<div class="self-start text-left wrap-break-word sm:w-auto w-min max-w-full">
 						<h2 class="text-2xl text-subtext1 font-bold">
 							Welcome, {authState.user.name || 'User'}!
 						</h2>
