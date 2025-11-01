@@ -65,17 +65,19 @@ impl SessionManager {
         let mut cookie_builder = Cookie::build((SESSION_COOKIE_NAME, session_id.to_string()))
             .path("/")
             .expires(time::OffsetDateTime::from_unix_timestamp(expires.timestamp()).unwrap())
-            .http_only(true)
-            .same_site(SameSite::Lax);
+            .http_only(true);
 
-        // in production, set secure and domain
+        // in production, use SameSite::None for cross-origin requests (Cloudflare Workers)
         if is_production {
             let domain =
                 std::env::var("COOKIE_DOMAIN").unwrap_or_else(|_| ".shymike.dev".to_string());
-            cookie_builder = cookie_builder.domain(domain).secure(true);
+            cookie_builder = cookie_builder
+                .domain(domain)
+                .secure(true)
+                .same_site(SameSite::None);
         } else {
-            // in development, don't set secure for localhost
-            cookie_builder = cookie_builder.secure(false);
+            // in development, use Lax for localhost
+            cookie_builder = cookie_builder.secure(false).same_site(SameSite::Lax);
         }
 
         cookie_builder.build()
@@ -123,13 +125,16 @@ impl SessionManager {
             .expires(time::OffsetDateTime::UNIX_EPOCH)
             .http_only(true);
 
-        // in production, allow sharing between subdomains
+        // in production, match the same settings as create_session_cookie
         if is_production {
             let domain =
                 std::env::var("COOKIE_DOMAIN").unwrap_or_else(|_| ".shymike.dev".to_string());
-            cookie_builder = cookie_builder.domain(domain).secure(true);
+            cookie_builder = cookie_builder
+                .domain(domain)
+                .secure(true)
+                .same_site(SameSite::None);
         } else {
-            cookie_builder = cookie_builder.secure(false);
+            cookie_builder = cookie_builder.secure(false).same_site(SameSite::Lax);
         }
 
         cookie_builder.build()

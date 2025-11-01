@@ -10,7 +10,7 @@ export const load: PageLoad = async ({ fetch, depends }) => {
 		const api = createApi(fetch);
 		return await api.get<LeaderboardResponse>('/page/leaderboard');
 	} catch (e) {
-		console.error('Error loading settings page data:', e);
+		console.error('Error loading leaderboard page data:', e);
 		const err = e as ApiError;
 		if (err.status === 401 || err.status === 403) {
 			throw redirect(302, '/?auth_error=unauthorized');
