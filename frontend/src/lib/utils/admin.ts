@@ -1,13 +1,9 @@
 import { createApi } from '$lib/utils/api';
 
 export async function impersonateUser(userId: number) {
-	try {
-		const api = createApi(fetch);
-		await api.get(`/admin/impersonate/${userId}`);
-		window.location.reload();
-	} catch (error) {
-		console.error('Error impersonating user:', error);
-	}
+	const api = createApi(fetch);
+	await api.get(`/admin/impersonate/${userId}`);
+	window.location.href = '/';
 }
 
 export async function changeAdminLevel(userId: number, targetLevel: number) {
@@ -15,11 +11,6 @@ export async function changeAdminLevel(userId: number, targetLevel: number) {
 		return;
 	}
 
-	try {
-		const api = createApi(fetch);
-		await api.get(`/admin/admin_level/${userId}/${targetLevel}`);
-		window.location.reload();
-	} catch (error) {
-		console.error('Failed to update admin level:', error);
-	}
+	const api = createApi(fetch);
+	await api.get(`/admin/admin_level/${userId}/${targetLevel}`);
 }

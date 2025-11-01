@@ -1,8 +1,5 @@
-use std::env;
-
 use axum::Json;
 use axum::extract::Path;
-use axum::response::Redirect;
 use axum::{
     Extension,
     extract::State,
@@ -113,19 +110,13 @@ pub async fn impersonate_user(
     cookies: Cookies,
     impersonation: Option<Extension<ImpersonationContext>>,
     user: Option<Extension<User>>,
-) -> Result<Redirect, Response> {
+) -> Result<StatusCode, Response> {
     let session_user = user
         .expect("User should be authenticated since middleware validated authentication")
         .0;
 
-    let frontend_url =
-        env::var("FRONTEND_URL").unwrap_or_else(|_| "http://localhost:5173".to_string());
-
     let Some(session_id) = SessionManager::get_session_from_cookies(&cookies) else {
-        return Ok(Redirect::to(&format!(
-            "{}/?error=session_missing",
-            frontend_url
-        )));
+        return Err((StatusCode::UNAUTHORIZED, "Session missing").into_response());
     };
 
     let mut conn = get_db_conn!(app_state);
@@ -134,10 +125,7 @@ pub async fn impersonate_user(
         SessionManager::validate_session(&app_state.db_pool, session_id).await,
         "Failed to validate session"
     ) else {
-        return Ok(Redirect::to(&format!(
-            "{}/?error=session_invalid",
-            frontend_url
-        )));
+        return Err((StatusCode::UNAUTHORIZED, "Session invalid").into_response());
     };
 
     let acting_admin = if let Some(ctx) = impersonation.as_ref() {
@@ -192,17 +180,7 @@ pub async fn impersonate_user(
     let session_cookie = SessionManager::create_session_cookie(updated_session.id);
     cookies.add(session_cookie);
 
-    if target_user.id == acting_admin.id {
-        Ok(Redirect::to(&format!(
-            "{}/?impersonation=cleared",
-            frontend_url
-        )))
-    } else {
-        Ok(Redirect::to(&format!(
-            "{}/?impersonation=active&user={}",
-            frontend_url, target_user.id
-        )))
-    }
+    Ok(StatusCode::OK)
 }
 
 pub async fn change_user_admin_level(
