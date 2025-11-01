@@ -8,6 +8,7 @@ export const load: PageLoad = async ({ fetch }) => {
 		const api = createApi(fetch);
 		return await api.get<SettingsResponse>('/page/settings');
 	} catch (e) {
+		console.error('Error loading settings page data:', e);
 		const err = e as ApiError;
 		if (err.status === 401 || err.status === 403) {
 			throw redirect(302, '/?auth_error=unauthorized');
