@@ -263,9 +263,7 @@
 													>
 														Promote
 													</button>
-												{/if}
-
-												{#if (user.admin_level ?? 0) > 0}
+												{:else if (user.admin_level ?? 0) > 0 && ($auth.user?.admin_level === undefined || ($auth.user.admin_level ?? 0) > (user.admin_level ?? 0))}
 													<button
 														class="cursor-pointer inline-flex items-center justify-center rounded bg-ctp-red px-3 py-1 text-xs font-semibold text-ctp-base transition hover:bg-ctp-maroon"
 														onclick={() => {

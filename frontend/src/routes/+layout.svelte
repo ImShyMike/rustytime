@@ -3,14 +3,14 @@
 	import { page } from '$app/state';
 	import { auth } from '$lib/stores/auth';
 	import { AuthErrorWarning, Meta, SideBar } from '$lib';
-	import { PUBLIC_BACKEND_API_URL } from '$env/static/public';
+	import { PUBLIC_SITE_URL } from '$env/static/public';
 	import { ProgressBar } from '@prgm/sveltekit-progress-bar';
 	import { onMount } from 'svelte';
 
 	const props = $props();
 	let { children, data } = props;
 
-	const canonicalUrl = $derived(`${PUBLIC_BACKEND_API_URL}${page.url.pathname}${page.url.search}`);
+	const canonicalUrl = $derived(`${PUBLIC_SITE_URL}${page.url.pathname}${page.url.search}`);
 
 	auth.hydrate(data?.auth);
 
@@ -25,8 +25,8 @@
 <Meta
 	name="rustytime"
 	description="Blazingly fast time tracking for developers"
-	image={`${PUBLIC_BACKEND_API_URL}/og-image.png`}
-	url={PUBLIC_BACKEND_API_URL}
+	image={`${PUBLIC_SITE_URL}/og-image.png`}
+	url={PUBLIC_SITE_URL}
 	canonical={canonicalUrl}
 	imageAlt="rustytime logo"
 />
@@ -38,7 +38,7 @@
 		<AuthErrorWarning />
 	</div>
 
-	<div class="side-bar relative w-0 md:w-auto md:flex-shrink-0 h-full">
+	<div class="side-bar relative w-0 md:w-auto md:shrink-0 h-full">
 		<SideBar />
 	</div>
 
