@@ -5,38 +5,20 @@
 	import { AuthErrorWarning, Meta, SideBar } from '$lib';
 	import { PUBLIC_BACKEND_API_URL } from '$env/static/public';
 	import { ProgressBar } from '@prgm/sveltekit-progress-bar';
+	import { onMount } from 'svelte';
 
 	const props = $props();
 	let { children, data } = props;
 
 	const canonicalUrl = $derived(`${PUBLIC_BACKEND_API_URL}${page.url.pathname}${page.url.search}`);
 
-	type AuthData = App.PageData['auth'];
-	const DEFAULT_AUTH: AuthData = {
-		isAuthenticated: false,
-		sessionId: null,
-		user: null,
-		impersonation: null
-	};
+	auth.hydrate(data?.auth);
 
-	let lastAuthSnapshot = '';
-
-	const hydrateAuth = (incoming: AuthData | undefined) => {
-		const authData = incoming ?? DEFAULT_AUTH;
-		const serialized = JSON.stringify(authData);
-
-		if (serialized === lastAuthSnapshot) {
-			return;
+	// Fallback if not authenticated
+	onMount(() => {
+		if (!data?.auth?.isAuthenticated) {
+			auth.verify();
 		}
-
-		lastAuthSnapshot = serialized;
-		auth.hydrate(authData);
-	};
-
-	hydrateAuth(data?.auth);
-
-	$effect(() => {
-		hydrateAuth(data?.auth);
 	});
 </script>
 

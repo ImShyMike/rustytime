@@ -37,7 +37,10 @@ export const handle: Handle = async ({ event, resolve }) => {
 	if (sessionId) {
 		try {
 			const response = await event.fetch(
-				`${BACKEND_API_URL}/auth/github/verify?session_id=${sessionId}`
+				`${BACKEND_API_URL}/auth/github/verify?session_id=${sessionId}`,
+				{
+					credentials: 'include'
+				}
 			);
 
 			if (response.ok) {
@@ -61,7 +64,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 				}
 			}
 		} catch (error) {
-			console.error('SSR auth verification failed', error);
+			console.error('SSR auth verification failed:', error);
 		}
 	}
 

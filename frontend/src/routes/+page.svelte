@@ -3,43 +3,12 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { browser } from '$app/environment';
-	import { onMount } from 'svelte';
 	import { Logo, UserTag } from '$lib';
 
 	import LucideGithub from '~icons/lucide/github';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 
-	const props = $props();
-	let { data } = props;
-
-	type AuthSnapshot = App.PageData['auth'];
-	const DEFAULT_AUTH: AuthSnapshot = {
-		isAuthenticated: false,
-		sessionId: null,
-		user: null,
-		impersonation: null
-	};
-
-	let authState: AuthSnapshot = $state(data?.auth ?? DEFAULT_AUTH);
-
-	$effect(() => {
-		if (data?.auth) {
-			authState = data.auth;
-		}
-	});
-
-	onMount(() => {
-		const unsubscribe = auth.subscribe((state) => {
-			authState = {
-				isAuthenticated: state.isAuthenticated,
-				sessionId: state.sessionId,
-				user: state.user,
-				impersonation: state.impersonation
-			};
-		});
-
-		return () => unsubscribe();
-	});
+	let authState = $derived($auth);
 
 	// Handle url changes
 	$effect(() => {

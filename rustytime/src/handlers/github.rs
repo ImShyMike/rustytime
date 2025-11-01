@@ -173,11 +173,17 @@ pub async fn callback(
 pub async fn verify_session(
     State(app_state): State<AppState>,
     Query(params): Query<serde_json::Value>,
+    cookies: Cookies,
 ) -> Result<Json<serde_json::Value>, Response> {
     let session_id = params
         .get("session_id")
         .and_then(|v| v.as_str())
         .and_then(|s| uuid::Uuid::parse_str(s).ok())
+        .or_else(|| {
+            cookies
+                .get("rustytime_session")
+                .and_then(|cookie| uuid::Uuid::parse_str(cookie.value()).ok())
+        })
         .ok_or_else(|| {
             (StatusCode::BAD_REQUEST, "Missing or invalid session_id").into_response()
         })?;

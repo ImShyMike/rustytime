@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { tick } from 'svelte';
 	import { browser } from '$app/environment';
-	import { PUBLIC_BACKEND_API_URL } from '$env/static/public';
 	import { invalidate } from '$app/navigation';
 	import { apexcharts } from '$lib/stores/apexcharts';
 	import { theme } from '$lib/stores/theme';
@@ -12,7 +11,7 @@
 	import { setupVisibilityRefresh } from '$lib/utils/refresh';
 	import { Container, PageScaffold, SectionTitle, StatCard, UserTag } from '$lib';
 	import { auth } from '$lib/stores/auth';
-	import { impersonateUser } from '$lib/utils/admin';
+	import { impersonateUser, changeAdminLevel } from '$lib/utils/admin';
 
 	interface Props {
 		data: PageData;
@@ -29,33 +28,10 @@
 		await invalidate('app:admin');
 	};
 
-	const changeAdminLevel = async (userId: number, targetLevel: number) => {
-		if (!browser || targetLevel < 0) {
-			return;
-		}
-
-		try {
-			const response = await fetch(
-				`${PUBLIC_BACKEND_API_URL}/admin/admin_level/${userId}/${targetLevel}`,
-				{
-					method: 'GET',
-					credentials: 'include'
-				}
-			);
-
-			if (!response.ok) {
-				throw new Error(await response.text());
-			}
-
-			await refreshAdminData();
-		} catch (error) {
-			console.error('Failed to update admin level:', error);
-		}
-	};
-
 	const promoteUser = async (userId: number, currentLevel: number | null | undefined) => {
 		const nextLevel = (currentLevel ?? 0) + 1;
 		await changeAdminLevel(userId, nextLevel);
+		await refreshAdminData();
 	};
 
 	const demoteUser = async (userId: number, currentLevel: number | null | undefined) => {
@@ -65,6 +41,7 @@
 		}
 
 		await changeAdminLevel(userId, nextLevel);
+		await refreshAdminData();
 	};
 
 	function destroyCharts() {

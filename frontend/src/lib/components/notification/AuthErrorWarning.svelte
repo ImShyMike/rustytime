@@ -116,7 +116,7 @@
 								<button
 									type="button"
 									class="cursor-pointer inline-flex h-8 items-center justify-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground ring-offset-background hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-									onclick={auth.retryVerification}
+									onclick={() => auth.verify()}
 									disabled={$auth.isLoading}
 								>
 									{$auth.isLoading ? 'Retrying...' : 'Retry'}

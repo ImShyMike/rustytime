@@ -1,7 +1,8 @@
 import { browser } from '$app/environment';
 import { invalidateAll } from '$app/navigation';
 import { writable } from 'svelte/store';
-import { api, ApiError, setGlobalErrorCallback } from '../utils/api.js';
+import { createApi, ApiError } from '$lib/utils/api';
+
 export interface User {
 	id: number;
 	github_id: number;
@@ -32,6 +33,12 @@ export interface AuthState {
 	impersonation: App.ImpersonationInfo | null;
 }
 
+interface VerifyResponse {
+	valid: boolean;
+	user?: User & { username?: string | null };
+	impersonation?: App.ImpersonationInfo | null;
+}
+
 type AuthSnapshot = App.Locals['auth'];
 
 const DEFAULT_AUTH_SNAPSHOT: AuthSnapshot = {
@@ -50,7 +57,6 @@ const toState = (snapshot: AuthSnapshot): AuthState => ({
 	impersonation: snapshot.impersonation
 });
 
-// Create auth store
 const createAuthStore = () => {
 	const { subscribe, set, update } = writable<AuthState>({
 		user: null,
@@ -61,111 +67,120 @@ const createAuthStore = () => {
 		impersonation: null
 	});
 
-	// Helper function to create auth errors
-	const createAuthError = (type: AuthErrorType, message: string): AuthError => ({
-		type,
-		message,
-		timestamp: new Date()
-	});
+	const setError = (type: AuthErrorType, message: string) => {
+		if (!browser) return;
+		update((s) => ({ ...s, error: { type, message, timestamp: new Date() } }));
+	};
+
+	async function verify(fetchFn: typeof globalThis.fetch) {
+		update((s) => ({ ...s, isLoading: true, error: null }));
+
+		try {
+			const api = createApi(fetchFn);
+			const data = await api.get<VerifyResponse>('/auth/github/verify');
+
+			if (data?.valid && data.user) {
+				const name = data.user.name ?? data.user.username ?? null;
+				set({
+					user: { ...data.user, name },
+					sessionId: null,
+					isAuthenticated: true,
+					isLoading: false,
+					error: null,
+					impersonation: data.impersonation ?? null
+				});
+			} else {
+				set({
+					user: null,
+					sessionId: null,
+					isAuthenticated: false,
+					isLoading: false,
+					error: null,
+					impersonation: null
+				});
+			}
+		} catch (e) {
+			const err = e as ApiError;
+			if (err.status === 401 || err.status === 403) {
+				set({
+					user: null,
+					sessionId: null,
+					isAuthenticated: false,
+					isLoading: false,
+					error: null,
+					impersonation: null
+				});
+			} else if (err.status >= 500 || err.status === 0) {
+				setError(
+					err.status === 0 ? 'network' : 'server',
+					err.status === 0
+						? 'Unable to connect to server. Please check your connection.'
+						: `Server error: ${err.message}`
+				);
+				update((s) => ({ ...s, isLoading: false }));
+			} else {
+				set({
+					user: null,
+					sessionId: null,
+					isAuthenticated: false,
+					isLoading: false,
+					error: null,
+					impersonation: null
+				});
+			}
+		}
+	}
 
 	return {
 		subscribe,
-		set,
-		update,
-
-		// Login by redirecting to GitHub OAuth
-		login: async () => {
-			if (!browser) return;
-
-			try {
-				const data = await api.get<{ auth_url: string }>('/auth/github/login', fetch);
-
-				if (data.auth_url) {
-					window.location.href = data.auth_url;
-				}
-			} catch (error) {
-				console.error('Login error:', error);
-			}
-		},
-
-		// Logout
-		logout: async () => {
-			if (!browser) return;
-
-			try {
-				await api.get('/auth/github/logout', fetch);
-
-				set(toState(DEFAULT_AUTH_SNAPSHOT));
-				await invalidateAll();
-			} catch (error) {
-				console.error('Logout error:', error);
-			}
-		},
 
 		hydrate: (snapshot?: AuthSnapshot) => {
 			const next = snapshot ? toState(snapshot) : toState(DEFAULT_AUTH_SNAPSHOT);
 			set(next);
 		},
 
-		// Clear any existing error
-		clearError: () => {
-			update((state) => ({ ...state, error: null }));
+		clearError: () => update((s) => ({ ...s, error: null })),
+
+		setError: (type: AuthErrorType, message: string) => setError(type, message),
+
+		verify: async (fetchFn = fetch) => {
+			if (browser) await verify(fetchFn);
 		},
 
-		// Set a specific error
-		setError: (type: AuthErrorType, message: string) => {
+		login: async () => {
 			if (!browser) return;
-
-			update((state) => ({
-				...state,
-				error: createAuthError(type, message)
-			}));
-		},
-
-		// Retry session verification by reloading server-derived auth state
-		retryVerification: async () => {
-			if (!browser) return;
-
-			update((state) => ({ ...state, isLoading: true, error: null }));
 
 			try {
-				await invalidateAll();
-			} catch (error) {
-				console.error('Auth retry failed:', error);
+				const api = createApi(fetch);
+				const { auth_url } = await api.get<{ auth_url: string }>('/auth/github/login');
+				if (auth_url) window.location.href = auth_url;
+			} catch (e) {
+				console.log('Login error:', e);
+				setError('unknown', 'Login failed. Please try again.');
+			}
+		},
+
+		logout: async () => {
+			if (!browser) return;
+
+			try {
+				const api = createApi(fetch);
+				await api.get('/auth/github/logout');
+			} catch (e) {
+				console.log('Logout error:', e);
 			} finally {
-				update((state) => ({ ...state, isLoading: false }));
+				set({
+					user: null,
+					sessionId: null,
+					isAuthenticated: false,
+					isLoading: false,
+					error: null,
+					impersonation: null
+				});
+				await invalidateAll();
 			}
 		}
 	};
 };
 
 export const auth = createAuthStore();
-
-// Set up global API error handling
-if (browser) {
-	setGlobalErrorCallback((error: ApiError) => {
-		// Only show errors for network/server issues, not auth issues
-		if (error.status === 0 || error.status >= 500) {
-			auth.update((state) => {
-				// Don't overwrite existing errors
-				if (!state.error) {
-					const authError =
-						error.status === 0
-							? {
-									type: 'network' as const,
-									message: 'Unable to connect to server. Please check your connection.',
-									timestamp: new Date()
-								}
-							: {
-									type: 'server' as const,
-									message: `Server error: ${error.message}`,
-									timestamp: new Date()
-								};
-
-					return { ...state, error: authError };
-				}
-				return state;
-			});
-		}
-	});
-}

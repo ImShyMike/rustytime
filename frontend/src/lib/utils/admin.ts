@@ -1,15 +1,25 @@
-import { PUBLIC_BACKEND_API_URL } from '$env/static/public';
+import { createApi } from '$lib/utils/api';
 
 export async function impersonateUser(userId: number) {
 	try {
-		await fetch(`${PUBLIC_BACKEND_API_URL}/admin/impersonate/${userId}`, {
-			method: 'GET',
-			credentials: 'include',
-			redirect: 'manual'
-		});
-
+		const api = createApi(fetch);
+		await api.get(`/admin/impersonate/${userId}`);
 		window.location.reload();
 	} catch (error) {
 		console.error('Error impersonating user:', error);
+	}
+}
+
+export async function changeAdminLevel(userId: number, targetLevel: number) {
+	if (targetLevel < 0) {
+		return;
+	}
+
+	try {
+		const api = createApi(fetch);
+		await api.get(`/admin/admin_level/${userId}/${targetLevel}`);
+		window.location.reload();
+	} catch (error) {
+		console.error('Failed to update admin level:', error);
 	}
 }
