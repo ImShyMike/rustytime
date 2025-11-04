@@ -7,11 +7,16 @@
 	import type { Theme } from '$lib/stores/theme';
 	import type ApexCharts from 'apexcharts';
 	import type { PageData } from './$types';
-	import { destroyChart, ensureDateBarChart, isApexChartsConstructor } from '$lib/utils/apexClient';
+	import {
+		destroyChart,
+		ensureDateBarChart,
+		isApexChartsConstructor
+	} from '$lib/charts/apexClient';
 	import { setupVisibilityRefresh } from '$lib/utils/refresh';
 	import { Container, PageScaffold, SectionTitle, StatCard, UserTag } from '$lib';
 	import { auth } from '$lib/stores/auth';
-	import { impersonateUser, changeAdminLevel } from '$lib/utils/admin';
+	import { impersonateUser, changeAdminLevel } from '$lib/api/admin';
+	import { createApi } from '$lib/api/api';
 
 	interface Props {
 		data: PageData;
@@ -22,6 +27,8 @@
 	let adminData = $state(data);
 	let lastUpdatedAt = $state(new Date());
 
+	const api = createApi(fetch);
+
 	let activityChart: ApexCharts | null = null;
 
 	const refreshAdminData = async () => {
@@ -30,7 +37,7 @@
 
 	const promoteUser = async (userId: number, currentLevel: number | null | undefined) => {
 		const nextLevel = (currentLevel ?? 0) + 1;
-		await changeAdminLevel(userId, nextLevel);
+		await changeAdminLevel(api, userId, nextLevel);
 		await refreshAdminData();
 	};
 
@@ -40,7 +47,7 @@
 			return;
 		}
 
-		await changeAdminLevel(userId, nextLevel);
+		await changeAdminLevel(api, userId, nextLevel);
 		await refreshAdminData();
 	};
 
@@ -244,7 +251,7 @@
 										{:else}
 											<div class="flex items-center gap-2">
 												<button
-													onclick={() => impersonateUser(user.id)}
+													onclick={() => impersonateUser(api, user.id)}
 													class="cursor-pointer inline-flex items-center justify-center rounded bg-ctp-lavender px-3 py-1 text-xs font-semibold text-ctp-base transition hover:bg-ctp-blue"
 												>
 													{#if $auth.impersonation && user.id === $auth.impersonation.admin_id}

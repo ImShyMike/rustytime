@@ -153,7 +153,7 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 					{#key os}
 						<div class="relative mt-3">
 							<pre
-								class="text-text resize-none block w-full pr-14 px-3 py-3 border border-ctp-surface1 rounded-md bg-ctp-surface0/70 text-sm font-mono whitespace-pre-wrap">{installCommands[
+								class="text-text resize-none block w-full pr-14 px-3 py-3 border border-ctp-surface1 rounded-md bg-ctp-surface0/70 text-sm font-mono whitespace-pre-wrap wrap-break-word">{installCommands[
 									os
 								]}</pre>
 							<button

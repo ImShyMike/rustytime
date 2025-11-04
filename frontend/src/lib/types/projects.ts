@@ -11,3 +11,23 @@ export interface Project {
 export interface ProjectsResponse {
 	projects: Project[];
 }
+
+export interface ProjectsListResponse {
+	projects: Array<{
+		id: number;
+		name: string;
+	}>;
+}
+
+export interface ProjectAliasEntry {
+	project_id: number;
+	aliases: number[];
+}
+
+export interface ProjectAliasesResponse {
+	aliases: ProjectAliasEntry[];
+}
+
+export interface SetProjectRepoRequest {
+	repo_url: string | null;
+}

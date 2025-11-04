@@ -2,7 +2,7 @@ import {
 	createBarChartOptions,
 	createPieChartOptions,
 	createDateBarChartOptions
-} from '$lib/utils/charts';
+} from '$lib/charts/charts';
 import type { UsageStat } from '$lib/types/dashboard';
 import type ApexCharts from 'apexcharts';
 import type { ApexOptions } from 'apexcharts';

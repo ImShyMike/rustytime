@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS idx_heartbeats_user_project_id;

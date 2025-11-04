@@ -1,6 +1,6 @@
 import type { PageServerLoad } from './$types';
 import type { SettingsResponse } from '$lib/types/settings';
-import { createApi, ApiError } from '$lib/utils/api';
+import { createApi, ApiError } from '$lib/api/api';
 import { redirect, error } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async ({ fetch, request }) => {

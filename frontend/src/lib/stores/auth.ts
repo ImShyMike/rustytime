@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 import { invalidateAll } from '$app/navigation';
 import { writable } from 'svelte/store';
-import { createApi, ApiError } from '$lib/utils/api';
+import { createApi, ApiError } from '$lib/api/api';
 
 export interface User {
 	id: number;

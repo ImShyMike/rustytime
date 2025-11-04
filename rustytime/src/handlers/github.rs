@@ -93,7 +93,18 @@ pub async fn callback(
 
     // validate state parameter against cookie
     let state_cookie = cookies.get("rustytime_oauth_state");
-    if state_cookie.is_none() || state_cookie.unwrap().value() != params.state {
+    let state_valid = state_cookie
+        .as_ref()
+        .map(|c| c.value() == params.state)
+        .unwrap_or(false);
+
+    // remove the oauth state cookie after checking
+    let remove_state_cookie = tower_cookies::Cookie::build(("rustytime_oauth_state", ""))
+        .path("/")
+        .build();
+    cookies.remove(remove_state_cookie);
+
+    if !state_valid {
         return Ok(Redirect::to(&format!(
             "{}/?error=invalid_state",
             frontend_url
@@ -157,7 +168,6 @@ pub async fn callback(
         "github_id": user_info.id,
         "name": user_info.login,
         "avatar_url": user_info.avatar_url,
-        "is_admin": user.is_admin(),
     });
 
     let user_string = user_data.to_string();

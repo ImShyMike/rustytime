@@ -1,8 +1,6 @@
 pub mod admin;
-pub mod dashboard;
+pub mod api;
+pub mod data;
 pub mod github;
 pub mod homepage;
-pub mod leaderboard;
-pub mod projects;
-pub mod settings;
-pub mod user;
+pub mod page;

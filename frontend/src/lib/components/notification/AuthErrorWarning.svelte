@@ -79,14 +79,14 @@
 {#if $auth.error}
 	<div class="fixed top-4 right-4 z-50 w-full max-w-sm">
 		<div
-			class="bg-base relative rounded-lg border p-4 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/60 text-foreground {getVariantClasses(
+			class="bg-base relative rounded-lg border p-4 shadow-lg backdrop-blur supports-backdrop-filter:bg-background/60 text-foreground {getVariantClasses(
 				getErrorVariant($auth.error)
 			)}"
 			role="alert"
 			aria-live="assertive"
 		>
 			<div class="flex items-start gap-3">
-				<div class="flex-shrink-0 mt-0.5">
+				<div class="shrink-0 mt-0.5">
 					<svelte:component this={getIconVariant($auth.error)} class="h-6 w-6" />
 				</div>
 				<div class="flex-1 space-y-1">

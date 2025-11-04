@@ -118,7 +118,6 @@ pub fn get_or_create_project_id(
 }
 
 impl Project {
-    #[allow(dead_code)]
     pub fn list_user_projects(
         conn: &mut PgConnection,
         user_id_param: i32,
@@ -129,6 +128,25 @@ impl Project {
             .filter(user_id.eq(user_id_param))
             .order(name.asc())
             .load::<Project>(conn)
+    }
+
+    pub fn set_repo_url(
+        conn: &mut PgConnection,
+        project_id_param: i32,
+        user_id_param: i32,
+        new_repo_url: &Option<String>,
+    ) -> QueryResult<()> {
+        use crate::schema::projects::dsl::*;
+
+        diesel::update(
+            projects
+                .filter(id.eq(project_id_param))
+                .filter(user_id.eq(user_id_param)),
+        )
+        .set(repo_url.eq(new_repo_url))
+        .execute(conn)?;
+
+        Ok(())
     }
 
     pub fn list_projects_by_user_with_time(
@@ -155,14 +173,16 @@ impl Project {
                             SELECT
                                 time,
                                 LAG(time) OVER (ORDER BY time) AS prev_time
-                            FROM heartbeats
-                            WHERE user_id = $1
+                            FROM heartbeats h
+                            WHERE h.user_id = $1
+                              AND h.project_id IS NOT NULL
                               AND (
-                                  project_id = p.id
-                                  OR (
-                                      project_id IS NULL
-                                      AND project IS NOT NULL
-                                      AND project = p.name
+                                  h.project_id = p.id
+                                  OR h.project_id IN (
+                                      SELECT pa.project_id
+                                      FROM project_aliases pa
+                                      WHERE pa.user_id = $1
+                                        AND pa.alias_to = p.id
                                   )
                               )
                         ) time_diffs
@@ -170,6 +190,11 @@ impl Project {
                 ), 0)::bigint AS total_seconds
             FROM projects p
             WHERE p.user_id = $1
+              AND p.id NOT IN (
+                  SELECT project_id
+                  FROM project_aliases
+                  WHERE user_id = $1
+              )
             ORDER BY total_seconds DESC, p.name ASC
         "#;
 

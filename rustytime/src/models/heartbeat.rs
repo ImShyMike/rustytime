@@ -631,6 +631,74 @@ impl Heartbeat {
             .get_result(conn)
     }
 
+    /// Get top 10 projects by total seconds
+    fn get_project_stats_with_aliases(
+        conn: &mut PgConnection,
+        user_id: i32,
+        total_time: i64,
+    ) -> QueryResult<Vec<UsageStat>> {
+        let sql = r#"
+            WITH resolved_projects AS (
+                SELECT
+                    h.time,
+                    COALESCE(pa.alias_to, h.project_id) as resolved_project_id,
+                    LAG(h.time) OVER (
+                        PARTITION BY COALESCE(pa.alias_to, h.project_id)
+                        ORDER BY h.time
+                    ) as prev_time
+                FROM heartbeats h
+                LEFT JOIN project_aliases pa
+                    ON pa.user_id = h.user_id
+                    AND pa.project_id = h.project_id
+                WHERE h.user_id = $1
+                    AND h.project_id IS NOT NULL
+            ),
+            capped_diffs AS (
+                SELECT
+                    resolved_project_id,
+                    CASE
+                        WHEN prev_time IS NULL THEN 0
+                        ELSE LEAST(EXTRACT(EPOCH FROM (time - prev_time)), $2)
+                    END as diff
+                FROM resolved_projects
+            ),
+            project_times AS (
+                SELECT
+                    resolved_project_id,
+                    COALESCE(SUM(diff), 0)::bigint as total_seconds
+                FROM capped_diffs
+                GROUP BY resolved_project_id
+            )
+            SELECT
+                p.name as name,
+                pt.total_seconds
+            FROM project_times pt
+            JOIN projects p ON p.id = pt.resolved_project_id
+            ORDER BY pt.total_seconds DESC
+            LIMIT 10
+        "#;
+
+        let rows: Vec<Row> = diesel::sql_query(sql)
+            .bind::<diesel::sql_types::Int4, _>(user_id)
+            .bind::<diesel::sql_types::Int4, _>(TIMEOUT_SECONDS)
+            .load(conn)?;
+
+        Ok(rows
+            .into_iter()
+            .map(|row| UsageStat {
+                name: row.name.unwrap_or_else(|| "Unknown".to_string()),
+                total_seconds: row.total_seconds,
+                text: human_readable_duration(row.total_seconds, TimeFormat::HourMinute)
+                    .human_readable,
+                percent: if total_time > 0 {
+                    ((row.total_seconds as f32 / total_time as f32) * 10000.0).round() / 100.0
+                } else {
+                    0.0
+                },
+            })
+            .collect())
+    }
+
     /// Get top 10 projects, editors, OSes, and languages by total seconds
     pub fn get_dashboard_stats(
         conn: &mut PgConnection,
@@ -638,6 +706,9 @@ impl Heartbeat {
     ) -> QueryResult<DashboardStats> {
         // get total time for percentage calculations
         let total_time = Self::get_user_total_duration_seconds(conn, user_id)?;
+
+        // get project stats with alias resolution first
+        let top_projects = Self::get_project_stats_with_aliases(conn, user_id, total_time)?;
 
         // helper closure to run the SQL for a given field
         let mut get_stats = |field: &str| -> QueryResult<Vec<UsageStat>> {
@@ -688,7 +759,6 @@ impl Heartbeat {
                 .collect())
         };
 
-        let top_projects = get_stats("project")?;
         let top_editors = get_stats("editor")?;
         let top_oses = get_stats("operating_system")?;
         let top_languages = get_stats("language")?;

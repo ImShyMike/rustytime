@@ -27,7 +27,7 @@
 </script>
 
 <div class={`bg-ctp-mantle min-h-screen flex flex-col ${wrapperClass}`.trim()}>
-	<div class="flex-grow">
+	<div class="grow">
 		<div class={`max-w-6xl mx-auto py-4 2xl:py-12 px-3 ${contentClass}`.trim()}>
 			{#if hasHeadingSlot}
 				<slot name="heading" />
@@ -44,7 +44,7 @@
 			<slot name="footer" {lastUpdatedAt} />
 		{:else if lastUpdatedAt}
 			<div
-				class="text-center text-ctp-subtext0/70 hover:text-ctp-subtext1 text-sm mb-4"
+				class="text-center text-ctp-subtext0/70 hover:text-ctp-subtext1 text-sm"
 				title={lastUpdatedAt.toLocaleString()}
 			>
 				Last updated <RelativeTime datetime={lastUpdatedAt} />

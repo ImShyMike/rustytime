@@ -1,9 +1,14 @@
 pub mod admin;
 pub mod api;
+pub mod data;
 pub mod github;
 
 use crate::handlers::homepage::home_page;
-use crate::handlers::{self, admin::admin_dashboard};
+use crate::handlers::page::admin::admin_dashboard;
+use crate::handlers::page::dashboard::dashboard;
+use crate::handlers::page::leaderboard::leaderboard_page;
+use crate::handlers::page::projects::projects_dashboard;
+use crate::handlers::page::settings::settings_page;
 use crate::state::AppState;
 use crate::utils::middleware;
 use axum::routing::get;
@@ -26,6 +31,8 @@ pub fn create_app_router(app_state: AppState) -> Router {
         .merge(create_admin_routes(app_state.clone()))
         // API routes
         .nest("/api/v1", api::create_api_router())
+        // admin API routes
+        // .merge(create_admin_api_routes(app_state.clone()))
         // metrics endpoint
         .route("/metrics", get(|| async move { metric_handle.render() }))
         // catch-all fallback for unmatched routes (must be last)
@@ -55,11 +62,12 @@ fn protected_routes(app_state: AppState) -> Router<AppState> {
         .nest(
             "/page",
             Router::new()
-                .route("/dashboard", get(handlers::dashboard::dashboard))
-                .route("/projects", get(handlers::projects::projects_dashboard))
-                .route("/settings", get(handlers::settings::settings_page))
-                .route("/leaderboard", get(handlers::leaderboard::leaderboard_page)),
+                .route("/dashboard", get(dashboard))
+                .route("/projects", get(projects_dashboard))
+                .route("/settings", get(settings_page))
+                .route("/leaderboard", get(leaderboard_page)),
         )
+        .nest("/data", data::data_routes())
         .layer(axum_middleware::from_fn_with_state(
             app_state,
             middleware::require_auth,
@@ -78,10 +86,20 @@ fn protected_routes(app_state: AppState) -> Router<AppState> {
 /// Admin routes that require admin privileges
 pub fn create_admin_routes(app_state: AppState) -> Router<AppState> {
     Router::new()
-        .nest("/page", Router::new().route("/admin", get(admin_dashboard)))
+        .route("/page/admin", get(admin_dashboard))
         .nest("/admin", admin::admin_routes(app_state.clone()))
         .layer(axum_middleware::from_fn_with_state(
             app_state,
             middleware::require_admin,
         ))
 }
+
+// Admin API routes that require admin privileges
+// pub fn create_admin_api_routes(app_state: AppState) -> Router<AppState> {
+//     Router::new()
+//         .nest("/api/v1/admin", api::create_admin_api_router())
+//         .layer(axum_middleware::from_fn_with_state(
+//             app_state,
+//             middleware::require_admin,
+//         ))
+// }

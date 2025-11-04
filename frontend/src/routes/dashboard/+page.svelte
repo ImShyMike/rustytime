@@ -12,7 +12,7 @@
 		ensureBarChart,
 		ensurePieChart,
 		isApexChartsConstructor
-	} from '$lib/utils/apexClient';
+	} from '$lib/charts/apexClient';
 	import { setupVisibilityRefresh } from '$lib/utils/refresh';
 	import { Container, PageScaffold, SectionTitle, StatCard, UserTag } from '$lib';
 	import RelativeTime from '$lib/components/ui/RelativeTime.svelte';

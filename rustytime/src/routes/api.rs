@@ -1,4 +1,4 @@
-use crate::handlers::user::{create_heartbeats, get_statusbar_today};
+use crate::handlers::api::user::{create_heartbeats, get_statusbar_today};
 use crate::state::AppState;
 use axum::{
     Router,
@@ -12,6 +12,15 @@ pub fn create_api_router() -> Router<AppState> {
         .route("/", get(|| async { Redirect::permanent("/") }))
         .nest("/users", user_routes())
 }
+
+// Route: `/api/v1/admin`
+// pub fn create_admin_api_router() -> Router<AppState> {
+//     Router::new()
+//         .route(
+//             "/admin_level/{user_id}/{admin_level}",
+//             put(change_user_admin_level),
+//         )
+// }
 
 /// Route: `/api/v1/users`
 pub fn user_routes() -> Router<AppState> {

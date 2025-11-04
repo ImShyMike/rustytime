@@ -6,8 +6,10 @@
 	}>();
 
 	let size = $derived(() => props.size ?? 80);
-	let className = $derived(() =>
-		props.className ?? 'absolute inset-0 w-full h-full object-cover transition-opacity duration-200'
+	let className = $derived(
+		() =>
+			props.className ??
+			'absolute inset-0 w-full h-full object-cover transition-opacity duration-200'
 	);
 	let avatarLoaded = $state(false);
 </script>

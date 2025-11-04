@@ -1,5 +1,5 @@
 import type { PageServerLoad } from './$types';
-import { createApi, ApiError } from '$lib/utils/api';
+import { createApi, ApiError } from '$lib/api/api';
 import { redirect, error } from '@sveltejs/kit';
 import type { DashboardResponse } from '$lib/types/dashboard';
 

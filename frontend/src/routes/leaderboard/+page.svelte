@@ -48,8 +48,8 @@
 
 <PageScaffold title="Leaderboard" {lastUpdatedAt}>
 	<Container>
-		<div class="flex justify-between items-center">
-			<div class="mb-6 flex gap-2 border-b border-base">
+		<div class="flex justify-between items-end">
+			<div class="mb-4 flex gap-2 border-b border-base">
 				{#each tabs as tab (tab.id)}
 					<button
 						class="cursor-pointer px-4 py-2 font-medium transition-colors {selectedTab === tab.id
@@ -63,10 +63,12 @@
 			</div>
 
 			<p
-				class="text-xs text-ctp-overlay1"
+				class="text-xs text-ctp-overlay1 pb-4"
 				title={new Date(currentData.generated_at).toLocaleString()}
 			>
-				Regenerated <RelativeTime datetime={new Date(currentData.generated_at)} />
+				<span class="hidden md:inline">Regenerated&nbsp;</span><RelativeTime
+					datetime={new Date(currentData.generated_at)}
+				/>
 			</p>
 		</div>
 

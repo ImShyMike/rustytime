@@ -6,10 +6,12 @@
 	import type { Project } from '$lib/types/projects';
 	import LucideGithub from '~icons/lucide/github';
 	import LucideExternalLink from '~icons/lucide/external-link';
+	import LucidePencilLine from '~icons/lucide/pencil-line';
 	import StatCard from '$lib/components/ui/StatCard.svelte';
 	import { formatRelativeTime, creationDateFormatter } from '$lib/utils/time';
 	import RelativeTime from '$lib/components/ui/RelativeTime.svelte';
 	import { safeText } from '$lib/utils/text';
+	import EditProjectModal from '$lib/components/modals/EditProjectModal.svelte';
 
 	interface Props {
 		data: PageData;
@@ -30,6 +32,7 @@
 		await invalidate('app:projects');
 	};
 
+	let editingProject = $state<Project | null>(null);
 	let lastUpdatedAt = $state(new Date());
 
 	setupVisibilityRefresh({
@@ -120,6 +123,25 @@
 	<title>Projects - rustytime</title>
 </svelte:head>
 
+{#if editingProject !== null}
+	<EditProjectModal
+		project={editingProject}
+		onclose={() => {
+			editingProject = null;
+		}}
+		onsuccess={(updatedRepoUrl) => {
+			// update data locally without fully reloading
+			if (projectsData?.projects) {
+				const projectIndex = projectsData.projects.findIndex((p) => p.id === editingProject?.id);
+				if (projectIndex !== -1) {
+					projectsData.projects[projectIndex].repo_url = updatedRepoUrl;
+					projectsData.projects[projectIndex].updated_at = new Date().toISOString();
+				}
+			}
+		}}
+	/>
+{/if}
+
 {#if projectsData}
 	<PageScaffold title="Projects" {lastUpdatedAt}>
 		<!-- Project Statistics -->
@@ -150,6 +172,14 @@
 									>{safeText(project.name)}</SectionTitle
 								>
 							</div>
+
+							<LucidePencilLine
+								class="h-5 w-5 text-ctp-subtext1/70 hover:text-ctp-subtext0 cursor-pointer"
+								title="Edit Project"
+								onclick={() => {
+									editingProject = project;
+								}}
+							/>
 						</div>
 
 						<div class="flex flex-col justify-between h-full gap-3 text-sm text-ctp-subtext1">
@@ -169,7 +199,7 @@
 									{:else}
 										<LucideExternalLink class="h-4 w-4" aria-hidden="true" />
 									{/if}
-									<span>{project.repoLabel}</span>
+									<span>{safeText(project.repoLabel || '')}</span>
 								</a>
 							{/if}
 

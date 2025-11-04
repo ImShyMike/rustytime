@@ -20,8 +20,9 @@
 	import LucideTrophy from '~icons/lucide/trophy';
 	import { onMount } from 'svelte';
 	import UserTag from '$lib/components/ui/UserTag.svelte';
-	import { impersonateUser } from '$lib/utils/admin';
+	import { impersonateUser } from '$lib/api/admin';
 	import Avatar from './ui/Avatar.svelte';
+	import { createApi } from '$lib/api/api';
 
 	let collapsed: boolean = false;
 	let buttonMode: boolean = false;
@@ -34,6 +35,8 @@
 		: 'block relative h-full';
 
 	$: sidebarWidth = buttonMode ? 'min(20rem, 100vw)' : collapsed ? '5rem' : '16rem';
+
+	const api = createApi(fetch);
 
 	function toggleCollapse() {
 		collapsed = !collapsed;
@@ -302,7 +305,8 @@
 				{/if}
 				<button
 					onclick={() =>
-						setTimeout(closeMobileSidebar, 100) && impersonateUser($auth.impersonation!.admin_id)}
+						setTimeout(closeMobileSidebar, 100) &&
+						impersonateUser(api, $auth.impersonation!.admin_id)}
 					class="cursor-pointer inline-flex w-full items-center justify-center rounded-md bg-ctp-yellow px-3 py-2 text-sm font-semibold text-ctp-base transition hover:bg-ctp-yellow/80 {collapsed
 						? 'px-0'
 						: ''}"
