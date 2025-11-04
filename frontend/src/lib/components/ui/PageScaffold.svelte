@@ -26,7 +26,7 @@
 	const hasFooterSlot = Boolean($$slots.footer);
 </script>
 
-<div class={`bg-ctp-mantle min-h-screen flex flex-col ${wrapperClass}`.trim()}>
+<div class={`bg-ctp-mantle min-h-[99vh] flex flex-col ${wrapperClass}`.trim()}>
 	<div class="grow">
 		<div class={`max-w-6xl mx-auto py-4 2xl:py-12 px-3 ${contentClass}`.trim()}>
 			{#if hasHeadingSlot}

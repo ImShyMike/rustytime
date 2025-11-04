@@ -5,6 +5,7 @@
 	import type { Leaderboard } from '$lib/types/leaderboard';
 	import { setupVisibilityRefresh } from '$lib/utils/refresh';
 	import { formatDuration } from '$lib/utils/time';
+	import { auth } from '$lib/stores/auth';
 
 	interface Props {
 		data: PageData;
@@ -66,7 +67,7 @@
 				class="text-xs text-ctp-overlay1 pb-4"
 				title={new Date(currentData.generated_at).toLocaleString()}
 			>
-				<span class="hidden md:inline">Regenerated&nbsp;</span><RelativeTime
+				<span class="hidden md:inline">Updated&nbsp;</span><RelativeTime
 					datetime={new Date(currentData.generated_at)}
 				/>
 			</p>
@@ -92,7 +93,7 @@
 					</thead>
 					<tbody>
 						{#each currentData.entries as entry (entry.rank)}
-							<tr class="border-b border-surface0 last:border-0 hover:bg-surface0/50">
+							<tr class="border-b last:border-0 border-surface0 hover:bg-surface0/20">
 								<td class="w-12 pl-6 pr-0 py-4">
 									<div
 										class="flex h-8 w-8 items-center justify-center rounded-full font-bold {entry.rank ===
@@ -114,9 +115,11 @@
 											alt={entry.user_name}
 											class="h-8 w-8 rounded-full border border-surface0"
 										/>
-										<span
-											class="font-medium text-text overflow-hidden text-ellipsis whitespace-nowrap"
-											>{entry.user_name}</span
+										<a
+											class="font-medium text-text overflow-hidden text-ellipsis whitespace-nowrap {entry.user_id === $auth.user?.id ? 'text-yellow' : ''}"
+											href={entry.user_name ? `https://github.com/${entry.user_name}` : undefined}
+											target="_blank"
+											rel="noopener noreferrer">{entry.user_name || 'Unknown'}</a
 										>
 									</div>
 								</td>
