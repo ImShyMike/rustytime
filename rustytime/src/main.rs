@@ -10,6 +10,7 @@ use axum::{
     body::Body,
     http::{Request, Response},
 };
+use tower_governor::{GovernorLayer, governor::GovernorConfigBuilder};
 use std::{env, net::SocketAddr, time::Duration};
 use tower_cookies::CookieManagerLayer;
 use tower_http::{
@@ -25,7 +26,11 @@ use utils::http::extract_client_ip;
 use utils::logging::init_tracing;
 use utils::middleware::cors_layer;
 
-use crate::routes::create_app_router;
+use crate::{routes::create_app_router, utils::session::SessionManager};
+
+// default to about 4 requests per second per ip
+const DEFAULT_BURST_SIZE: u32 = 240;
+const DEFAULT_RATE_LIMIT_RESET_DURATION: Duration = Duration::from_secs(60);
 
 #[tokio::main]
 async fn main() {
@@ -34,6 +39,9 @@ async fn main() {
 
     // logging stuff
     init_tracing();
+
+    // check if running in production
+    let is_production = SessionManager::is_production_env();
 
     let version = env!("CARGO_PKG_VERSION");
     info!("🚀 Starting the rustytime (v{}) server...", version);
@@ -72,14 +80,33 @@ async fn main() {
     leaderboard_generator.start().await;
     info!("✅ Leaderboard generator started");
 
+    let governor_conf = GovernorConfigBuilder::default()
+       .period(if is_production { DEFAULT_RATE_LIMIT_RESET_DURATION } else { Duration::from_secs(1) })
+       .burst_size(if is_production { DEFAULT_BURST_SIZE } else { 10_000_000 })
+       .use_headers()
+       .finish()
+       .unwrap();
+
+    let governor_limiter = governor_conf.limiter().clone();
+
+    let interval = Duration::from_secs(60);
+    // use a separate background task to clean up
+    std::thread::spawn(move || {
+        loop {
+            std::thread::sleep(interval);
+            governor_limiter.retain_recent();
+        }
+    });
+
     // create the main application router
     let app = create_app_router(app_state)
         .layer(CookieManagerLayer::new())
         .layer(cors_layer()) // add CORS
         .layer(CompressionLayer::new().gzip(true)) // enable gzip
         .layer(DecompressionLayer::new().gzip(true)) // accept gzip
-        .layer(RequestBodyLimitLayer::new(10 * 1024 * 1024)) // 10 MB size limit
-        .layer(TimeoutLayer::new(Duration::from_secs(10))) // 10 seconds timeout
+        .layer(RequestBodyLimitLayer::new(16 * 1024 * 1024)) // 16 MB size limit
+        .layer(TimeoutLayer::new(Duration::from_secs(15))) // 15 second timeout
+        .layer(GovernorLayer::new(governor_conf)) // rate limiting
         .layer(
             // add request logging
             TraceLayer::new_for_http()
