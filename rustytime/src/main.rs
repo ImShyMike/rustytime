@@ -10,9 +10,9 @@ use axum::{
     body::Body,
     http::{Request, Response},
 };
-use tower_governor::{GovernorLayer, governor::GovernorConfigBuilder};
 use std::{env, net::SocketAddr, time::Duration};
 use tower_cookies::CookieManagerLayer;
+use tower_governor::{GovernorLayer, governor::GovernorConfigBuilder};
 use tower_http::{
     compression::CompressionLayer, decompression::DecompressionLayer, limit::RequestBodyLimitLayer,
     timeout::TimeoutLayer, trace::TraceLayer,
@@ -81,11 +81,19 @@ async fn main() {
     info!("✅ Leaderboard generator started");
 
     let governor_conf = GovernorConfigBuilder::default()
-       .period(if is_production { DEFAULT_RATE_LIMIT_RESET_DURATION } else { Duration::from_secs(1) })
-       .burst_size(if is_production { DEFAULT_BURST_SIZE } else { 10_000_000 })
-       .use_headers()
-       .finish()
-       .unwrap();
+        .period(if is_production {
+            DEFAULT_RATE_LIMIT_RESET_DURATION
+        } else {
+            Duration::from_secs(1)
+        })
+        .burst_size(if is_production {
+            DEFAULT_BURST_SIZE
+        } else {
+            10_000_000
+        })
+        .use_headers()
+        .finish()
+        .unwrap();
 
     let governor_limiter = governor_conf.limiter().clone();
 
