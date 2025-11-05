@@ -219,7 +219,9 @@
 												<img src={user.avatar_url} alt="Avatar" class="h-8 w-8 rounded-full mr-3" />
 											{/if}
 											<a
-												class="text-sm font-medium text-ctp-text"
+												class="text-sm font-medium {user.id === $auth.user?.id
+													? 'text-blue'
+													: 'text-text'}"
 												href={user.name ? `https://github.com/${user.name}` : undefined}
 												target="_blank"
 												rel="noopener noreferrer">{user.name || 'Unknown'}</a

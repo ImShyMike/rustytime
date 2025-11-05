@@ -116,7 +116,10 @@
 											class="h-8 w-8 rounded-full border border-surface0"
 										/>
 										<a
-											class="font-medium text-text overflow-hidden text-ellipsis whitespace-nowrap {entry.user_id === $auth.user?.id ? 'text-yellow' : ''}"
+											class="font-medium overflow-hidden text-ellipsis whitespace-nowrap {entry.user_id ===
+											$auth.user?.id
+												? 'text-blue'
+												: 'text-text'}"
 											href={entry.user_name ? `https://github.com/${entry.user_name}` : undefined}
 											target="_blank"
 											rel="noopener noreferrer">{entry.user_name || 'Unknown'}</a

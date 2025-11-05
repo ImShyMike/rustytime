@@ -42,12 +42,12 @@ impl ProjectAlias {
     pub fn delete_project_alias(
         conn: &mut PgConnection,
         user_id_param: i32,
-        alias_id_param: i32,
+        alias_record_id: i32,
     ) -> QueryResult<usize> {
         diesel::delete(
             project_aliases::table
                 .filter(project_aliases::user_id.eq(user_id_param))
-                .filter(project_aliases::project_id.eq(alias_id_param)),
+                .filter(project_aliases::id.eq(alias_record_id)),
         )
         .execute(conn)
     }

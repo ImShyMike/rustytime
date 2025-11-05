@@ -14,9 +14,15 @@ use serde::Serialize;
 use std::collections::HashMap;
 
 #[derive(Serialize)]
+pub struct AliasRecord {
+    pub id: i32,
+    pub project_id: i32,
+}
+
+#[derive(Serialize)]
 pub struct ParsedProjectAlias {
     pub project_id: i32,
-    pub aliases: Vec<i32>,
+    pub aliases: Vec<AliasRecord>,
 }
 
 #[derive(Serialize)]
@@ -43,12 +49,15 @@ pub async fn project_aliases(
         "Failed to fetch project aliases"
     );
 
-    let mut grouped_aliases: HashMap<i32, Vec<i32>> = HashMap::new();
+    let mut grouped_aliases: HashMap<i32, Vec<AliasRecord>> = HashMap::new();
     for alias in alias_records {
         grouped_aliases
-            .entry(alias.project_id)
+            .entry(alias.alias_to)
             .or_default()
-            .push(alias.alias_to);
+            .push(AliasRecord {
+                id: alias.id,
+                project_id: alias.project_id,
+            });
     }
 
     let response_aliases = grouped_aliases
@@ -77,8 +86,8 @@ pub async fn add_project_alias(
 
     let new_alias = NewProjectAlias {
         user_id: current_user.id,
-        project_id: id,
-        alias_to: alias_id,
+        project_id: alias_id,
+        alias_to: id,
     };
 
     db_query!(

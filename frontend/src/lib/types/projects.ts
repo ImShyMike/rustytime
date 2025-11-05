@@ -19,9 +19,14 @@ export interface ProjectsListResponse {
 	}>;
 }
 
+export interface AliasRecord {
+	id: number;
+	project_id: number;
+}
+
 export interface ProjectAliasEntry {
 	project_id: number;
-	aliases: number[];
+	aliases: AliasRecord[];
 }
 
 export interface ProjectAliasesResponse {
@@ -30,4 +35,14 @@ export interface ProjectAliasesResponse {
 
 export interface SetProjectRepoRequest {
 	repo_url: string | null;
+}
+
+export interface SimpleProject {
+	id: number;
+	name: string;
+	repo_url: string | null;
+}
+
+export interface FullProjectListResponse {
+	projects: SimpleProject[];
 }
