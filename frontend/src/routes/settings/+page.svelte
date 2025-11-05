@@ -273,7 +273,8 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 			<Container>
 				<SectionTitle level="h2" className="mb-3">Project Aliases</SectionTitle>
 				<p class="text-ctp-text mb-4">
-					Here you can add aliases for projects. For example, adding "myapp" with "myapp-backend" as an alias will combine them into the "myapp" project.
+					Here you can add aliases for projects. For example, adding "myapp" with "myapp-backend" as
+					an alias will combine them into the "myapp" project.
 				</p>
 
 				{#if aliases && projects}
