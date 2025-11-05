@@ -80,6 +80,12 @@ async fn main() {
     leaderboard_generator.start().await;
     info!("✅ Leaderboard generator started");
 
+    // use the appropriate key extractor
+    #[cfg(feature = "cloudflare")]
+    let key_extractor = tower_governor::key_extractor::SmartIpKeyExtractor; // cloudflare support
+    #[cfg(not(feature = "cloudflare"))]
+    let key_extractor = tower_governor::key_extractor::PeerIpKeyExtractor; // default
+
     let governor_conf = GovernorConfigBuilder::default()
         .period(if is_production {
             DEFAULT_RATE_LIMIT_RESET_DURATION
@@ -91,6 +97,7 @@ async fn main() {
         } else {
             10_000_000
         })
+        .key_extractor(key_extractor)
         .use_headers()
         .finish()
         .unwrap();
