@@ -74,70 +74,73 @@
 			</p>
 		</div>
 
-		<div class="overflow-hidden rounded-lg border border-surface0 bg-mantle">
-			{#if currentData.entries.length === 0}
-				<div class="p-8 text-center text-subtext0">No data available for this period</div>
-			{:else}
-				<table class="w-full table-fixed">
-					<thead class="border-b border-surface0 bg-surface0">
-						<tr>
-							<th class="w-24 pl-6 py-3 text-left text-xs font-medium uppercase text-subtext0"
-								>Rank</th
-							>
-							<th class="w-56 pl-0 pr-6 py-3 text-left text-xs font-medium uppercase text-subtext0"
-								>User</th
-							>
-							<th class="px-6 py-3 text-right text-xs font-medium uppercase text-subtext0"
-								>Time Coded</th
-							>
-						</tr>
-					</thead>
-					<tbody>
-						{#each currentData.entries as entry (entry.rank)}
-							<tr class="border-b last:border-0 border-surface0 hover:bg-surface0/20">
-								<td class="w-12 pl-6 pr-0 py-4">
-									<div
-										class="flex h-8 w-8 items-center justify-center rounded-full font-bold {entry.rank ===
-										1
-											? 'bg-yellow text-base'
-											: entry.rank === 2
-												? 'bg-overlay0 text-text'
-												: entry.rank === 3
-													? 'bg-peach text-base'
-													: 'text-subtext0'}"
-									>
-										{entry.rank}
-									</div>
-								</td>
-								<td class="w-56 py-4">
-									<div class="flex items-center gap-3">
-										<img
-											src={entry.avatar_url}
-											alt={entry.user_name}
-											class="h-8 w-8 rounded-full border border-surface0"
-										/>
-										<a
-											class="font-medium overflow-hidden text-ellipsis whitespace-nowrap {entry.user_id ===
-											$auth.user?.id
-												? 'text-blue'
-												: 'text-text'}"
-											href={entry.user_name ? `https://github.com/${entry.user_name}` : undefined}
-											target="_blank"
-											rel="noopener noreferrer external">{entry.user_name || 'Unknown'}</a
-										>
-									</div>
-								</td>
-								<td
-									class="px-6 py-4 text-right font-mono text-lg text-text"
-									title={formatDuration(entry.total_seconds)}
+		<div class="rounded-lg border border-surface0 bg-mantle">
+			<div class="overflow-x-auto">
+				{#if currentData.entries.length === 0}
+					<div class="p-8 text-center text-subtext0">No data available for this period</div>
+				{:else}
+					<table class="min-w-lg w-full table-fixed">
+						<thead class="border-b border-surface0 bg-surface0">
+							<tr>
+								<th class="w-24 pl-6 py-3 text-left text-xs font-medium uppercase text-subtext0"
+									>Rank</th
 								>
-									{formatDuration(entry.total_seconds, false)}
-								</td>
+								<th
+									class="w-56 pl-0 pr-6 py-3 text-left text-xs font-medium uppercase text-subtext0"
+									>User</th
+								>
+								<th class="px-6 py-3 text-right text-xs font-medium uppercase text-subtext0"
+									>Time Coded</th
+								>
 							</tr>
-						{/each}
-					</tbody>
-				</table>
-			{/if}
+						</thead>
+						<tbody>
+							{#each currentData.entries as entry (entry.rank)}
+								<tr class="border-b last:border-0 border-surface0 hover:bg-surface0/20">
+									<td class="w-12 pl-6 pr-0 py-4">
+										<div
+											class="flex h-8 w-8 items-center justify-center rounded-full font-bold {entry.rank ===
+											1
+												? 'bg-yellow text-base'
+												: entry.rank === 2
+													? 'bg-overlay0 text-text'
+													: entry.rank === 3
+														? 'bg-peach text-base'
+														: 'text-subtext0'}"
+										>
+											{entry.rank}
+										</div>
+									</td>
+									<td class="w-56 py-4">
+										<div class="flex items-center gap-3">
+											<img
+												src={entry.avatar_url}
+												alt={entry.user_name}
+												class="h-8 w-8 rounded-full border border-surface0"
+											/>
+											<a
+												class="font-medium overflow-hidden text-ellipsis whitespace-nowrap {entry.user_id ===
+												$auth.user?.id
+													? 'text-blue'
+													: 'text-text'}"
+												href={entry.user_name ? `https://github.com/${entry.user_name}` : undefined}
+												target="_blank"
+												rel="noopener noreferrer external">{entry.user_name || 'Unknown'}</a
+											>
+										</div>
+									</td>
+									<td
+										class="px-6 py-4 text-right font-mono text-lg text-text"
+										title={formatDuration(entry.total_seconds)}
+									>
+										{formatDuration(entry.total_seconds, false)}
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				{/if}
+			</div>
 		</div>
 	</Container>
 </PageScaffold>

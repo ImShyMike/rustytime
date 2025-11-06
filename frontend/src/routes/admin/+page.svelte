@@ -180,116 +180,122 @@
 		{#if adminData.all_users.length > 0}
 			<Container>
 				<SectionTitle className="mb-4">Users</SectionTitle>
-				<div class="overflow-hidden rounded-lg border border-surface0 bg-mantle">
-					<table class="w-full">
-						<thead class="border-b border-surface0 bg-surface0">
-							<tr>
-								<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
-									>Id</th
-								>
-								<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
-									>User</th
-								>
-								<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
-									>Type</th
-								>
-								<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
-									>Created (UTC)</th
-								>
-								{#if adminData.all_users[0].api_key}
+				<div class="rounded-lg border border-surface0 bg-mantle">
+					<div class="overflow-x-auto">
+						<table class="min-w-lg w-full">
+							<thead class="border-b border-surface0 bg-surface0">
+								<tr>
 									<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
-										>API Key</th
+										>Id</th
 									>
-								{/if}
-								<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
-									>Actions</th
-								>
-							</tr>
-						</thead>
-						<tbody>
-							{#each [...adminData.all_users].sort((a, b) => {
-								const adminDiff = (b.admin_level ?? 0) - (a.admin_level ?? 0);
-								if (adminDiff !== 0) return adminDiff;
-								return a.id - b.id;
-							}) as user (user.id)}
-								<tr class="border-b border-surface0 last:border-0 hover:bg-surface0/50">
-									<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1">{user.id}</td>
-									<td class="px-6 py-4 whitespace-nowrap">
-										<div class="flex items-center">
-											{#if user.avatar_url}
-												<img src={user.avatar_url} alt="Avatar" class="h-8 w-8 rounded-full mr-3" />
-											{/if}
-											<a
-												class="text-sm font-medium {user.id === $auth.user?.id
-													? 'text-blue'
-													: 'text-text'}"
-												href={user.name ? `https://github.com/${user.name}` : undefined}
-												target="_blank"
-												rel="noopener noreferrer external">{user.name || 'Unknown'}</a
-											>
-										</div>
-									</td>
-									<td class="px-6 py-4 whitespace-nowrap">
-										<UserTag admin_level={user.admin_level} />
-									</td>
-									<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1"
-										>{new Date(user.created_at).toLocaleString('en-US', { timeZone: 'UTC' })}</td
+									<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
+										>User</th
 									>
-									{#if user.api_key}
-										<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1 font-mono">
-											<button
-												onclick={() => navigator.clipboard.writeText(user.api_key!)}
-												class="cursor-pointer hover:bg-ctp-base px-2 py-1 rounded"
-												title="Click to copy full API key"
-											>
-												{user.api_key.substring(0, 16)}...
-											</button>
-										</td>
+									<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
+										>Type</th
+									>
+									<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
+										>Created (UTC)</th
+									>
+									{#if adminData.all_users[0].api_key}
+										<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
+											>API Key</th
+										>
 									{/if}
-									<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1">
-										{#if $auth.user?.admin_level !== undefined && user.admin_level >= $auth.user.admin_level && (!$auth.impersonation || user.id !== $auth.impersonation.admin_id)}
-											<span class="text-xs uppercase tracking-wide text-ctp-subtext1/80"
-												>Nothing</span
-											>
-										{:else}
-											<div class="flex items-center gap-2">
-												<button
-													onclick={() => impersonateUser(api, user.id)}
-													class="cursor-pointer inline-flex items-center justify-center rounded bg-ctp-lavender px-3 py-1 text-xs font-semibold text-ctp-base transition hover:bg-ctp-blue"
-												>
-													{#if $auth.impersonation && user.id === $auth.impersonation.admin_id}
-														Go back
-													{:else}
-														Impersonate
-													{/if}
-												</button>
-
-												{#if $auth.user?.admin_level === undefined || ($auth.user.admin_level ?? 0) > (user.admin_level ?? 0) + 1}
-													<button
-														class="cursor-pointer inline-flex items-center justify-center rounded bg-ctp-green px-3 py-1 text-xs font-semibold text-ctp-base transition hover:bg-ctp-teal"
-														onclick={() => {
-															void promoteUser(user.id, user.admin_level);
-														}}
-													>
-														Promote
-													</button>
-												{:else if (user.admin_level ?? 0) > 0 && ($auth.user?.admin_level === undefined || ($auth.user.admin_level ?? 0) > (user.admin_level ?? 0))}
-													<button
-														class="cursor-pointer inline-flex items-center justify-center rounded bg-ctp-red px-3 py-1 text-xs font-semibold text-ctp-base transition hover:bg-ctp-maroon"
-														onclick={() => {
-															void demoteUser(user.id, user.admin_level);
-														}}
-													>
-														Demote
-													</button>
-												{/if}
-											</div>
-										{/if}
-									</td>
+									<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
+										>Actions</th
+									>
 								</tr>
-							{/each}
-						</tbody>
-					</table>
+							</thead>
+							<tbody>
+								{#each [...adminData.all_users].sort((a, b) => {
+									const adminDiff = (b.admin_level ?? 0) - (a.admin_level ?? 0);
+									if (adminDiff !== 0) return adminDiff;
+									return a.id - b.id;
+								}) as user (user.id)}
+									<tr class="border-b border-surface0 last:border-0 hover:bg-surface0/50">
+										<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1">{user.id}</td>
+										<td class="px-6 py-4 whitespace-nowrap">
+											<div class="flex items-center">
+												{#if user.avatar_url}
+													<img
+														src={user.avatar_url}
+														alt="Avatar"
+														class="h-8 w-8 rounded-full mr-3"
+													/>
+												{/if}
+												<a
+													class="text-sm font-medium {user.id === $auth.user?.id
+														? 'text-blue'
+														: 'text-text'}"
+													href={user.name ? `https://github.com/${user.name}` : undefined}
+													target="_blank"
+													rel="noopener noreferrer external">{user.name || 'Unknown'}</a
+												>
+											</div>
+										</td>
+										<td class="px-6 py-4 whitespace-nowrap">
+											<UserTag admin_level={user.admin_level} />
+										</td>
+										<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1"
+											>{new Date(user.created_at).toLocaleString('en-US', { timeZone: 'UTC' })}</td
+										>
+										{#if user.api_key}
+											<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1 font-mono">
+												<button
+													onclick={() => navigator.clipboard.writeText(user.api_key!)}
+													class="cursor-pointer hover:bg-ctp-base px-2 py-1 rounded"
+													title="Click to copy full API key"
+												>
+													{user.api_key.substring(0, 16)}...
+												</button>
+											</td>
+										{/if}
+										<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1">
+											{#if $auth.user?.admin_level !== undefined && user.admin_level >= $auth.user.admin_level && (!$auth.impersonation || user.id !== $auth.impersonation.admin_id)}
+												<span class="text-xs uppercase tracking-wide text-ctp-subtext1/80"
+													>Nothing</span
+												>
+											{:else}
+												<div class="flex items-center gap-2">
+													<button
+														onclick={() => impersonateUser(api, user.id)}
+														class="cursor-pointer inline-flex items-center justify-center rounded bg-ctp-lavender px-3 py-1 text-xs font-semibold text-ctp-base transition hover:bg-ctp-blue"
+													>
+														{#if $auth.impersonation && user.id === $auth.impersonation.admin_id}
+															Go back
+														{:else}
+															Impersonate
+														{/if}
+													</button>
+
+													{#if $auth.user?.admin_level === undefined || ($auth.user.admin_level ?? 0) > (user.admin_level ?? 0) + 1}
+														<button
+															class="cursor-pointer inline-flex items-center justify-center rounded bg-ctp-green px-3 py-1 text-xs font-semibold text-ctp-base transition hover:bg-ctp-teal"
+															onclick={() => {
+																void promoteUser(user.id, user.admin_level);
+															}}
+														>
+															Promote
+														</button>
+													{:else if (user.admin_level ?? 0) > 0 && ($auth.user?.admin_level === undefined || ($auth.user.admin_level ?? 0) > (user.admin_level ?? 0))}
+														<button
+															class="cursor-pointer inline-flex items-center justify-center rounded bg-ctp-red px-3 py-1 text-xs font-semibold text-ctp-base transition hover:bg-ctp-maroon"
+															onclick={() => {
+																void demoteUser(user.id, user.admin_level);
+															}}
+														>
+															Demote
+														</button>
+													{/if}
+												</div>
+											{/if}
+										</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					</div>
 				</div>
 			</Container>
 		{:else}
