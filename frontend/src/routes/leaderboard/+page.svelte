@@ -1,4 +1,5 @@
 <script lang="ts">
+	/* eslint-disable svelte/no-navigation-without-resolve -- External GitHub profile links */
 	import { invalidate } from '$app/navigation';
 	import { Container, PageScaffold, RelativeTime } from '$lib';
 	import type { PageData } from './$types';
@@ -122,7 +123,7 @@
 												: 'text-text'}"
 											href={entry.user_name ? `https://github.com/${entry.user_name}` : undefined}
 											target="_blank"
-											rel="noopener noreferrer">{entry.user_name || 'Unknown'}</a
+											rel="noopener noreferrer external">{entry.user_name || 'Unknown'}</a
 										>
 									</div>
 								</td>

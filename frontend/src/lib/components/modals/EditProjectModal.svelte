@@ -56,32 +56,31 @@
 </script>
 
 <Modal bind:isOpen onclose={closeModal} title="Edit Project">
-	{#snippet children()}
-		<div class="space-y-6">
-			<div>
-				<label
-					for="project-repo"
-					class="mb-1 block text-sm font-medium text-ctp-subtext0 dark:text-ctp-subtext1"
-				>
-					Project Repository URL
-				</label>
-				<input
-					id="project-repo"
-					type="text"
-					class="w-full rounded-md border border-ctp-subtext1 bg-ctp-surface0 px-3 py-2 text-sm text-ctp-text focus:outline-none focus:ring-2 focus:ring-ctp-lavender disabled:opacity-50 disabled:cursor-not-allowed"
-					bind:value={projectRepo}
-					placeholder={`https://github.com/${username}/...`}
-					disabled={isSaving}
-				/>
-			</div>
-
-			{#if errorMessage}
-				<div class="rounded-md bg-ctp-red/10 border border-ctp-red/30 px-4 py-3">
-					<p class="text-sm text-ctp-red">{errorMessage}</p>
-				</div>
-			{/if}
+	<div class="space-y-6">
+		<div>
+			<label
+				for="project-repo"
+				class="mb-1 block text-sm font-medium text-ctp-subtext0 dark:text-ctp-subtext1"
+			>
+				Project Repository URL
+			</label>
+			<input
+				id="project-repo"
+				type="text"
+				class="w-full rounded-md border border-ctp-subtext1 bg-ctp-surface0 px-3 py-2 text-sm text-ctp-text focus:outline-none focus:ring-2 focus:ring-ctp-lavender disabled:opacity-50 disabled:cursor-not-allowed"
+				bind:value={projectRepo}
+				placeholder={`https://github.com/${username}/...`}
+				disabled={isSaving}
+			/>
 		</div>
-	{/snippet}
+
+		{#if errorMessage}
+			<div class="rounded-md bg-ctp-red/10 border border-ctp-red/30 px-4 py-3">
+				<p class="text-sm text-ctp-red">{errorMessage}</p>
+			</div>
+		{/if}
+	</div>
+
 	{#snippet footer()}
 		<div class="flex justify-end space-x-2">
 			<button

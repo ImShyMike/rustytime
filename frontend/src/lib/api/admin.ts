@@ -2,7 +2,6 @@ import { Api } from '$lib/api/api';
 
 export async function impersonateUser(api: Api, userId: number) {
 	await api.get(`/admin/impersonate/${userId}`);
-	await window.cookieStore.delete({ name: 'rustytime_auth_snapshot', path: '/' });
 	window.location.href = '/';
 }
 

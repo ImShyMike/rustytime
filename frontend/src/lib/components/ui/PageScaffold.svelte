@@ -8,20 +8,6 @@
 	export let wrapperClass = '';
 	export let contentClass = '';
 
-	type $$Props = {
-		title: string;
-		lastUpdatedAt?: Date | null;
-		showLastUpdated?: boolean;
-		wrapperClass?: string;
-		contentClass?: string;
-	};
-
-	type $$Slots = {
-		default: Record<string, never>;
-		heading?: Record<string, never>;
-		footer?: { lastUpdatedAt: Date | null };
-	};
-
 	const hasHeadingSlot = Boolean($$slots.heading);
 	const hasFooterSlot = Boolean($$slots.footer);
 </script>

@@ -28,9 +28,9 @@ use utils::middleware::cors_layer;
 
 use crate::{routes::create_app_router, utils::session::SessionManager};
 
-// default to about 5 requests per second per ip
-const DEFAULT_BURST_SIZE: u32 = 300;
-const DEFAULT_RATE_LIMIT_RESET_DURATION: Duration = Duration::from_secs(60);
+// about 4 requests per second with a max burst of 60
+const DEFAULT_BURST_SIZE: u32 = 60;
+const DEFAULT_RATE_LIMIT_REPLENISH_DURATION: Duration = Duration::from_millis(250);
 
 #[tokio::main]
 async fn main() {
@@ -88,7 +88,7 @@ async fn main() {
 
     let governor_conf = GovernorConfigBuilder::default()
         .period(if is_production {
-            DEFAULT_RATE_LIMIT_RESET_DURATION
+            DEFAULT_RATE_LIMIT_REPLENISH_DURATION
         } else {
             Duration::from_secs(1)
         })

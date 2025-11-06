@@ -1,4 +1,5 @@
 <script lang="ts">
+	/* eslint-disable svelte/no-navigation-without-resolve -- External project links */
 	import { invalidate } from '$app/navigation';
 	import { setupVisibilityRefresh } from '$lib/utils/refresh';
 	import type { PageData } from './$types';
@@ -192,7 +193,7 @@
 									href={project.repo_url}
 									class="group flex items-center gap-1 text-sm font-medium text-ctp-blue hover:text-ctp-blue-400"
 									target="_blank"
-									rel="noopener noreferrer"
+									rel="noopener noreferrer external"
 								>
 									{#if project.repo_url.includes('github.com')}
 										<LucideGithub class="h-4 w-4" aria-hidden="true" />
