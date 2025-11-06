@@ -127,7 +127,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 				};
 				event.cookies.set(AUTH_SNAPSHOT_COOKIE, JSON.stringify(snapshot), {
 					path: '/',
-					httpOnly: true,
+					httpOnly: false,
 					sameSite: 'lax',
 					secure: !dev
 				});
