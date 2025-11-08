@@ -1,10 +1,27 @@
-# [rustytime](https://rustytime.shymike.dev)
+<div align="center">
+    <a href="https://rustytime.shymike.dev">
+        <img src="frontend/static/pwa/favicon-196.png" alt="rustytime" width="200">
+    </a>
+</div>
+<div id="user-content-toc" align="center">
+  <ul align="center" style="list-style: none;">
+    <summary >
+      <h1><a href="https://rustytime.shymike.dev">rustytime</a></h1>
+    </summary>
+  </ul>
+</div>
+<p align="center">🕒 blazingly fast time tracking for developers</p>
 
-🕒 blazingly fast time tracking for developers
+<div align="center">
+    <a href="https://crates.io/crates/rustytime-server"><img alt="Crates.io Total Downloads" src="https://img.shields.io/crates/d/rustytime-server?style=flat-square&color=blue"></a>
+    <a href="https://github.com/ImShyMike/rustytime/actions/workflows/ci.yml"><img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/ImShyMike/rustytime/ci.yml?style=flat-square&color=green"></a>
+    <a href="https://crates.io/crates/rustytime-server"><img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/ImShyMike/rustytime?style=flat-square&color=yellowgreen"></a>
+    <a href="https://crates.io/crates/rustytime-server"><img alt="Crates.io Version" src="https://img.shields.io/crates/v/rustytime-server?style=flat-square&color=yellow"></a>
+    <a href="https://crates.io/crates/rustytime-server"><img alt="Crates.io License" src="https://img.shields.io/crates/l/rustytime-server?style=flat-square&color=orange"></a>
+    <a href="https://crates.io/crates/rustytime-server"><img alt="Crates.io Size" src="https://img.shields.io/crates/size/rustytime-server?style=flat-square&color=red"></a>
+</div>
 
 ---
-
-> If you want to try this project out, you can head over to [https://rustytime.shymike.dev](https://rustytime.shymike.dev) for the deployed version!
 
 ## Features
 
