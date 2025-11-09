@@ -15,7 +15,7 @@ use tower_cookies::CookieManagerLayer;
 use tower_governor::{GovernorLayer, governor::GovernorConfigBuilder};
 use tower_http::{
     compression::CompressionLayer, decompression::DecompressionLayer, limit::RequestBodyLimitLayer,
-    timeout::TimeoutLayer, trace::TraceLayer,
+    timeout::TimeoutLayer, trace::TraceLayer, normalize_path::NormalizePathLayer,
 };
 
 use tracing::{error, info};
@@ -122,6 +122,7 @@ async fn main() {
         .layer(RequestBodyLimitLayer::new(16 * 1024 * 1024)) // 16 MB size limit
         .layer(TimeoutLayer::new(Duration::from_secs(15))) // 15 second timeout
         .layer(GovernorLayer::new(governor_conf)) // rate limiting
+        .layer(NormalizePathLayer::trim_trailing_slash()) // normalize paths
         .layer(
             // add request logging
             TraceLayer::new_for_http()
