@@ -1,36 +1,53 @@
-name: Build and verify backend
+name: deny & fmt & clippy & test & check
 
 on:
   push:
-    branches:
-      - '**'
+    branches: [ "main" ]
   pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
 
 jobs:
-  backend:
-    name: Backend check
+  cargo-deny:
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: rustytime
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
+    - uses: EmbarkStudios/cargo-deny-action@v2
+      with:
+        rust-version: "1.90"
 
-      - name: Cache cargo directories
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('rustytime/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+  rust-checks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rustytime
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: "1.90"
+        components: rustfmt, clippy
+    - name: Cache cargo artifacts
+      uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: rustytime -> target
+        shared-key: ci
+    - name: Cargo formatting check
+      run: cargo fmt --all -- --check
+    - name: Cargo clippy check
+      run: cargo clippy --all-targets --all-features
+    - name: Run tests
+      run: cargo test --locked --all-targets --all-features
+    - name: Cargo check
+      run: cargo check --all-targets --all-features
 
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cargo check
-        run: cargo check --all-targets
