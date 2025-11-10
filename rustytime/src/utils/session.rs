@@ -1,6 +1,7 @@
 use crate::db::connection::DbPool;
 use crate::models::session::Session;
 use crate::models::user::User;
+use crate::utils::env::is_production_env;
 use chrono::{DateTime, Duration, Utc};
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -38,29 +39,13 @@ pub struct ImpersonationContext {
 }
 
 impl SessionManager {
-    #[inline(always)]
-    pub(crate) fn is_production_env() -> bool {
-        if let Ok(env) = std::env::var("ENVIRONMENT")
-            && env.eq_ignore_ascii_case("production")
-        {
-            return true;
-        }
-
-        if let Ok(prod) = std::env::var("PRODUCTION") {
-            let normalized = prod.trim().to_ascii_lowercase();
-            return matches!(normalized.as_str(), "true" | "1" | "yes");
-        }
-
-        false
-    }
-
     /// Create a new session cookie
     #[inline(always)]
     pub fn create_session_cookie(session_id: Uuid) -> Cookie<'static> {
         let expires = Utc::now() + Duration::days(SESSION_DURATION_DAYS);
 
         // check if in production
-        let is_production = Self::is_production_env();
+        let is_production = is_production_env();
 
         let mut cookie_builder = Cookie::build((SESSION_COOKIE_NAME, session_id.to_string()))
             .path("/")
@@ -119,7 +104,7 @@ impl SessionManager {
     /// Remove the session cookie
     #[inline(always)]
     pub fn remove_session_cookie() -> Cookie<'static> {
-        let is_production = Self::is_production_env();
+        let is_production = is_production_env();
 
         let mut cookie_builder = Cookie::build((SESSION_COOKIE_NAME, ""))
             .path("/")

@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod env;
 pub mod http;
 pub mod logging;
 pub mod macros;

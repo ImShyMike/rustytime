@@ -22,12 +22,14 @@ use tracing::{error, info};
 
 use db::connection::create_pool;
 use state::AppState;
-use utils::http::extract_client_ip;
+use utils::http::{CloudflareAwareKeyExtractor, extract_client_ip};
 use utils::logging::init_tracing;
 use utils::middleware::cors_layer;
 
-use crate::routes::create_app_router;
-use crate::utils::session::SessionManager;
+use crate::{
+    routes::create_app_router,
+    utils::env::{is_production_env, use_cloudflare_headers},
+};
 
 // about 4 requests per second with a max burst of 60
 const DEFAULT_BURST_SIZE: u32 = 60;
@@ -42,10 +44,17 @@ async fn main() {
     init_tracing();
 
     // check if running in production
-    let is_production = SessionManager::is_production_env();
+    let is_production = is_production_env();
+
+    // check if should use cloudflare headers
+    let use_cloudflare = use_cloudflare_headers();
 
     let version = env!("CARGO_PKG_VERSION");
     info!("🚀 Starting the rustytime (v{}) server...", version);
+
+    if use_cloudflare {
+        info!("✅ Cloudflare IP extraction enabled!");
+    }
 
     // create database connection pool
     let pool = create_pool();
@@ -81,24 +90,21 @@ async fn main() {
     leaderboard_generator.start().await;
     info!("✅ Leaderboard generator started");
 
-    // use the appropriate key extractor
-    #[cfg(feature = "cloudflare")]
-    let key_extractor = tower_governor::key_extractor::SmartIpKeyExtractor; // cloudflare support
-    #[cfg(not(feature = "cloudflare"))]
-    let key_extractor = tower_governor::key_extractor::PeerIpKeyExtractor; // default
+    let rate_period = if is_production {
+        DEFAULT_RATE_LIMIT_REPLENISH_DURATION
+    } else {
+        Duration::from_secs(1)
+    };
+    let burst_size = if is_production {
+        DEFAULT_BURST_SIZE
+    } else {
+        10_000_000
+    };
 
     let governor_conf = GovernorConfigBuilder::default()
-        .period(if is_production {
-            DEFAULT_RATE_LIMIT_REPLENISH_DURATION
-        } else {
-            Duration::from_secs(1)
-        })
-        .burst_size(if is_production {
-            DEFAULT_BURST_SIZE
-        } else {
-            10_000_000
-        })
-        .key_extractor(key_extractor)
+        .period(rate_period)
+        .burst_size(burst_size)
+        .key_extractor(CloudflareAwareKeyExtractor::new(use_cloudflare))
         .use_headers()
         .finish()
         .unwrap();

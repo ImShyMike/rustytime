@@ -9,9 +9,6 @@ use serde_json::json;
 use std::net::IpAddr;
 use std::net::SocketAddr;
 
-#[cfg(feature = "cloudflare")]
-use crate::utils::http::extract_client_ip_cloudflare;
-
 use crate::db::connection::DbPool;
 use crate::get_db_conn;
 use crate::models::heartbeat::Heartbeat;
@@ -20,6 +17,7 @@ use crate::models::project::get_or_create_project_id;
 use crate::schema::heartbeats;
 use crate::state::AppState;
 use crate::utils::auth::{get_user_id_from_api_key, get_valid_api_key};
+use crate::utils::http::extract_client_ip_from_headers;
 use crate::utils::time::{TimeFormat, human_readable_duration};
 use std::collections::{HashMap, hash_map};
 
@@ -114,8 +112,7 @@ async fn process_heartbeat_request(
     }
 }
 
-/// Handler to create heartbeats (Cloudflare version)
-#[cfg(feature = "cloudflare")]
+/// Handler to create heartbeats, trusting Cloudflare headers when enabled.
 pub async fn create_heartbeats(
     State(app_state): State<AppState>,
     Path(id): Path<String>,
@@ -124,21 +121,8 @@ pub async fn create_heartbeats(
     uri: axum::http::Uri,
     Json(heartbeat_input): Json<HeartbeatInput>,
 ) -> Result<Response, Response> {
-    let client_ip = extract_client_ip_cloudflare(&headers).unwrap_or(addr.ip());
+    let client_ip = extract_client_ip_from_headers(&headers, addr);
     process_heartbeat_request(&app_state, id, client_ip, headers, uri, heartbeat_input).await
-}
-
-/// Handler to create heartbeats (Regular socket version)
-#[cfg(not(feature = "cloudflare"))]
-pub async fn create_heartbeats(
-    State(app_state): State<AppState>,
-    Path(id): Path<String>,
-    ConnectInfo(addr): ConnectInfo<SocketAddr>,
-    headers: axum::http::HeaderMap,
-    uri: axum::http::Uri,
-    Json(heartbeat_input): Json<HeartbeatInput>,
-) -> Result<Response, Response> {
-    process_heartbeat_request(&app_state, id, addr.ip(), headers, uri, heartbeat_input).await
 }
 
 /// Handler to get today's status bar data

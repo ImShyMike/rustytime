@@ -1,13 +1,17 @@
 use axum::extract::ConnectInfo;
+use axum::http::HeaderMap;
 use axum::{body::Body, extract::Request};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::net::IpAddr;
 use std::net::SocketAddr;
+use tower_governor::{
+    errors::GovernorError,
+    key_extractor::{KeyExtractor, PeerIpKeyExtractor, SmartIpKeyExtractor},
+};
 use woothee::parser::Parser;
 
-#[cfg(feature = "cloudflare")]
-use axum::http::HeaderMap;
+use crate::utils::env::use_cloudflare_headers;
 
 static USER_AGENT_PATTERN: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"(?iU)^(?:(?:wakatime|chrome|firefox|edge)\/(?:v?[\d+.]+|unset)?\s)(?:\(?(\w+)[-_].*\)?.+\s)?(?:([^\/\s]+)\/[\w\d\.]+\s)?([^\/\s]+)-wakatime\/.+$").unwrap()
@@ -63,16 +67,31 @@ pub fn parse_user_agent(ua: String) -> Result<(String, String), String> {
 }
 
 /// Extract client IP from request headers or connection info
+#[inline(always)]
 pub fn extract_client_ip(request: &Request<Body>) -> IpAddr {
-    #[cfg(feature = "cloudflare")]
-    return extract_client_ip_cloudflare(request.headers())
-        .unwrap_or_else(|| extract_direct_client_ip(request));
+    if use_cloudflare_headers() {
+        if let Some(ip) = extract_client_ip_cloudflare(request.headers()) {
+            return ip;
+        }
+    }
 
-    #[cfg(not(feature = "cloudflare"))]
     extract_direct_client_ip(request)
 }
 
+/// Resolve client IP from request headers or connection info
+#[inline(always)]
+pub fn extract_client_ip_from_headers(headers: &HeaderMap, addr: SocketAddr) -> IpAddr {
+    if use_cloudflare_headers() {
+        if let Some(ip) = extract_client_ip_cloudflare(headers) {
+            return ip;
+        }
+    }
+
+    addr.ip()
+}
+
 /// Extract direct client IP from connection info
+#[inline(always)]
 fn extract_direct_client_ip(request: &Request<Body>) -> IpAddr {
     if let Some(ConnectInfo(addr)) = request.extensions().get::<ConnectInfo<SocketAddr>>() {
         addr.ip()
@@ -82,7 +101,7 @@ fn extract_direct_client_ip(request: &Request<Body>) -> IpAddr {
 }
 
 /// Extract client ip from cloudflare header
-#[cfg(feature = "cloudflare")]
+#[inline(always)]
 pub fn extract_client_ip_cloudflare(headers: &HeaderMap) -> Option<IpAddr> {
     if let Some(cf_ip) = headers.get("cf-connecting-ip")
         && let Ok(ip_str) = cf_ip.to_str()
@@ -90,4 +109,40 @@ pub fn extract_client_ip_cloudflare(headers: &HeaderMap) -> Option<IpAddr> {
         return ip_str.parse().ok();
     }
     None
+}
+
+#[derive(Clone, Copy)]
+pub struct CloudflareAwareKeyExtractor {
+    use_cloudflare: bool,
+}
+
+impl CloudflareAwareKeyExtractor {
+    #[inline(always)]
+    pub const fn new(use_cloudflare: bool) -> Self {
+        Self { use_cloudflare }
+    }
+}
+
+impl KeyExtractor for CloudflareAwareKeyExtractor {
+    type Key = IpAddr;
+
+    fn name(&self) -> &'static str {
+        if self.use_cloudflare {
+            "cloudflare-smart-ip"
+        } else {
+            "peer-ip"
+        }
+    }
+
+    fn extract<T>(&self, req: &Request<T>) -> Result<Self::Key, GovernorError> {
+        if self.use_cloudflare {
+            SmartIpKeyExtractor.extract(req)
+        } else {
+            PeerIpKeyExtractor.extract(req)
+        }
+    }
+
+    fn key_name(&self, key: &Self::Key) -> Option<String> {
+        Some(key.to_string())
+    }
 }

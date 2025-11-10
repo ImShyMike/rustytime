@@ -173,11 +173,11 @@ allow = [
 ]
 # List of crates to deny
 deny = [
-    #"ansi_term@0.11.0",
-    #{ crate = "ansi_term@0.11.0", reason = "you can specify a reason it is banned" },
-    # Wrapper crates can optionally be specified to allow the crate when it
-    # is a direct dependency of the otherwise banned crate
-    #{ crate = "ansi_term@0.11.0", wrappers = ["this-crate-directly-depends-on-ansi_term"] },
+    "openssl@*",
+    "openssl-macros@*",
+    "openssl-probe@*",
+    "openssl-src@*",
+    "openssl-sys@*",
 ]
 
 # List of features to allow/deny

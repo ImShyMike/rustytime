@@ -12,10 +12,10 @@ use serde::Deserialize;
 use std::env;
 use tower_cookies::Cookies;
 
-use crate::models::user::User;
 use crate::state::AppState;
 use crate::utils::session::SessionManager;
 use crate::{get_db_conn, models::session::Session};
+use crate::{models::user::User, utils::env::is_production_env};
 use axum::Json;
 
 #[derive(Deserialize)]
@@ -66,7 +66,7 @@ pub async fn login(State(app_state): State<AppState>, cookies: Cookies) -> Json<
         .url();
 
     // check if in production for cookie security settings
-    let is_production = SessionManager::is_production_env();
+    let is_production = is_production_env();
 
     let mut cookie = tower_cookies::Cookie::build(("rustytime_oauth_state", csrf_token_secret))
         .path("/")
