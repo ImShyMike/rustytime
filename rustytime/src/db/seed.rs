@@ -1,7 +1,7 @@
 #![cfg(feature = "seed")]
 
 use crate::db::connection::DbPool;
-use crate::handlers::user::store_heartbeats_in_db;
+use crate::handlers::api::user::store_heartbeats_in_db;
 use crate::models::heartbeat::{NewHeartbeat, SourceType};
 use crate::models::user::User;
 use chrono::Utc;

@@ -84,10 +84,10 @@ fn extract_direct_client_ip(request: &Request<Body>) -> IpAddr {
 /// Extract client ip from cloudflare header
 #[cfg(feature = "cloudflare")]
 pub fn extract_client_ip_cloudflare(headers: &HeaderMap) -> Option<IpAddr> {
-    if let Some(cf_ip) = headers.get("cf-connecting-ip") {
-        if let Ok(ip_str) = cf_ip.to_str() {
-            return ip_str.parse().ok();
-        }
+    if let Some(cf_ip) = headers.get("cf-connecting-ip")
+        && let Ok(ip_str) = cf_ip.to_str()
+    {
+        return ip_str.parse().ok();
     }
     None
 }
