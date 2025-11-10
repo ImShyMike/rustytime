@@ -15,7 +15,7 @@ use tower_cookies::CookieManagerLayer;
 use tower_governor::{GovernorLayer, governor::GovernorConfigBuilder};
 use tower_http::{
     compression::CompressionLayer, decompression::DecompressionLayer, limit::RequestBodyLimitLayer,
-    timeout::TimeoutLayer, trace::TraceLayer, normalize_path::NormalizePathLayer,
+    normalize_path::NormalizePathLayer, timeout::TimeoutLayer, trace::TraceLayer,
 };
 
 use tracing::{error, info};
@@ -26,7 +26,8 @@ use utils::http::extract_client_ip;
 use utils::logging::init_tracing;
 use utils::middleware::cors_layer;
 
-use crate::{routes::create_app_router, utils::session::SessionManager};
+use crate::routes::create_app_router;
+use crate::utils::session::SessionManager;
 
 // about 4 requests per second with a max burst of 60
 const DEFAULT_BURST_SIZE: u32 = 60;

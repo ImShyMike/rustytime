@@ -1,11 +1,11 @@
 [package]
 name = "rustytime-server"
 description = "🕒 blazingly fast time tracking for developers"
-version = "0.9.7"
+version = "0.9.8"
 edition = "2024"
 authors = ["ImShyMike"]
 readme = "../README.md"
-license = "AGPL-3.0"
+license = "AGPL-3.0-only"
 homepage = "https://rustytime.shymike.dev"
 repository = "https://github.com/ImShyMike/rustytime"
 

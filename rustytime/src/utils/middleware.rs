@@ -109,10 +109,10 @@ pub fn cors_layer() -> CorsLayer {
     ];
 
     // add production domain from environment variable
-    if let Ok(prod_origin) = std::env::var("FRONTEND_URL") {
-        if let Ok(origin) = prod_origin.parse::<HeaderValue>() {
-            allowed_origins.push(origin);
-        }
+    if let Ok(prod_origin) = std::env::var("FRONTEND_URL")
+        && let Ok(origin) = prod_origin.parse::<HeaderValue>()
+    {
+        allowed_origins.push(origin);
     }
 
     CorsLayer::new()

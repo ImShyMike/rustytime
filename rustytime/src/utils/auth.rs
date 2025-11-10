@@ -9,18 +9,18 @@ use crate::schema::users::dsl;
 /// Try to get API key from the "Authorization" header
 fn get_api_key_from_header(headers: &axum::http::HeaderMap) -> Option<String> {
     // parse "Authorization" header
-    if let Some(auth_header) = headers.get("Authorization") {
-        if let Ok(auth_str) = auth_header.to_str() {
-            // check if it starts with "Bearer" or "Basic"
-            if let Some(api_key) = auth_str.strip_prefix("Bearer ") {
-                return Some(api_key.to_string());
-            } else if let Some(base64_key) = auth_str.strip_prefix("Basic ") {
-                // decode base64
-                if let Ok(decoded) = BASE64_STANDARD.decode(base64_key) {
-                    if let Ok(api_key) = String::from_utf8(decoded) {
-                        return Some(api_key);
-                    }
-                }
+    if let Some(auth_header) = headers.get("Authorization")
+        && let Ok(auth_str) = auth_header.to_str()
+    {
+        // check if it starts with "Bearer" or "Basic"
+        if let Some(api_key) = auth_str.strip_prefix("Bearer ") {
+            return Some(api_key.to_string());
+        } else if let Some(base64_key) = auth_str.strip_prefix("Basic ") {
+            // decode base64
+            if let Ok(decoded) = BASE64_STANDARD.decode(base64_key)
+                && let Ok(api_key) = String::from_utf8(decoded)
+            {
+                return Some(api_key);
             }
         }
     }
@@ -54,10 +54,10 @@ pub async fn get_valid_api_key(
         if validate_api_key(&api_key) {
             return Some(api_key);
         }
-    } else if let Some(api_key) = get_api_key_from_query(query) {
-        if validate_api_key(&api_key) {
-            return Some(api_key);
-        }
+    } else if let Some(api_key) = get_api_key_from_query(query)
+        && validate_api_key(&api_key)
+    {
+        return Some(api_key);
     }
     None
 }

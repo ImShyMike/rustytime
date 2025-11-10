@@ -33,16 +33,6 @@ pub struct AdminDashboardResponse {
     pub all_users: Vec<PartialUser>,
 }
 
-#[derive(Serialize)]
-pub struct ImpersonationStatus {
-    pub admin_id: i32,
-    pub admin_name: String,
-    pub admin_avatar_url: String,
-    pub target_id: i32,
-    pub target_name: String,
-    pub target_avatar_url: String,
-}
-
 pub async fn admin_dashboard(
     State(app_state): State<AppState>,
     user: Option<Extension<User>>,

@@ -40,10 +40,10 @@ pub struct ImpersonationContext {
 impl SessionManager {
     #[inline(always)]
     pub(crate) fn is_production_env() -> bool {
-        if let Ok(env) = std::env::var("ENVIRONMENT") {
-            if env.eq_ignore_ascii_case("production") {
-                return true;
-            }
+        if let Ok(env) = std::env::var("ENVIRONMENT")
+            && env.eq_ignore_ascii_case("production")
+        {
+            return true;
         }
 
         if let Ok(prod) = std::env::var("PRODUCTION") {

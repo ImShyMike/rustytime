@@ -71,15 +71,14 @@ pub fn get_or_create_project_id(
                 .map(|e| e.as_secs() < TTL_SECONDS)
                 .unwrap_or(false)
         });
-        if let Some(cached) = cache.get(&(user_id_param, project_name.to_string())) {
-            if cached
+        if let Some(cached) = cache.get(&(user_id_param, project_name.to_string()))
+            && cached
                 .cached_at
                 .elapsed()
                 .map(|e| e.as_secs() < TTL_SECONDS)
                 .unwrap_or(false)
-            {
-                return Ok(cached.id);
-            }
+        {
+            return Ok(cached.id);
         }
     }
 

@@ -231,12 +231,12 @@ pub async fn store_heartbeats_in_db(
             let mut deduplicated = Vec::new();
 
             for mut heartbeat in new_heartbeats {
-                if heartbeat.project_id.is_none() {
-                    if let Some(project_name) = heartbeat.project.as_ref() {
-                        let project_id =
-                            get_or_create_project_id(conn, heartbeat.user_id, project_name, None)?;
-                        heartbeat.project_id = Some(project_id);
-                    }
+                if heartbeat.project_id.is_none()
+                    && let Some(project_name) = heartbeat.project.as_ref()
+                {
+                    let project_id =
+                        get_or_create_project_id(conn, heartbeat.user_id, project_name, None)?;
+                    heartbeat.project_id = Some(project_id);
                 }
 
                 let key = (heartbeat.user_id, heartbeat.time);

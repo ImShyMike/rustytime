@@ -86,23 +86,6 @@ pub struct DashboardStats {
     pub top_oses: Vec<UsageStat>,
     pub top_editors: Vec<UsageStat>,
 }
-
-#[derive(QueryableByName, Debug, Clone, Serialize)]
-pub struct LanguageCount {
-    #[diesel(sql_type = Nullable<Text>)]
-    pub language: Option<String>,
-    #[diesel(sql_type = BigInt)]
-    pub count: i64,
-}
-
-#[derive(QueryableByName, Debug, Clone, Serialize)]
-pub struct ProjectCount {
-    #[diesel(sql_type = Nullable<Text>)]
-    pub project: Option<String>,
-    #[diesel(sql_type = BigInt)]
-    pub count: i64,
-}
-
 #[derive(QueryableByName, Debug, Clone, Serialize)]
 pub struct DailyActivity {
     #[diesel(sql_type = Date)]
