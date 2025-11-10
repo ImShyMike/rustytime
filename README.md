@@ -69,24 +69,46 @@ mv .env.example .env
 docker compose up
 ```
 
-## Usage
+## Local Development
 
-Run the docker compose and open the website at [http://localhost:3000](http://localhost:3000)
+```sh
+# Clone the repo
+$ git clone https://github.com/ImShyMike/rustytime && cd rustytime
+
+# Copy the env file
+$ cp .env.example .env
+```
+
+Edit your `.env` file to include the following:
+
+```env
+# GitHub OAuth Settings
+GITHUB_CLIENT_ID=client_id_goes_here
+GITHUB_CLIENT_SECRET=client_secret_goes_here
+```
+
+### Build & Run
+
+```sh
+# Run the full app
+$ docker compose up
+
+# OR
+
+# Run the databse + backend 
+$ docker compose up timescaledb rustytime
+# Run the frontend
+$ cd frontend && bun run dev
+```
+
+The app should now be available at [http://localhost:5173](http://localhost:5173)
 
 ### Seeding the DB
 
-The `seed` feature can be enabled in the build that seeds the database with a single user and 10000 heartbeats.
+The `seed` feature can be enabled in the build to seed the database with a single user and 10000 heartbeats.
 
 ```bash
 cargo run --features seed
-```
-
-### Using cloudflare
-
-To get the actual client IP's when behind cloudflare, enable the `cloudflare` feature.
-
-```bash
-cargo run --features cloudflare
 ```
 
 ## WakaTime

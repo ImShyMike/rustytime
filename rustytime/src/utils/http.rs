@@ -69,10 +69,10 @@ pub fn parse_user_agent(ua: String) -> Result<(String, String), String> {
 /// Extract client IP from request headers or connection info
 #[inline(always)]
 pub fn extract_client_ip(request: &Request<Body>) -> IpAddr {
-    if use_cloudflare_headers() {
-        if let Some(ip) = extract_client_ip_cloudflare(request.headers()) {
-            return ip;
-        }
+    if use_cloudflare_headers()
+        && let Some(ip) = extract_client_ip_cloudflare(request.headers())
+    {
+        return ip;
     }
 
     extract_direct_client_ip(request)
@@ -81,10 +81,10 @@ pub fn extract_client_ip(request: &Request<Body>) -> IpAddr {
 /// Resolve client IP from request headers or connection info
 #[inline(always)]
 pub fn extract_client_ip_from_headers(headers: &HeaderMap, addr: SocketAddr) -> IpAddr {
-    if use_cloudflare_headers() {
-        if let Some(ip) = extract_client_ip_cloudflare(headers) {
-            return ip;
-        }
+    if use_cloudflare_headers()
+        && let Some(ip) = extract_client_ip_cloudflare(headers)
+    {
+        return ip;
     }
 
     addr.ip()

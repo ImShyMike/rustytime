@@ -1,3 +1,5 @@
+use crate::state::AppState;
+use crate::utils::session::{ImpersonationContext, SessionManager};
 use axum::{
     extract::{Request, State},
     http::{HeaderValue, StatusCode},
@@ -6,10 +8,7 @@ use axum::{
 };
 use reqwest::Method;
 use tower_cookies::Cookies;
-
-use crate::state::AppState;
-use crate::utils::session::{ImpersonationContext, SessionManager};
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{AllowOrigin, Any, CorsLayer};
 
 /// Middleware to require authentication
 pub async fn require_auth(
@@ -102,21 +101,21 @@ pub async fn track_metrics(
 
 /// Layer to add CORS
 pub fn cors_layer() -> CorsLayer {
-    let mut allowed_origins = vec![
-        "http://localhost:5173".parse::<HeaderValue>().unwrap(), // SvelteKit dev
-        "http://localhost:4173".parse::<HeaderValue>().unwrap(), // SvelteKit preview
-        "http://localhost:8787".parse::<HeaderValue>().unwrap(), // Local Cloudflare Workers dev
-    ];
-
-    // add production domain from environment variable
-    if let Ok(prod_origin) = std::env::var("FRONTEND_URL")
-        && let Ok(origin) = prod_origin.parse::<HeaderValue>()
-    {
-        allowed_origins.push(origin);
-    }
+    let allowed_origin = if cfg!(debug_assertions) {
+        Any.into()
+    } else {
+        // in production, only allow the specified frontend URL
+        let mut origins = Vec::new();
+        if let Ok(prod_origin) = std::env::var("FRONTEND_URL")
+            && let Ok(origin) = prod_origin.parse::<HeaderValue>()
+        {
+            origins.push(origin);
+        }
+        AllowOrigin::list(origins)
+    };
 
     CorsLayer::new()
-        .allow_origin(allowed_origins)
+        .allow_origin(allowed_origin)
         .allow_methods([
             Method::GET,
             Method::POST,
