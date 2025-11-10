@@ -1,4 +1,4 @@
-name: deny & fmt & clippy & test & check
+name: "Backend: CI"
 
 on:
   push:
@@ -10,19 +10,6 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  cargo-deny:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: rustytime
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 1
-    - uses: EmbarkStudios/cargo-deny-action@v2
-      with:
-        rust-version: "1.90"
-
   rust-checks:
     runs-on: ubuntu-latest
     defaults:
