@@ -14,7 +14,7 @@ services:
     healthcheck:
       test: [
           "CMD-SHELL",
-          "pg_isready -U username -d rustytime -h localhost"
+          "pg_isready -U ${POSTGRES_USER:-username} -d ${POSTGRES_DB:-rustytime} -h localhost"
         ]
       interval: 5s
       timeout: 2s
@@ -27,7 +27,7 @@ services:
       timescaledb:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}/${POSTGRES_DB}
+      DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@timescaledb/${POSTGRES_DB}"
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
       REDIRECT_URL: ${REDIRECT_URL:-http://localhost:3000/auth/github/callback}

@@ -8,7 +8,7 @@ use axum::{
 };
 use reqwest::Method;
 use tower_cookies::Cookies;
-use tower_http::cors::{AllowOrigin, Any, CorsLayer};
+use tower_http::cors::{AllowOrigin, CorsLayer};
 
 /// Middleware to require authentication
 pub async fn require_auth(
@@ -101,9 +101,7 @@ pub async fn track_metrics(
 
 /// Layer to add CORS
 pub fn cors_layer() -> CorsLayer {
-    let allowed_origin = if cfg!(debug_assertions) {
-        Any.into()
-    } else {
+    let allowed_origin = {
         // in production, only allow the specified frontend URL
         let mut origins = Vec::new();
         if let Ok(prod_origin) = std::env::var("FRONTEND_URL")
@@ -116,6 +114,33 @@ pub fn cors_layer() -> CorsLayer {
 
     CorsLayer::new()
         .allow_origin(allowed_origin)
+        .allow_methods([
+            Method::GET,
+            Method::POST,
+            Method::PUT,
+            Method::DELETE,
+            Method::OPTIONS,
+        ])
+        .allow_headers([
+            axum::http::header::AUTHORIZATION,
+            axum::http::header::CONTENT_TYPE,
+            axum::http::header::ACCEPT,
+            axum::http::header::COOKIE,
+            axum::http::header::SET_COOKIE,
+            axum::http::header::ORIGIN,
+            axum::http::header::REFERER,
+            axum::http::header::USER_AGENT,
+        ])
+        .expose_headers([
+            axum::http::header::SET_COOKIE,
+            axum::http::header::CONTENT_TYPE,
+        ])
+        .allow_credentials(true)
+}
+
+pub fn cors_allow_all_layer() -> CorsLayer {
+    CorsLayer::new()
+        .allow_origin(AllowOrigin::mirror_request())
         .allow_methods([
             Method::GET,
             Method::POST,

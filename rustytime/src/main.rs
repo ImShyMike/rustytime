@@ -28,7 +28,10 @@ use utils::middleware::cors_layer;
 
 use crate::{
     routes::create_app_router,
-    utils::env::{is_production_env, use_cloudflare_headers},
+    utils::{
+        env::{is_production_env, use_cloudflare_headers},
+        middleware::cors_allow_all_layer,
+    },
 };
 
 // about 4 requests per second with a max burst of 60
@@ -121,9 +124,16 @@ async fn main() {
     });
 
     // create the main application router
-    let app = create_app_router(app_state)
-        .layer(CookieManagerLayer::new())
-        .layer(cors_layer()) // add CORS
+    let mut app = create_app_router(app_state).layer(CookieManagerLayer::new());
+
+    if is_production {
+        // only construct and add the CORS layer when running in production
+        app = app.layer(cors_layer());
+    } else {
+        app = app.layer(cors_allow_all_layer());
+    }
+
+    let app = app
         .layer(CompressionLayer::new().gzip(true)) // enable gzip
         .layer(DecompressionLayer::new().gzip(true)) // accept gzip
         .layer(RequestBodyLimitLayer::new(16 * 1024 * 1024)) // 16 MB size limit
