@@ -12,6 +12,9 @@ env:
 jobs:
   rust-checks:
     runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
     defaults:
       run:
         working-directory: rustytime
