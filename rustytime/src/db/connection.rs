@@ -8,9 +8,13 @@ use tracing::{error, info};
 /// Create a new database connection pool
 pub fn create_pool() -> DbPool {
     dotenv().ok();
-
-    let database_url = env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "postgres://username:password@localhost/rustytime".to_string());
+    let database_url = env::var("DATABASE_URL").unwrap_or_else(|_| {
+        let user = env::var("POSTGRES_USER").unwrap_or_else(|_| "username".into());
+        let password = env::var("POSTGRES_PASSWORD").unwrap_or_else(|_| "password".into());
+        let host = env::var("POSTGRES_HOST").unwrap_or_else(|_| "localhost".into());
+        let db = env::var("POSTGRES_DB").unwrap_or_else(|_| "rustytime".into());
+        format!("postgres://{user}:{password}@{host}/{db}")
+    });
 
     info!("🔄 Trying to connect to the database...");
 
