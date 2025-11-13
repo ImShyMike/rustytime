@@ -100,6 +100,8 @@ pub fn create_app_router(app_state: AppState) -> Router {
         )
         // metrics endpoint
         .route("/metrics", get(|| async move { metric_handle.render() }))
+        // method not allowed fallback
+        .method_not_allowed_fallback(method_not_allowed)
         // catch-all fallback for unmatched routes (must be last)
         .fallback(not_found)
         // inject application state
@@ -115,4 +117,9 @@ pub fn create_app_router(app_state: AppState) -> Router {
 /// Handler for unmatched routes
 async fn not_found() -> impl IntoResponse {
     (StatusCode::NOT_FOUND, "Not Found")
+}
+
+/// Handler for method not allowed responses
+async fn method_not_allowed() -> impl IntoResponse {
+    (StatusCode::METHOD_NOT_ALLOWED, "Method Not Allowed")
 }
