@@ -8,8 +8,6 @@
 	import LucideGithub from '~icons/lucide/github';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 
-	let authState = $derived($auth);
-
 	// Handle url changes
 	$effect(() => {
 		if (browser) {
@@ -32,6 +30,7 @@
 
 		// Handle auth error from server redirects
 		if (authError === 'unauthorized') {
+			auth.clear();
 			auth.setError('unauthorized', 'Please log in to access that page.');
 			const newUrl = new URL(window.location.href);
 			newUrl.searchParams.delete('auth_error');
@@ -60,20 +59,20 @@
 
 	<!-- Main Content -->
 	<div class="rounded-xl p-8">
-		{#if authState.isAuthenticated && authState.user}
+		{#if $auth.isAuthenticated && $auth.user}
 			<!-- Authenticated User -->
 			<div class="text-center">
 				<div class="flex items-center justify-center gap-4 mb-6">
-					{#if authState.user.avatar_url}
-						<Avatar url={authState.user.avatar_url} size={64} />
+					{#if $auth.user.avatar_url}
+						<Avatar url={$auth.user.avatar_url} size={64} />
 					{/if}
 					<div class="self-start text-left wrap-break-word sm:w-auto w-min max-w-full">
 						<h2 class="text-2xl text-subtext1 font-bold">
-							Welcome, {authState.user.name || 'User'}!
+							Welcome, {$auth.user.name || 'User'}!
 						</h2>
 						<div class="flex flex-row items-center gap-1 align-middle">
-							<UserTag admin_level={authState.user.admin_level} />
-							<p class="text-subtext0">User ID: {authState.user.id}</p>
+							<UserTag admin_level={$auth.user.admin_level} />
+							<p class="text-subtext0">User ID: {$auth.user.id}</p>
 						</div>
 					</div>
 				</div>
@@ -87,7 +86,7 @@
 							Go to Dashboard
 						</a>
 
-						{#if authState.user.admin_level >= 1}
+						{#if $auth.user.admin_level >= 1}
 							<a
 								href={resolve('/admin')}
 								class="inline-block bg-ctp-red-400 hover:bg-ctp-red-500 text-ctp-base font-semibold py-3 px-6 rounded-lg"

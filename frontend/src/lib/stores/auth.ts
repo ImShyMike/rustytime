@@ -160,6 +160,17 @@ const createAuthStore = () => {
 			}
 		},
 
+		clear: () => {
+			set({
+				user: null,
+				sessionId: null,
+				isAuthenticated: false,
+				isLoading: false,
+				impersonation: null,
+				error: null
+			});
+		},
+
 		logout: async () => {
 			if (!browser) return;
 
