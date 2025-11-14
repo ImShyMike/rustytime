@@ -22,6 +22,9 @@ pub fn create_pool() -> DbPool {
     let pool = r2d2::Pool::builder()
         .max_size(15)
         .min_idle(Some(5))
+        .connection_timeout(std::time::Duration::from_secs(10))
+        .idle_timeout(Some(std::time::Duration::from_secs(300)))
+        .max_lifetime(Some(std::time::Duration::from_secs(1800)))
         .build(manager)
         .unwrap_or_else(|e| {
             error!("❌ Database connection failed: {}", e);

@@ -96,13 +96,17 @@ impl LeaderboardGenerator {
             }
         }
 
-        // cleanup old leaderboard entries
-        let today = now.date_naive();
-        let cutoff_daily = today - chrono::Duration::days(30);
-        let cutoff_weekly = today - chrono::Duration::weeks(12);
+        // cleanup old leaderboard entries in a single transaction
+        conn.transaction::<_, diesel::result::Error, _>(|conn| {
+            let today = now.date_naive();
+            let cutoff_daily = today - chrono::Duration::days(30);
+            let cutoff_weekly = today - chrono::Duration::weeks(12);
 
-        Leaderboard::delete_old_daily(&mut conn, cutoff_daily)?;
-        Leaderboard::delete_old_weekly(&mut conn, cutoff_weekly)?;
+            Leaderboard::delete_old_daily(conn, cutoff_daily)?;
+            Leaderboard::delete_old_weekly(conn, cutoff_weekly)?;
+
+            Ok(())
+        })?;
 
         Ok(())
     }
@@ -115,24 +119,26 @@ impl LeaderboardGenerator {
         start_time: DateTime<Utc>,
         end_time: DateTime<Utc>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let results: Vec<UserDurationRow> =
-            Heartbeat::get_all_user_durations(conn, start_time, end_time)?;
+        conn.transaction(|conn| {
+            let results: Vec<UserDurationRow> =
+                Heartbeat::get_all_user_durations(conn, start_time, end_time)?;
 
-        let leaderboard_entries: Vec<NewLeaderboard> = results
-            .iter()
-            .enumerate()
-            .map(|(idx, row)| NewLeaderboard {
-                user_id: row.user_id,
-                period_type: period_type.to_string(),
-                period_date,
-                total_seconds: row.total_seconds,
-                rank: (idx + 1) as i32,
-            })
-            .collect();
+            let leaderboard_entries: Vec<NewLeaderboard> = results
+                .iter()
+                .enumerate()
+                .map(|(idx, row)| NewLeaderboard {
+                    user_id: row.user_id,
+                    period_type: period_type.to_string(),
+                    period_date,
+                    total_seconds: row.total_seconds,
+                    rank: (idx + 1) as i32,
+                })
+                .collect();
 
-        Leaderboard::upsert_batch(conn, leaderboard_entries)?;
+            Leaderboard::upsert_batch(conn, leaderboard_entries)?;
 
-        Ok(())
+            Ok(())
+        })
     }
 }
 
