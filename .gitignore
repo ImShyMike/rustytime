@@ -13,3 +13,6 @@ target/
 
 # Old templates
 templates/
+
+# Docker buildx
+.buildx-cache/
