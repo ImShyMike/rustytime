@@ -74,7 +74,8 @@ impl Session {
                 diesel::update(sessions::table.find(existing_session.id))
                     .set((
                         dsl::github_access_token.eq(access_token),
-                        dsl::expires_at.eq(Utc::now() + chrono::Duration::days(SESSION_EXPIRY_DAYS)),
+                        dsl::expires_at
+                            .eq(Utc::now() + chrono::Duration::days(SESSION_EXPIRY_DAYS)),
                     ))
                     .get_result(conn)
             } else {
