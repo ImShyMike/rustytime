@@ -1,13 +1,56 @@
 use axum::http::HeaderMap;
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
-use diesel::sql_types::{BigInt, Date, Int4, Nullable, Text};
+use diesel::sql_types::{BigInt, Date, Int4, Nullable as SqlNullable, Text, Timestamptz};
 use ipnetwork::IpNetwork;
 use serde::{Deserialize, Serialize};
 
 use crate::schema::heartbeats;
 use crate::utils::http::parse_user_agent;
 use crate::utils::time::{TimeFormat, human_readable_duration};
+
+diesel::define_sql_function! {
+    /// Calculate user duration with filters
+    #[allow(clippy::too_many_arguments)]
+    fn calculate_user_duration(
+        user_id: SqlNullable<Int4>,
+        start_date: SqlNullable<Timestamptz>,
+        end_date: SqlNullable<Timestamptz>,
+        project: SqlNullable<Text>,
+        language: SqlNullable<Text>,
+        entity: SqlNullable<Text>,
+        type_filter: SqlNullable<Text>,
+        timeout_seconds: Int4
+    ) -> BigInt;
+}
+
+diesel::define_sql_function! {
+    /// Get field statistics (language, editor, OS, etc.)
+    fn calculate_field_stats(
+        user_id: Int4,
+        field_name: Text,
+        timeout_seconds: Int4,
+        limit_count: Int4
+    ) -> diesel::sql_types::Array<diesel::sql_types::Record<(Text, BigInt)>>;
+}
+
+diesel::define_sql_function! {
+    /// Get project statistics with alias resolution
+    fn calculate_project_stats_with_aliases(
+        user_id: Int4,
+        timeout_seconds: Int4,
+        limit_count: Int4
+    ) -> diesel::sql_types::Array<diesel::sql_types::Record<(Text, BigInt)>>;
+}
+
+diesel::define_sql_function! {
+    /// Calculate all user durations in a time range
+    fn calculate_all_user_durations(
+        start_date: Timestamptz,
+        end_date: Timestamptz,
+        timeout_seconds: Int4
+    ) -> diesel::sql_types::Array<diesel::sql_types::Record<(Int4, BigInt)>>;
+}
 
 pub const TIMEOUT_SECONDS: i32 = 120; // 2 minutes in seconds
 
@@ -27,11 +70,19 @@ const MAX_DEPENDENCY_LENGTH: usize = 254;
 
 /// Truncate a string to the specified maximum length, respecting UTF-8 boundaries
 #[inline(always)]
-fn truncate_string(s: String, max_length: usize) -> String {
-    if s.chars().count() <= max_length {
+fn truncate_string(mut s: String, max_length: usize) -> String {
+    let char_count = s.chars().count();
+    if char_count <= max_length {
         s
     } else {
-        s.chars().take(max_length).collect()
+        let byte_idx = s
+            .char_indices()
+            .nth(max_length)
+            .map(|(idx, _)| idx)
+            .unwrap_or(s.len());
+        s.truncate(byte_idx);
+        s.shrink_to_fit();
+        s
     }
 }
 
@@ -41,8 +92,9 @@ fn truncate_optional_string(s: Option<String>, max_length: usize) -> Option<Stri
     s.map(|s| truncate_string(s, max_length))
 }
 
+/// Convert DateTime<Utc> to f64 timestamp
 #[inline(always)]
-pub fn heartbeat_time_to_f64(time: DateTime<Utc>) -> f64 {
+pub fn datetime_to_f64(time: DateTime<Utc>) -> f64 {
     time.timestamp() as f64 + time.timestamp_subsec_nanos() as f64 / 1e9
 }
 
@@ -63,8 +115,8 @@ pub struct UserDurationRow {
 }
 
 #[derive(QueryableByName)]
-struct Row {
-    #[diesel(sql_type = Nullable<Text>)]
+struct NullableNameDurationRow {
+    #[diesel(sql_type = SqlNullable<Text>)]
     name: Option<String>,
     #[diesel(sql_type = BigInt)]
     total_seconds: i64,
@@ -92,12 +144,6 @@ pub struct DailyActivity {
     pub date: chrono::NaiveDate,
     #[diesel(sql_type = BigInt)]
     pub count: i64,
-}
-
-#[derive(QueryableByName, Debug, Clone, Serialize)]
-pub struct DurationResult {
-    #[diesel(sql_type = BigInt)]
-    pub total_seconds: i64,
 }
 
 #[derive(Deserialize, Debug)]
@@ -431,7 +477,7 @@ impl From<Heartbeat> for HeartbeatResponse {
             id: heartbeat.id,
             entity: heartbeat.entity,
             type_: heartbeat.type_,
-            time: heartbeat_time_to_f64(heartbeat.time),
+            time: datetime_to_f64(heartbeat.time),
         }
     }
 }
@@ -442,7 +488,7 @@ impl From<(i64, NewHeartbeat)> for HeartbeatResponse {
             id,
             entity: heartbeat.entity,
             type_: heartbeat.type_,
-            time: heartbeat_time_to_f64(heartbeat.time),
+            time: datetime_to_f64(heartbeat.time),
         }
     }
 }
@@ -480,66 +526,42 @@ impl Heartbeat {
     pub fn get_daily_activity_last_week(
         conn: &mut PgConnection,
     ) -> QueryResult<Vec<DailyActivity>> {
-        diesel::sql_query(
-            "SELECT DATE(time) as date, COUNT(*) as count 
-             FROM heartbeats 
-             WHERE time >= NOW() - INTERVAL '7 days'
-             GROUP BY DATE(time)
-             ORDER BY date",
-        )
-        .load::<DailyActivity>(conn)
+        use diesel::dsl::*;
+        use diesel::sql_types::*;
+
+        let seven_days_ago = chrono::Utc::now() - chrono::Duration::days(7);
+
+        // Use Diesel's select with sql() for date functions not in DSL
+        heartbeats::table
+            .filter(heartbeats::time.ge(seven_days_ago))
+            .select((sql::<Date>("DATE(time)"), sql::<BigInt>("COUNT(*)")))
+            .group_by(sql::<Date>("DATE(time)"))
+            .order_by(sql::<Date>("DATE(time)"))
+            .load::<(chrono::NaiveDate, i64)>(conn)
+            .map(|rows| {
+                rows.into_iter()
+                    .map(|(date, count)| DailyActivity { date, count })
+                    .collect()
+            })
     }
 
-    /// Calculate total duration in seconds using SQL with filters
+    /// Calculate total duration in seconds using database function
     pub fn get_user_duration_seconds(
         conn: &mut PgConnection,
         duration_input: DurationInput,
     ) -> QueryResult<i64> {
-        let base_query = r#"
-            WITH capped_diffs AS (
-                SELECT CASE
-                    WHEN LAG(time) OVER (ORDER BY time) IS NULL THEN 0
-                    ELSE LEAST(EXTRACT(EPOCH FROM (time - LAG(time) OVER (ORDER BY time))), $8)
-                END as diff
-                FROM heartbeats
-                WHERE ($1::int IS NULL OR user_id = $1)
-                  AND ($2::timestamptz IS NULL OR time >= $2)
-                  AND ($3::timestamptz IS NULL OR time <= $3)
-                  AND ($4::text IS NULL OR project = $4)
-                  AND ($5::text IS NULL OR language = $5)
-                  AND ($6::text IS NULL OR entity = $6)
-                  AND ($7::text IS NULL OR type = $7)
-                  AND time IS NOT NULL
-                ORDER BY time ASC
-            )
-            SELECT COALESCE(SUM(diff), 0)::bigint AS total_seconds
-            FROM capped_diffs
-            "#;
-
-        let result = diesel::sql_query(base_query)
-            .bind::<diesel::sql_types::Nullable<diesel::sql_types::Int4>, _>(duration_input.user_id)
-            .bind::<diesel::sql_types::Nullable<diesel::sql_types::Timestamptz>, _>(
-                duration_input.start_date,
-            )
-            .bind::<diesel::sql_types::Nullable<diesel::sql_types::Timestamptz>, _>(
-                duration_input.end_date,
-            )
-            .bind::<diesel::sql_types::Nullable<diesel::sql_types::Text>, _>(
-                duration_input.project.as_deref(),
-            )
-            .bind::<diesel::sql_types::Nullable<diesel::sql_types::Text>, _>(
-                duration_input.language.as_deref(),
-            )
-            .bind::<diesel::sql_types::Nullable<diesel::sql_types::Text>, _>(
-                duration_input.entity.as_deref(),
-            )
-            .bind::<diesel::sql_types::Nullable<diesel::sql_types::Text>, _>(
-                duration_input.type_filter.as_deref(),
-            )
-            .bind::<diesel::sql_types::Int4, _>(TIMEOUT_SECONDS)
-            .get_result::<DurationResult>(conn)?;
-
-        Ok(result.total_seconds)
+        // Call database function using Diesel's define_sql_function!
+        diesel::select(calculate_user_duration(
+            duration_input.user_id,
+            duration_input.start_date,
+            duration_input.end_date,
+            duration_input.project.as_deref(),
+            duration_input.language.as_deref(),
+            duration_input.entity.as_deref(),
+            duration_input.type_filter.as_deref(),
+            TIMEOUT_SECONDS,
+        ))
+        .get_result(conn)
     }
 
     /// Calculate total durations for all users between start_time and end_time
@@ -548,35 +570,15 @@ impl Heartbeat {
         start_time: DateTime<Utc>,
         end_time: DateTime<Utc>,
     ) -> QueryResult<Vec<UserDurationRow>> {
-        let sql = r#"
-            WITH capped_diffs AS (
-                SELECT
-                    user_id,
-                    CASE
-                        WHEN LAG(time) OVER (PARTITION BY user_id ORDER BY time) IS NULL THEN 0
-                        ELSE LEAST(EXTRACT(EPOCH FROM (time - LAG(time) OVER (PARTITION BY user_id ORDER BY time))), $3)
-                    END as diff
-                FROM heartbeats
-                WHERE time >= $1
-                  AND time < $2
-                  AND time IS NOT NULL
-                ORDER BY user_id, time ASC
-            )
-            SELECT
-                user_id,
-                COALESCE(SUM(diff), 0)::bigint as total_seconds
-            FROM capped_diffs
-            GROUP BY user_id
-            ORDER BY total_seconds DESC
-        "#;
-
-        let results: Vec<UserDurationRow> = diesel::sql_query(sql)
-            .bind::<diesel::sql_types::Timestamptz, _>(start_time)
-            .bind::<diesel::sql_types::Timestamptz, _>(end_time)
-            .bind::<diesel::sql_types::Int4, _>(TIMEOUT_SECONDS)
-            .load(conn)?;
-
-        Ok(results)
+        // Call the database function using parameter binding to avoid malformed SQL
+        diesel::sql_query(
+            "SELECT user_id, total_seconds \
+             FROM calculate_all_user_durations($1, $2, $3)",
+        )
+        .bind::<Timestamptz, _>(start_time)
+        .bind::<Timestamptz, _>(end_time)
+        .bind::<Int4, _>(TIMEOUT_SECONDS)
+        .load::<UserDurationRow>(conn)
     }
 
     /// Calculate total duration in seconds using SQL
@@ -620,54 +622,36 @@ impl Heartbeat {
         user_id: i32,
         total_time: i64,
     ) -> QueryResult<Vec<UsageStat>> {
-        let sql = r#"
-            WITH resolved_projects AS (
-                SELECT
-                    h.time,
-                    COALESCE(pa.alias_to, h.project_id) as resolved_project_id,
-                    LAG(h.time) OVER (
-                        PARTITION BY COALESCE(pa.alias_to, h.project_id)
-                        ORDER BY h.time
-                    ) as prev_time
-                FROM heartbeats h
-                LEFT JOIN project_aliases pa
-                    ON pa.user_id = h.user_id
-                    AND pa.project_id = h.project_id
-                WHERE h.user_id = $1
-                    AND h.project_id IS NOT NULL
-            ),
-            capped_diffs AS (
-                SELECT
-                    resolved_project_id,
-                    CASE
-                        WHEN prev_time IS NULL THEN 0
-                        ELSE LEAST(EXTRACT(EPOCH FROM (time - prev_time)), $2)
-                    END as diff
-                FROM resolved_projects
-            ),
-            project_times AS (
-                SELECT
-                    resolved_project_id,
-                    COALESCE(SUM(diff), 0)::bigint as total_seconds
-                FROM capped_diffs
-                GROUP BY resolved_project_id
-            )
-            SELECT
-                p.name as name,
-                pt.total_seconds
-            FROM project_times pt
-            JOIN projects p ON p.id = pt.resolved_project_id
-            ORDER BY pt.total_seconds DESC
-            LIMIT 10
-        "#;
+        let rows: Vec<NullableNameDurationRow> = diesel::sql_query(
+            "SELECT name, total_seconds \
+             FROM calculate_project_stats_with_aliases($1, $2, $3)",
+        )
+        .bind::<Int4, _>(user_id)
+        .bind::<Int4, _>(TIMEOUT_SECONDS)
+        .bind::<Int4, _>(10)
+        .load(conn)?;
 
-        let rows: Vec<Row> = diesel::sql_query(sql)
-            .bind::<diesel::sql_types::Int4, _>(user_id)
-            .bind::<diesel::sql_types::Int4, _>(TIMEOUT_SECONDS)
-            .load(conn)?;
+        Ok(Self::map_usage_stats(rows, total_time))
+    }
 
-        Ok(rows
-            .into_iter()
+    fn load_field_stats(
+        conn: &mut PgConnection,
+        user_id: i32,
+        field: &str,
+    ) -> QueryResult<Vec<NullableNameDurationRow>> {
+        diesel::sql_query(
+            "SELECT name, total_seconds \
+             FROM calculate_field_stats($1, $2, $3, $4)",
+        )
+        .bind::<Int4, _>(user_id)
+        .bind::<Text, _>(field)
+        .bind::<Int4, _>(TIMEOUT_SECONDS)
+        .bind::<Int4, _>(10)
+        .load(conn)
+    }
+
+    fn map_usage_stats(rows: Vec<NullableNameDurationRow>, total_time: i64) -> Vec<UsageStat> {
+        rows.into_iter()
             .map(|row| UsageStat {
                 name: row.name.unwrap_or_else(|| "Unknown".to_string()),
                 total_seconds: row.total_seconds,
@@ -679,7 +663,7 @@ impl Heartbeat {
                     0.0
                 },
             })
-            .collect())
+            .collect()
     }
 
     /// Get top 10 projects, editors, OSes, and languages by total seconds
@@ -687,71 +671,26 @@ impl Heartbeat {
         conn: &mut PgConnection,
         user_id: i32,
     ) -> QueryResult<DashboardStats> {
-        // get total time for percentage calculations
-        let total_time = Self::get_user_total_duration_seconds(conn, user_id)?;
+        conn.transaction::<_, diesel::result::Error, _>(|conn| {
+            let total_time = Self::get_user_total_duration_seconds(conn, user_id)?;
+            let top_projects = Self::get_project_stats_with_aliases(conn, user_id, total_time)?;
 
-        // get project stats with alias resolution first
-        let top_projects = Self::get_project_stats_with_aliases(conn, user_id, total_time)?;
+            let mut get_stats = |field: &str| -> QueryResult<Vec<UsageStat>> {
+                let rows = Self::load_field_stats(conn, user_id, field)?;
+                Ok(Self::map_usage_stats(rows, total_time))
+            };
 
-        // helper closure to run the SQL for a given field
-        let mut get_stats = |field: &str| -> QueryResult<Vec<UsageStat>> {
-            let sql = format!(
-                r#"
-                WITH capped_diffs AS (
-                    SELECT
-                        {field} as name,
-                        CASE
-                            WHEN LAG(time) OVER (PARTITION BY {field} ORDER BY time) IS NULL THEN 0
-                            ELSE LEAST(EXTRACT(EPOCH FROM (time - LAG(time) OVER (PARTITION BY {field} ORDER BY time))), $2)
-                        END as diff
-                    FROM heartbeats
-                    WHERE {field} IS NOT NULL
-                    AND user_id = $1
-                    AND time IS NOT NULL
-                    ORDER BY time ASC
-                )
-                SELECT
-                    name,
-                    COALESCE(SUM(diff), 0)::bigint as total_seconds
-                FROM capped_diffs
-                GROUP BY name
-                ORDER BY total_seconds DESC
-                LIMIT 10
-                "#,
-                field = field,
-            );
+            let top_editors = get_stats("editor")?;
+            let top_oses = get_stats("operating_system")?;
+            let top_languages = get_stats("language")?;
 
-            let rows: Vec<Row> = diesel::sql_query(sql)
-                .bind::<diesel::sql_types::Int4, _>(user_id)
-                .bind::<diesel::sql_types::Int4, _>(TIMEOUT_SECONDS)
-                .load(conn)?;
-
-            Ok(rows
-                .into_iter()
-                .map(|row| UsageStat {
-                    name: row.name.unwrap_or_else(|| "Unknown".to_string()),
-                    total_seconds: row.total_seconds,
-                    text: human_readable_duration(row.total_seconds, TimeFormat::HourMinute)
-                        .human_readable,
-                    percent: if total_time > 0 {
-                        ((row.total_seconds as f32 / total_time as f32) * 10000.0).round() / 100.0
-                    } else {
-                        0.0
-                    },
-                })
-                .collect())
-        };
-
-        let top_editors = get_stats("editor")?;
-        let top_oses = get_stats("operating_system")?;
-        let top_languages = get_stats("language")?;
-
-        Ok(DashboardStats {
-            total_time,
-            top_projects,
-            top_languages,
-            top_oses,
-            top_editors,
+            Ok(DashboardStats {
+                total_time,
+                top_projects,
+                top_languages,
+                top_oses,
+                top_editors,
+            })
         })
     }
 }

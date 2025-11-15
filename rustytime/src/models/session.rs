@@ -65,25 +65,27 @@ impl Session {
         access_token: &str,
         gh_user_id: i64,
     ) -> QueryResult<Session> {
-        // check if a session already exists for this user
-        if let Some(existing_session) = Self::find_by_github_user_id(conn, gh_user_id)? {
-            // update the existing session with new access token
-            diesel::update(sessions::table.find(existing_session.id))
-                .set((
-                    dsl::github_access_token.eq(access_token),
-                    dsl::updated_at.eq(now),
-                ))
-                .get_result(conn)
-        } else {
-            // create new session
-            let new_session = NewSession {
-                user_id,
-                github_access_token: access_token.to_string(),
-                github_user_id: gh_user_id,
-                impersonated_by: None,
-            };
-            Self::create(conn, &new_session)
-        }
+        conn.transaction::<_, diesel::result::Error, _>(|conn| {
+            // check if a session already exists for this user
+            if let Some(existing_session) = Self::find_by_github_user_id(conn, gh_user_id)? {
+                // update the existing session with new access token
+                diesel::update(sessions::table.find(existing_session.id))
+                    .set((
+                        dsl::github_access_token.eq(access_token),
+                        dsl::updated_at.eq(now),
+                    ))
+                    .get_result(conn)
+            } else {
+                // create new session
+                let new_session = NewSession {
+                    user_id,
+                    github_access_token: access_token.to_string(),
+                    github_user_id: gh_user_id,
+                    impersonated_by: None,
+                };
+                Self::create(conn, &new_session)
+            }
+        })
     }
 
     #[allow(dead_code)]

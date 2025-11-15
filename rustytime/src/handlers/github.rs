@@ -140,23 +140,23 @@ pub async fn callback(
     // get database connection
     let mut conn = get_db_conn!(app_state);
 
-    // create or update user in database
-    let user = match User::create_or_update(
-        &mut conn,
-        user_info.id as i64,
-        &user_info.login,
-        &user_info.avatar_url,
-    ) {
-        Ok(user) => user,
+    let (user, session) = match conn.transaction::<_, diesel::result::Error, _>(|conn| {
+        // create or update user in database
+        let user = User::create_or_update(
+            conn,
+            user_info.id as i64,
+            &user_info.login,
+            &user_info.avatar_url,
+        )?;
+
+        // create or update session for authentication
+        let session = Session::create_or_update(conn, user.id, access_token, user_info.id as i64)?;
+
+        Ok((user, session))
+    }) {
+        Ok(result) => result,
         Err(_) => return Ok(Redirect::to(&format!("{}/?error=database", frontend_url))),
     };
-
-    // create or update session for authentication
-    let session =
-        match Session::create_or_update(&mut conn, user.id, access_token, user_info.id as i64) {
-            Ok(session) => session,
-            Err(_) => return Ok(Redirect::to(&format!("{}/?error=session", frontend_url))),
-        };
 
     // set session cookie
     let session_cookie = SessionManager::create_session_cookie(session.id);

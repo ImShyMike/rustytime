@@ -66,29 +66,31 @@ impl User {
         username: &str,
         avatar_url: &str,
     ) -> QueryResult<User> {
-        // first, try to find existing user by github_id
-        if let Some(existing_user) = Self::find_by_github_id(conn, github_id)? {
-            // update user info if it has changed
-            if existing_user.avatar_url != avatar_url || existing_user.name != username {
-                diesel::update(users::table.find(existing_user.id))
-                    .set((users::avatar_url.eq(avatar_url), users::name.eq(username)))
-                    .get_result(conn)
+        conn.transaction::<_, diesel::result::Error, _>(|conn| {
+            // first, try to find existing user by github_id
+            if let Some(existing_user) = Self::find_by_github_id(conn, github_id)? {
+                // update user info if it has changed
+                if existing_user.avatar_url != avatar_url || existing_user.name != username {
+                    diesel::update(users::table.find(existing_user.id))
+                        .set((users::avatar_url.eq(avatar_url), users::name.eq(username)))
+                        .get_result(conn)
+                } else {
+                    Ok(existing_user)
+                }
             } else {
-                Ok(existing_user)
-            }
-        } else {
-            let total_users = Self::count_total_users(conn, true)?;
+                let total_users = Self::count_total_users(conn, true)?;
 
-            // create new user
-            let new_user = NewUser {
-                github_id,
-                name: username.to_string(),
-                avatar_url: avatar_url.to_string(),
-                admin_level: if total_users == 0 { 2 } else { 0 }, // make the first real user an owner
-                is_banned: false,
-            };
-            Self::create(conn, &new_user)
-        }
+                // create new user
+                let new_user = NewUser {
+                    github_id,
+                    name: username.to_string(),
+                    avatar_url: avatar_url.to_string(),
+                    admin_level: if total_users == 0 { 2 } else { 0 }, // make the first real user an owner
+                    is_banned: false,
+                };
+                Self::create(conn, &new_user)
+            }
+        })
     }
 
     pub fn is_admin(&self) -> bool {

@@ -209,10 +209,11 @@ pub async fn store_heartbeats_in_db(
         let mut connection = pool.get().expect("Failed to get DB connection from pool");
 
         connection.transaction(|conn| {
-            let mut keys_to_insert = Vec::new();
-            let mut heartbeat_keys = Vec::new();
-            let mut seen = HashMap::new();
-            let mut deduplicated = Vec::new();
+            let mut keys_to_insert = Vec::with_capacity(new_heartbeats.len());
+            let mut heartbeat_keys = Vec::with_capacity(new_heartbeats.len());
+            let mut seen: HashMap<(i32, chrono::DateTime<Utc>), ()> =
+                HashMap::with_capacity(new_heartbeats.len());
+            let mut deduplicated = Vec::with_capacity(new_heartbeats.len());
 
             for mut heartbeat in new_heartbeats {
                 if heartbeat.project_id.is_none()

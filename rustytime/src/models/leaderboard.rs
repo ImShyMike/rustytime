@@ -53,6 +53,10 @@ impl Leaderboard {
         conn: &mut PgConnection,
         entries: Vec<NewLeaderboard>,
     ) -> QueryResult<usize> {
+        if entries.is_empty() {
+            return Ok(0);
+        }
+
         diesel::insert_into(leaderboards::table)
             .values(&entries)
             .on_conflict((
