@@ -80,6 +80,10 @@ cargo run --features seed
 
 When using a WakaTime client, point your requests to `http://localhost:3000/api/v1` (or `https://api-rustytime.shymike.dev/api/v1` if using the deployed version)
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=imshymike/rustytime&type=date&legend=top-left)](https://www.star-history.com/#imshymike/rustytime&type=date&legend=top-left)
+
 ## License
 
 This project is licensed under the [GNU AGPLv3](https://github.com/ImShyMike/rustytime/blob/HEAD/LICENSE)
