@@ -211,7 +211,8 @@ pub async fn store_heartbeats_in_db(
         connection.transaction(|conn| {
             let mut keys_to_insert = Vec::with_capacity(new_heartbeats.len());
             let mut heartbeat_keys = Vec::with_capacity(new_heartbeats.len());
-            let mut seen: HashMap<(i32, chrono::DateTime<Utc>), ()> = HashMap::with_capacity(new_heartbeats.len());
+            let mut seen: HashMap<(i32, chrono::DateTime<Utc>), ()> =
+                HashMap::with_capacity(new_heartbeats.len());
             let mut deduplicated = Vec::with_capacity(new_heartbeats.len());
 
             for mut heartbeat in new_heartbeats {
