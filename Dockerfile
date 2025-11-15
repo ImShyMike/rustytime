@@ -43,7 +43,6 @@ RUN rm -rf src/
 # Copy actual source code
 COPY rustytime/src ./src
 COPY rustytime/migrations ./migrations
-COPY rustytime/templates ./templates
 
 # Build with actual source and copy binary out of cache
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
