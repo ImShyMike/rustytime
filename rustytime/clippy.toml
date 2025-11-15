@@ -1,0 +1,9 @@
+msrv = "1.91"
+
+disallowed-types = [
+    { path = "std::collections::LinkedList", reason = "LinkedList is slow" },
+    { path = "ring::digest::SHA1_FOR_LEGACY_USE_ONLY", reason = "SHA-1 is cryptographically broken", allow-invalid = true },
+]
+disallowed-macros = [
+    "std::dbg",
+]

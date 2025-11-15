@@ -8,6 +8,8 @@ use crate::models::user::User;
 use crate::schema::sessions;
 use crate::schema::sessions::dsl;
 
+const SESSION_EXPIRY_DAYS: i64 = 7;
+
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
 #[diesel(table_name = sessions)]
 pub struct Session {
@@ -72,7 +74,7 @@ impl Session {
                 diesel::update(sessions::table.find(existing_session.id))
                     .set((
                         dsl::github_access_token.eq(access_token),
-                        dsl::updated_at.eq(now),
+                        dsl::expires_at.eq(Utc::now() + chrono::Duration::days(SESSION_EXPIRY_DAYS)),
                     ))
                     .get_result(conn)
             } else {
@@ -109,7 +111,6 @@ impl Session {
                 dsl::user_id.eq(target_user.id),
                 dsl::github_user_id.eq(target_user.github_id),
                 dsl::impersonated_by.eq(Some(acting_admin_id)),
-                dsl::updated_at.eq(now),
             ))
             .get_result(conn)
     }
@@ -124,7 +125,6 @@ impl Session {
                 dsl::user_id.eq(admin_user.id),
                 dsl::github_user_id.eq(admin_user.github_id),
                 dsl::impersonated_by.eq::<Option<i32>>(None),
-                dsl::updated_at.eq(now),
             ))
             .get_result(conn)
     }
