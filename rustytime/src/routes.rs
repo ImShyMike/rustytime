@@ -123,3 +123,100 @@ async fn not_found() -> impl IntoResponse {
 async fn method_not_allowed() -> impl IntoResponse {
     (StatusCode::METHOD_NOT_ALLOWED, "Method Not Allowed")
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{
+        body::{self, Body},
+        http,
+        response::IntoResponse,
+    };
+    use diesel::{
+        pg::PgConnection,
+        r2d2::{ConnectionManager, Pool},
+    };
+    use oauth2::{AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
+    use tower::ServiceExt;
+
+    fn build_test_state() -> AppState {
+        let manager = ConnectionManager::<PgConnection>::new("postgres://invalid");
+        let db_pool = Pool::builder()
+            .max_size(1)
+            .min_idle(Some(0))
+            .build_unchecked(manager);
+
+        let github_client = BasicClient::new(ClientId::new("client-id".into()))
+            .set_client_secret(ClientSecret::new("client-secret".into()))
+            .set_auth_uri(AuthUrl::new("https://example.test/auth".into()).unwrap())
+            .set_token_uri(TokenUrl::new("https://example.test/token".into()).unwrap())
+            .set_redirect_uri(RedirectUrl::new("https://example.test/callback".into()).unwrap());
+
+        AppState {
+            db_pool,
+            github_client,
+            http_client: reqwest::Client::new(),
+            metrics: MetricsTracker::new(),
+        }
+    }
+
+    use crate::utils::metrics::MetricsTracker;
+    use oauth2::basic::BasicClient;
+
+    #[tokio::test]
+    async fn create_app_router_wires_routes_and_state() {
+        let app_state = build_test_state();
+        let app = create_app_router(app_state);
+
+        let response = app
+            .clone()
+            .oneshot(
+                http::Request::builder()
+                    .uri("/")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .expect("router should produce a response");
+        assert!(response.status().is_redirection());
+        assert_eq!(
+            response.headers().get(http::header::LOCATION).unwrap(),
+            "http://localhost:5173"
+        );
+
+        let metrics_response = app
+            .oneshot(
+                http::Request::builder()
+                    .uri("/metrics")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .expect("metrics endpoint should respond");
+        assert_eq!(metrics_response.status(), StatusCode::OK);
+        let body_bytes = body::to_bytes(metrics_response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        assert!(!body_bytes.is_empty());
+    }
+
+    #[tokio::test]
+    async fn not_found_returns_404_payload() {
+        let response = not_found().await.into_response();
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        let body_bytes = body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        assert_eq!(body_bytes.as_ref(), b"Not Found");
+    }
+
+    #[tokio::test]
+    async fn method_not_allowed_returns_405_payload() {
+        let response = method_not_allowed().await.into_response();
+        assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
+        let body_bytes = body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        assert_eq!(body_bytes.as_ref(), b"Method Not Allowed");
+    }
+}

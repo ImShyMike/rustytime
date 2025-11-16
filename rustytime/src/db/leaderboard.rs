@@ -142,7 +142,20 @@ impl LeaderboardGenerator {
     }
 }
 
-fn get_week_start(date: NaiveDate) -> NaiveDate {
+#[inline(always)]
+pub fn get_week_start(date: NaiveDate) -> NaiveDate {
     let weekday = date.weekday().num_days_from_monday();
     date - chrono::Duration::days(weekday as i64)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn week_start_calculates_monday_anchor() {
+        let date = NaiveDate::from_ymd_opt(2024, 6, 5).unwrap(); // Wednesday
+        let week_start = get_week_start(date);
+        assert_eq!(week_start, NaiveDate::from_ymd_opt(2024, 6, 3).unwrap()); // Monday
+    }
 }

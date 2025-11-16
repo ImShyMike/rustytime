@@ -73,3 +73,75 @@ pub async fn get_user_id_from_api_key(pool: &DbPool, api_key_value: &str) -> Opt
         .ok()?;
     Some(user_id)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn extracts_bearer_token_from_authorization_header() {
+        let headers = {
+            let mut map = axum::http::HeaderMap::new();
+            map.insert(
+                "Authorization",
+                "Bearer 123e4567-e89b-12d3-a456-426614174000"
+                    .parse()
+                    .unwrap(),
+            );
+            map
+        };
+        let api_key = get_api_key_from_header(&headers).unwrap();
+        assert_eq!(api_key, "123e4567-e89b-12d3-a456-426614174000".to_string());
+    }
+
+    #[test]
+    fn extracts_api_key_from_basic_authorization_header() {
+        let headers = {
+            let mut map = axum::http::HeaderMap::new();
+            let basic_value = BASE64_STANDARD.encode("123e4567-e89b-12d3-a456-426614174000");
+            map.insert(
+                "Authorization",
+                format!("Basic {}", basic_value).parse().unwrap(),
+            );
+            map
+        };
+        let api_key = get_api_key_from_header(&headers).unwrap();
+        assert_eq!(api_key, "123e4567-e89b-12d3-a456-426614174000".to_string());
+    }
+
+    #[test]
+    fn extracts_api_key_from_query_parameter() {
+        let uri: axum::http::Uri = "/path?api_key=123e4567-e89b-12d3-a456-426614174000"
+            .parse()
+            .unwrap();
+        let api_key = get_api_key_from_query(&uri).unwrap();
+        assert_eq!(api_key, "123e4567-e89b-12d3-a456-426614174000".to_string());
+    }
+
+    #[test]
+    fn validates_api_key_format_using_uuid_semantics() {
+        let valid_key = "123e4567-e89b-12d3-a456-426614174000";
+        let invalid_key = "invalid-api-key";
+        assert!(validate_api_key(valid_key));
+        assert!(!validate_api_key(invalid_key));
+    }
+
+    #[tokio::test]
+    async fn get_valid_api_key_prioritizes_headers_over_query() {
+        let headers = {
+            let mut map = axum::http::HeaderMap::new();
+            map.insert(
+                "Authorization",
+                "Bearer 123e4567-e89b-12d3-a456-426614174000"
+                    .parse()
+                    .unwrap(),
+            );
+            map
+        };
+        let uri: axum::http::Uri = "/path?api_key=00000000-0000-0000-0000-000000000000"
+            .parse()
+            .unwrap();
+        let api_key = get_valid_api_key(&headers, &uri).await.unwrap();
+        assert_eq!(api_key, "123e4567-e89b-12d3-a456-426614174000".to_string());
+    }
+}

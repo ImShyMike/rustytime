@@ -84,3 +84,28 @@ pub fn human_readable_duration(seconds: i64, format: TimeFormat) -> Time {
         },
     )
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const SECONDS: i64 = 90061;
+
+    #[test]
+    fn formats_duration_with_full_precision() {
+        let time_obj = human_readable_duration(SECONDS, TimeFormat::Full);
+        assert_eq!(time_obj.human_readable, "1d 1h 1m 1s");
+    }
+
+    #[test]
+    fn formats_duration_without_day_component() {
+        let time_obj = human_readable_duration(SECONDS, TimeFormat::NoDays);
+        assert_eq!(time_obj.human_readable, "25h 1m 1s");
+    }
+
+    #[test]
+    fn formats_duration_for_hour_minute_display() {
+        let time_obj = human_readable_duration(SECONDS, TimeFormat::HourMinute);
+        assert_eq!(time_obj.human_readable, "25h 1m");
+    }
+}

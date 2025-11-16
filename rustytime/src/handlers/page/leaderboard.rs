@@ -1,3 +1,4 @@
+use crate::db::leaderboard::get_week_start;
 use crate::models::leaderboard::{Leaderboard, LeaderboardEntry};
 use crate::models::user::User;
 use crate::schema::users;
@@ -8,7 +9,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Json, Response},
 };
-use chrono::{DateTime, Datelike, NaiveDate, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use diesel::prelude::*;
 use serde::Serialize;
 
@@ -103,9 +104,4 @@ fn join_with_users(
             })
         })
         .collect()
-}
-
-fn get_week_start(date: NaiveDate) -> NaiveDate {
-    let weekday = date.weekday().num_days_from_monday();
-    date - chrono::Duration::days(weekday as i64)
 }

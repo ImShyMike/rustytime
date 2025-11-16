@@ -133,3 +133,24 @@ impl User {
             .execute(conn)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn is_admin_reflects_admin_level_threshold() {
+        let user = User {
+            id: 1,
+            github_id: 123,
+            name: "test".to_string(),
+            avatar_url: "http://example.com/avatar".to_string(),
+            api_key: Uuid::new_v4(),
+            admin_level: 1,
+            is_banned: false,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+        };
+        assert!(user.is_admin());
+    }
+}

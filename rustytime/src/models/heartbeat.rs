@@ -694,3 +694,137 @@ impl Heartbeat {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sample_request() -> HeartbeatRequest {
+        HeartbeatRequest {
+            entity: "example.txt".to_string(),
+            type_: "file".to_string(),
+            time: 1_700_000_000.123456,
+            category: None,
+            project: Some("ExampleProject".to_string()),
+            project_root_count: Some(1),
+            branch: Some("main".to_string()),
+            language: Some("Rust".to_string()),
+            dependencies: Some(vec!["dep1".to_string(), "dep2".to_string()]),
+            lines: Some(100),
+            line_additions: Some(10),
+            line_deletions: Some(5),
+            lineno: Some(42),
+            cursorpos: Some(128),
+            is_write: Some(true),
+        }
+    }
+
+    #[test]
+    fn truncates_strings_without_breaking_utf8_boundaries() {
+        let input = "😀😀😀😀😀😀😀😀😀😀".to_string();
+        let truncated = truncate_string(input, 7);
+        assert_eq!(truncated.chars().count(), 7);
+    }
+
+    #[test]
+    fn truncates_optional_strings_when_present() {
+        let input = Some("Hello 😀, World!".to_string());
+        let truncated = truncate_optional_string(input, 10);
+        assert_eq!(truncated.unwrap().chars().count(), 10);
+    }
+
+    #[test]
+    fn converts_datetime_to_f64_with_nanosecond_precision() {
+        let dt =
+            DateTime::<Utc>::from_timestamp(1_700_000_000, 987_654_321).expect("valid timestamp");
+
+        let converted = datetime_to_f64(dt);
+        let expected = 1_700_000_000f64 + 987_654_321f64 / 1e9;
+        let diff = (converted - expected).abs();
+
+        assert!(
+            diff <= 1e-12,
+            "expected {expected}, got {converted}, diff {diff}"
+        );
+    }
+
+    #[test]
+    fn sanitized_heartbeat_request_infers_defaults() {
+        let request = sample_request();
+        let sanitized = SanitizedHeartbeatRequest::from_request(request);
+        assert_eq!(sanitized.category.unwrap(), "coding");
+    }
+
+    #[test]
+    fn sanitized_heartbeat_into_new_heartbeat_maps_headers() {
+        let request = sample_request();
+        let sanitized = SanitizedHeartbeatRequest::from_request(request);
+        let headers = HeaderMap::new();
+        let new_heartbeat = sanitized.into_new_heartbeat(1, "1.1.1.1".parse().unwrap(), &headers);
+        assert_eq!(new_heartbeat.user_id, 1);
+        assert_eq!(new_heartbeat.entity, "example.txt".to_string());
+        assert_eq!(new_heartbeat.type_, "file".to_string());
+        assert_eq!(new_heartbeat.ip_address, "1.1.1.1".parse().unwrap());
+    }
+
+    #[test]
+    fn new_heartbeat_constructor_applies_truncation() {
+        let entity = "a".repeat(MAX_ENTITY_LENGTH + 10);
+        let type_ = "b".repeat(MAX_TYPE_LENGTH + 10);
+        let new_heartbeat = NewHeartbeat::new(
+            Utc::now(),
+            1,
+            entity.clone(),
+            type_.clone(),
+            "1.1.1.1".parse().unwrap(),
+        );
+        assert_eq!(new_heartbeat.entity.chars().count(), MAX_ENTITY_LENGTH);
+        assert_eq!(new_heartbeat.type_.chars().count(), MAX_TYPE_LENGTH);
+    }
+
+    #[test]
+    fn new_heartbeat_from_request_round_trips_request_payload() {
+        let request = sample_request();
+        let headers = HeaderMap::new();
+        let new_heartbeat =
+            NewHeartbeat::from_request(request, 1, "1.1.1.1".parse().unwrap(), &headers);
+        assert_eq!(new_heartbeat.entity, "example.txt".to_string());
+        assert_eq!(new_heartbeat.type_, "file".to_string());
+        assert_eq!(new_heartbeat.project.unwrap(), "ExampleProject".to_string());
+        assert_eq!(new_heartbeat.language.unwrap(), "Rust".to_string());
+        assert_eq!(new_heartbeat.lines.unwrap(), 100);
+    }
+
+    #[test]
+    fn heartbeat_response_conversion_retains_entity_details() {
+        let heartbeat = Heartbeat {
+            id: 1,
+            time: Utc::now(),
+            created_at: Utc::now(),
+            user_id: 1,
+            entity: "test.txt".to_string(),
+            type_: "file".to_string(),
+            ip_address: "127.0.0.1/32".parse().unwrap(),
+            project: None,
+            branch: None,
+            category: None,
+            cursorpos: None,
+            dependencies: None,
+            editor: None,
+            is_write: None,
+            language: None,
+            line_additions: None,
+            line_deletions: None,
+            lines: None,
+            machine: None,
+            operating_system: None,
+            project_id: None,
+            project_root_count: None,
+            user_agent: "".to_string(),
+            lineno: None,
+            source_type: None,
+        };
+        let response = HeartbeatResponse::from(heartbeat.clone());
+        assert_eq!(response.id, heartbeat.id);
+    }
+}

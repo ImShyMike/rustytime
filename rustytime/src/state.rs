@@ -2,6 +2,7 @@ use crate::db::connection::DbPool;
 use crate::utils::metrics::MetricsTracker;
 use oauth2::{EndpointNotSet, EndpointSet, basic::BasicClient};
 use reqwest::Client;
+
 /// App state that holds shared resources
 #[derive(Clone)]
 pub struct AppState {
