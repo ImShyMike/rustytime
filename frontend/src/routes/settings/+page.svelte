@@ -14,6 +14,7 @@
 		deleteProjectAlias
 	} from '$lib/api/project';
 	import { safeText } from '$lib/utils/text';
+	import { PUBLIC_BACKEND_API_URL, PUBLIC_SITE_URL } from '$env/static/public';
 
 	interface Props {
 		data: PageData;
@@ -30,6 +31,9 @@
 	let selectedMainProject = $state<number | null>(null);
 	let selectedAliasProject = $state<number | null>(null);
 	let isAddingAlias = $state(false);
+
+	let setupVariant = $state<'unix' | 'windows' | 'custom'>('custom');
+	let setupCopied = $state(false);
 
 	const usedAsAliasIds = $derived(
 		aliases
@@ -74,8 +78,30 @@
 		}
 	}
 
+	const unixCommand = () => {
+		const apiKey = settingsData?.api_key ?? 'REDACTED';
+		return `curl -fsSL ${PUBLIC_SITE_URL}/install.sh | RT_API_KEY="${apiKey}" RT_API_URL="${PUBLIC_BACKEND_API_URL}/api/v1" bash`;
+	};
+
+	const windowsCommand = () => {
+		const apiKey = settingsData?.api_key ?? 'REDACTED';
+		return `$env:RT_API_KEY="${apiKey}"; $env:RT_API_URL="${PUBLIC_BACKEND_API_URL}/api/v1"; irm ${PUBLIC_SITE_URL}/install.ps1 | iex`;
+	};
+
 	onMount(() => {
 		loadData();
+		const platform = navigator.userAgent.toLowerCase();
+
+		if (platform.includes('win')) {
+			os = 'windows';
+			setupVariant = 'windows';
+		} else if (platform.includes('mac')) {
+			os = 'macos';
+			setupVariant = 'unix';
+		} else if (platform.includes('linux')) {
+			os = 'linux';
+			setupVariant = 'unix';
+		}
 	});
 
 	let selectedTab = $state<'setup' | 'projects'>('setup');
@@ -85,15 +111,22 @@
 	];
 
 	let config: string = $state('');
-	let copied: boolean = $state(false);
 	let commandCopied: boolean = $state(false);
 	let os: string = $state('windows');
 
-	function copySetup() {
-		if (!config) return;
-		navigator.clipboard.writeText(config).then(() => {
-			copied = true;
-			setTimeout(() => (copied = false), 2000);
+	function copySetupContent() {
+		let textToCopy = '';
+		if (setupVariant === 'custom') {
+			textToCopy = config;
+		} else if (setupVariant === 'unix') {
+			textToCopy = unixCommand();
+		} else if (setupVariant === 'windows') {
+			textToCopy = windowsCommand();
+		}
+		if (!textToCopy) return;
+		navigator.clipboard.writeText(textToCopy).then(() => {
+			setupCopied = true;
+			setTimeout(() => (setupCopied = false), 2000);
 		});
 	}
 
@@ -115,19 +148,16 @@
 	$effect(() => {
 		if (settingsData) {
 			config = `[settings]
-api_url = "https://api-rustytime.shymike.dev/api/v1"
+api_url = "${PUBLIC_BACKEND_API_URL}/api/v1"
 api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 		} else {
 			config = '';
 		}
 	});
 
-	onMount(() => {
-		const platform = navigator.userAgent.toLowerCase();
-
-		if (platform.includes('win')) os = 'windows';
-		else if (platform.includes('mac')) os = 'macos';
-		else if (platform.includes('linux')) os = 'linux';
+	$effect(() => {
+		setupVariant;
+		setupCopied = false;
 	});
 </script>
 
@@ -157,36 +187,85 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 			<Container>
 				<SectionTitle level="h2" className="mb-3">Setup</SectionTitle>
 				<div class="space-y-4">
-					<div>
-						<label for="api-setup" class="block text-sm font-medium text-ctp-text mb-2"
-							>Copy this into your <code class="bg-ctp-surface1 p-1">~/.wakatime.cfg</code> file:</label
-						>
-						<div class="relative w-full">
-							<div
-								id="api-setup"
-								class="resize-none text-text block w-full pr-14 px-2 py-2 border border-ctp-surface1 rounded-md bg-ctp-surface0/40 text-sm font-mono"
-							>
-								<p class="text-mauve">[<span class="text-text">settings</span>]</p>
-								<p class="text-blue">
-									api_url <span class="text-text">=</span>
-									<span class="text-green">"https://api-rustytime.shymike.dev/api/v1"</span>
-								</p>
-								<p class="text-blue">
-									api_key <span class="text-text">=</span>
-									<span class="text-{settingsData.api_key ? 'yellow' : 'red'}"
-										>{settingsData.api_key ?? 'REDACTED'}</span
-									>
-								</p>
+					<div class="flex flex-col gap-3">
+						<div class="flex flex-wrap items-center justify-between gap-3">
+							<label for="setup-content" class="text-sm font-medium text-ctp-text">
+								{#if setupVariant === 'unix'}
+									Run this command on macOS or Linux:
+								{:else if setupVariant === 'windows'}
+									Run this command in PowerShell:
+								{:else}
+									Copy this into your <code class="bg-ctp-surface1 p-1">~/.wakatime.cfg</code> file:
+								{/if}
+							</label>
+							<div class="inline-flex rounded-md bg-ctp-surface0/40 p-1 border border-surface1">
+								<button
+									onclick={() => (setupVariant = 'unix')}
+									class={`cursor-pointer px-3 py-1 text-sm rounded ${
+										setupVariant === 'unix'
+											? 'bg-ctp-blue/80 text-ctp-base'
+											: 'text-ctp-text hover:bg-ctp-surface0/60'
+									}`}
+								>
+									macOS/Linux
+								</button>
+								<button
+									onclick={() => (setupVariant = 'windows')}
+									class={`cursor-pointer px-3 py-1 text-sm rounded ${
+										setupVariant === 'windows'
+											? 'bg-ctp-blue/80 text-ctp-base'
+											: 'text-ctp-text hover:bg-ctp-surface0/60'
+									}`}
+								>
+									Windows
+								</button>
+								<button
+									onclick={() => (setupVariant = 'custom')}
+									class={`cursor-pointer px-3 py-1 text-sm rounded ${
+										setupVariant === 'custom'
+											? 'bg-ctp-blue/80 text-ctp-base'
+											: 'text-ctp-text hover:bg-ctp-surface0/60'
+									}`}
+								>
+									Custom
+								</button>
 							</div>
+						</div>
+						<div class="relative w-full">
+							{#if setupVariant === 'custom'}
+								<div
+									id="setup-content"
+									class="resize-none text-text block w-full pr-14 px-2 py-2 border border-ctp-surface1 rounded-md bg-ctp-surface0/40 text-sm font-mono"
+								>
+									<p class="text-mauve">[<span class="text-text">settings</span>]</p>
+									<p class="text-blue">
+										api_url <span class="text-text">=</span>
+										<span class="text-green">"{PUBLIC_BACKEND_API_URL}/api/v1"</span>
+									</p>
+									<p class="text-blue">
+										api_key <span class="text-text">=</span>
+										<span class="text-{settingsData.api_key ? 'yellow' : 'red'}"
+											>{settingsData.api_key ?? 'REDACTED'}</span
+										>
+									</p>
+								</div>
+							{:else}
+								<pre
+									id="setup-content"
+									class="text-text resize-none block w-full pr-14 px-3 py-3 border border-ctp-surface1 rounded-md bg-ctp-surface0/40 text-sm font-mono whitespace-pre-wrap wrap-break-word">{setupVariant ===
+									'unix'
+										? unixCommand()
+										: windowsCommand()}</pre>
+							{/if}
 							<button
-								onclick={() => copySetup()}
+								onclick={() => copySetupContent()}
 								aria-label="Copy setup to clipboard"
 								class={`absolute top-2 right-2 cursor-pointer h-8 px-2 text-ctp-base text-sm rounded transition-transform duration-200 transform flex items-center gap-2 hover:scale-105 active:scale-100 ` +
-									(copied
+									(setupCopied
 										? 'bg-ctp-green-600 hover:bg-ctp-green-700'
 										: 'bg-ctp-blue/70 hover:bg-ctp-blue')}
 							>
-								{#if copied}
+								{#if setupCopied}
 									<LucideCopyCheck class="w-4 h-4 inline" />
 								{:else}
 									<LucideCopy class="w-4 h-4 inline" />
@@ -213,8 +292,11 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 						Or simply use the quick install command for your operating system below.
 					</p>
 					<!-- OS selector + install command -->
-					<div class="mt-3">
-						<div class="flex items-center gap-3">
+					<div class="flex flex-col gap-3 mt-3">
+						<div class="flex flex-wrap items-center justify-between gap-3">
+							<label for="timesplit-command" class="text-sm font-medium text-ctp-text">
+								Quick install command for your OS:
+							</label>
 							<div class="inline-flex rounded-md bg-ctp-surface0/40 p-1 border border-surface1">
 								<button
 									onclick={() => (os = 'linux')}
@@ -238,8 +320,9 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 						</div>
 
 						{#key os}
-							<div class="relative mt-3">
+							<div class="relative w-full">
 								<pre
+									id="timesplit-command"
 									class="text-text resize-none block w-full pr-14 px-3 py-3 border border-ctp-surface1 rounded-md bg-ctp-surface0/40 text-sm font-mono whitespace-pre-wrap wrap-break-word">{installCommands[
 										os
 									]}</pre>
