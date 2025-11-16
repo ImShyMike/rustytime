@@ -13,7 +13,7 @@ jobs:
             runner: ubuntu-latest
           - name: arm64
             platform: linux/arm64
-            runner: ubuntu-24.04-arm64
+            runner: ubuntu-latest-arm64
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
