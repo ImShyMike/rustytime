@@ -156,7 +156,7 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 	});
 
 	$effect(() => {
-		setupVariant;
+		void setupVariant;
 		setupCopied = false;
 	});
 </script>
