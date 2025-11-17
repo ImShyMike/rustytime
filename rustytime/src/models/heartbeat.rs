@@ -98,12 +98,12 @@ pub fn datetime_to_f64(time: DateTime<Utc>) -> f64 {
     time.timestamp() as f64 + time.timestamp_subsec_nanos() as f64 / 1e9
 }
 
-pub struct SourceType;
-
-impl SourceType {
-    pub const DIRECT_ENTRY: &'static str = "direct_entry";
-    #[allow(dead_code)]
-    pub const SEEDING: &'static str = "seeding";
+#[repr(i16)]
+#[allow(dead_code)]
+enum SourceType {
+    DirectEntry = 0,
+    Import = 1,
+    WakaTimeImport = 2,
 }
 
 #[derive(QueryableByName)]
@@ -255,7 +255,7 @@ pub struct Heartbeat {
     pub line_deletions: Option<i32>,
     pub lineno: Option<i32>,
     pub cursorpos: Option<i32>,
-    pub source_type: Option<String>,
+    pub source_type: Option<i16>,
     pub project_id: Option<i32>,
 }
 
@@ -283,7 +283,7 @@ pub struct NewHeartbeat {
     pub line_deletions: Option<i32>,
     pub lineno: Option<i32>,
     pub cursorpos: Option<i32>,
-    pub source_type: Option<String>,
+    pub source_type: Option<i16>,
     pub project_id: Option<i32>,
 }
 
@@ -419,7 +419,7 @@ impl SanitizedHeartbeatRequest {
             line_deletions: self.line_deletions,
             lineno: self.lineno,
             cursorpos: self.cursorpos,
-            source_type: SourceType::DIRECT_ENTRY.to_string().into(),
+            source_type: Some(SourceType::DirectEntry as i16),
             project_id: None,
         }
     }
