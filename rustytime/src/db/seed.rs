@@ -153,7 +153,7 @@ fn generate_random_heartbeat<R: Rng>(
         line_deletions: None,
         lineno: Some(rng.random_range(1..=100)),
         cursorpos: Some(rng.random_range(0..500)),
-        source_type: SourceType::SEEDING.to_string().into(),
+        source_type: Some(SourceType::Seeding as i16),
         project_id: None,
     }
 }

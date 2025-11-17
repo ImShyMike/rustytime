@@ -100,10 +100,11 @@ pub fn datetime_to_f64(time: DateTime<Utc>) -> f64 {
 
 #[repr(i16)]
 #[allow(dead_code)]
-enum SourceType {
+pub enum SourceType {
     DirectEntry = 0,
     Import = 1,
     WakaTimeImport = 2,
+    Seeding = 3,
 }
 
 #[derive(QueryableByName)]
