@@ -101,7 +101,7 @@ const createAuthStore = () => {
 			}
 		} catch (e) {
 			const err = e as ApiError;
-			if (err.status === 401 || err.status === 403) {
+			if (err.status === 400 || err.status === 401 || err.status === 403) {
 				set({
 					user: null,
 					sessionId: null,
