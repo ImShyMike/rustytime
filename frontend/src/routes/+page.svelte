@@ -109,7 +109,7 @@
 			<div class="text-center">
 				<button
 					onclick={auth.login}
-					class="cursor-pointer bg-ctp-surface2 text-ctp-text hover:bg-ctp-surface1 font-semibold py-4 px-8 rounded-lg flex items-center gap-3 mx-auto"
+					class="cursor-pointer bg-ctp-surface0 text-ctp-text hover:bg-ctp-surface1 font-semibold py-4 px-8 rounded-lg flex items-center gap-3 mx-auto"
 				>
 					<LucideGithub class="min-w-6 min-h-6" />
 					Sign in with GitHub

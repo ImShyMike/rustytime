@@ -34,7 +34,9 @@ export const load: ServerLoad = async ({ fetch, cookies, locals }) => {
 				{ credentials: 'include' }
 			);
 
-			if (response.ok) {
+			if (response.status === 400) {
+				// raised if the session id wasn't provided, just ignore it
+			} else if (response.ok) {
 				const data = (await response.json()) as RawVerifyResponse;
 
 				if (data.valid && data.user) {
@@ -52,9 +54,14 @@ export const load: ServerLoad = async ({ fetch, cookies, locals }) => {
 						impersonation: data.impersonation ?? null
 					};
 				}
+			} else {
+				console.error('Auth verification failed with status:', response.status);
 			}
 		} catch (error) {
-			console.error('Auth verification failed:', error);
+			const status = typeof error === 'object' && error && 'status' in error ? (error as { status?: number }).status : undefined;
+			if (status !== 400) {
+				console.error('Auth verification failed:', error);
+			}
 		}
 	}
 
