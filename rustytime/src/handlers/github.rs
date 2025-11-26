@@ -3,12 +3,13 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Redirect, Response},
 };
+use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use oauth2::{
     AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EndpointNotSet, EndpointSet,
     RedirectUrl, Scope, TokenResponse, TokenUrl, basic::BasicClient, reqwest,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::env;
 use tower_cookies::Cookies;
 
@@ -29,6 +30,48 @@ pub struct GitHubUser {
     pub login: String,
     pub id: u64,
     pub avatar_url: String,
+}
+
+#[derive(Serialize)]
+pub struct AuthUrlResponse {
+    pub auth_url: String,
+}
+
+#[derive(Serialize)]
+pub struct CallbackUserResponse {
+    pub id: i32,
+    pub github_id: u64,
+    pub name: String,
+    pub avatar_url: String,
+}
+
+#[derive(Serialize)]
+pub struct UserResponse {
+    pub id: i32,
+    pub github_id: i64,
+    pub username: String,
+    pub avatar_url: String,
+    pub admin_level: i16,
+}
+
+#[derive(Serialize)]
+pub struct ImpersonationResponse {
+    pub admin_id: i32,
+    pub admin_name: String,
+    pub admin_avatar_url: String,
+}
+
+#[derive(Serialize)]
+pub struct VerifySessionResponse {
+    pub valid: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub user: Option<UserResponse>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub impersonation: Option<ImpersonationResponse>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expires_at: Option<DateTime<Utc>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
 }
 
 /// Create a new GitHub OAuth client
@@ -56,7 +99,7 @@ pub fn create_github_client()
 }
 
 /// Handler to initiate GitHub OAuth login
-pub async fn login(State(app_state): State<AppState>, cookies: Cookies) -> Json<serde_json::Value> {
+pub async fn login(State(app_state): State<AppState>, cookies: Cookies) -> Json<AuthUrlResponse> {
     let csrf_token = CsrfToken::new_random();
     let csrf_token_secret = csrf_token.secret().clone();
     let (auth_url, _) = app_state
@@ -78,7 +121,9 @@ pub async fn login(State(app_state): State<AppState>, cookies: Cookies) -> Json<
     cookie.set_expires(time::OffsetDateTime::now_utc() + time::Duration::minutes(10));
     cookies.add(cookie);
 
-    Json(serde_json::json!({ "auth_url": auth_url.as_ref() }))
+    Json(AuthUrlResponse {
+        auth_url: auth_url.to_string(),
+    })
 }
 
 /// Handler for GitHub OAuth callback
@@ -163,14 +208,14 @@ pub async fn callback(
     cookies.add(session_cookie);
 
     // create JSON response
-    let user_data = serde_json::json!({
-        "id": user.id,
-        "github_id": user_info.id,
-        "name": user_info.login,
-        "avatar_url": user_info.avatar_url,
-    });
+    let user_data = CallbackUserResponse {
+        id: user.id,
+        github_id: user_info.id,
+        name: user_info.login,
+        avatar_url: user_info.avatar_url,
+    };
 
-    let user_string = user_data.to_string();
+    let user_string = serde_json::to_string(&user_data).unwrap_or_default();
     let user_encoded = urlencoding::encode(&user_string);
 
     Ok(Redirect::to(&format!(
@@ -184,7 +229,7 @@ pub async fn verify_session(
     State(app_state): State<AppState>,
     Query(params): Query<serde_json::Value>,
     cookies: Cookies,
-) -> Result<Json<serde_json::Value>, Response> {
+) -> Result<Json<VerifySessionResponse>, Response> {
     let session_id = params
         .get("session_id")
         .and_then(|v| v.as_str())
@@ -216,11 +261,11 @@ pub async fn verify_session(
                     .first::<User>(&mut conn)
                     .optional()
                 {
-                    Ok(Some(admin)) => Some(serde_json::json!({
-                        "admin_id": admin.id,
-                        "admin_name": admin.name,
-                        "admin_avatar_url": admin.avatar_url,
-                    })),
+                    Ok(Some(admin)) => Some(ImpersonationResponse {
+                        admin_id: admin.id,
+                        admin_name: admin.name,
+                        admin_avatar_url: admin.avatar_url,
+                    }),
                     Ok(None) => None,
                     Err(err) => {
                         eprintln!("Database error fetching impersonating admin: {}", err);
@@ -232,23 +277,27 @@ pub async fn verify_session(
                 None
             };
 
-            Ok(Json(serde_json::json!({
-                "valid": true,
-                "user": {
-                    "id": user.id,
-                    "github_id": user.github_id,
-                    "username": user.name,
-                    "avatar_url": user.avatar_url,
-                    "admin_level": user.admin_level
-                },
-                "impersonation": impersonation,
-                "expires_at": session_data.expires_at
-            })))
+            Ok(Json(VerifySessionResponse {
+                valid: true,
+                user: Some(UserResponse {
+                    id: user.id,
+                    github_id: user.github_id,
+                    username: user.name,
+                    avatar_url: user.avatar_url,
+                    admin_level: user.admin_level,
+                }),
+                impersonation,
+                expires_at: Some(session_data.expires_at),
+                message: None,
+            }))
         }
-        Ok(None) => Ok(Json(serde_json::json!({
-            "valid": false,
-            "message": "Session not found or expired"
-        }))),
+        Ok(None) => Ok(Json(VerifySessionResponse {
+            valid: false,
+            user: None,
+            impersonation: None,
+            expires_at: None,
+            message: Some("Session not found or expired".to_string()),
+        })),
         Err(err) => {
             eprintln!("Database error validating session: {}", err);
             Err((StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response())
