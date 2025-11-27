@@ -1,16 +1,5 @@
 use std::sync::Arc;
 
-use aide::{
-    axum::{routing::get_with, routing::post_with, ApiRouter, IntoApiResponse},
-    openapi::OpenApi,
-    scalar::Scalar,
-};
-use axum::{
-    routing::{delete as axum_delete, get as axum_get, post as axum_post, put as axum_put},
-    Extension, Json, Router,
-};
-use axum::{http::StatusCode, middleware as axum_middleware};
-use axum_prometheus::PrometheusMetricLayer;
 use crate::handlers::admin::change_user_admin_level;
 use crate::handlers::api::user::{create_heartbeats, get_statusbar_today};
 use crate::handlers::data::project_aliases::{
@@ -27,6 +16,17 @@ use crate::handlers::page::projects::projects_dashboard;
 use crate::handlers::page::settings::settings_page;
 use crate::state::AppState;
 use crate::utils::middleware;
+use aide::{
+    axum::{ApiRouter, IntoApiResponse, routing::get_with, routing::post_with},
+    openapi::OpenApi,
+    scalar::Scalar,
+};
+use axum::{
+    Extension, Json, Router,
+    routing::{delete as axum_delete, get as axum_get, post as axum_post, put as axum_put},
+};
+use axum::{http::StatusCode, middleware as axum_middleware};
+use axum_prometheus::PrometheusMetricLayer;
 
 /// Create the main application router
 pub fn create_app_router(app_state: AppState) -> ApiRouter {
@@ -191,9 +191,7 @@ async fn not_found() -> impl IntoApiResponse {
 }
 
 /// Serve the generated OpenAPI document
-async fn openapi_docs(
-    Extension(openapi): Extension<Arc<OpenApi>>,
-) -> impl IntoApiResponse {
+async fn openapi_docs(Extension(openapi): Extension<Arc<OpenApi>>) -> impl IntoApiResponse {
     Json(openapi.as_ref().clone())
 }
 
