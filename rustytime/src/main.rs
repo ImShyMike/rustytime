@@ -6,11 +6,13 @@ mod schema;
 mod state;
 mod utils;
 
+use aide::openapi::OpenApi;
 use axum::{
+    Extension,
     body::Body,
     http::{Request, Response},
 };
-use std::{env, net::SocketAddr, time::Duration};
+use std::{env, net::SocketAddr, sync::Arc, time::Duration};
 use tower_cookies::CookieManagerLayer;
 use tower_governor::{GovernorLayer, governor::GovernorConfigBuilder};
 use tower_http::{
@@ -123,8 +125,20 @@ async fn main() {
         }
     });
 
+    aide::generate::all_error_responses(true);
+    aide::generate::inferred_empty_response_status(200);
+
+    aide::generate::on_error(|error| {
+        println!("{error}");
+    });
+
     // create the main application router
-    let mut app = create_app_router(app_state).layer(CookieManagerLayer::new());
+    let api_router = create_app_router(app_state);
+    let mut openapi = OpenApi::default();
+    let mut app = api_router.finish_api(&mut openapi);
+    let openapi = Arc::new(openapi);
+    app = app.layer(Extension(openapi));
+    app = app.layer(CookieManagerLayer::new());
 
     if is_production {
         // only construct and add the CORS layer when running in production

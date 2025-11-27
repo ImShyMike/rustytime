@@ -4,6 +4,7 @@ use crate::db_query;
 use crate::models::user::User;
 use crate::state::AppState;
 use crate::utils::session::SessionManager;
+use aide::NoApi;
 use axum::Json;
 use axum::extract::State;
 use axum::response::Redirect;
@@ -24,11 +25,13 @@ pub struct SettingsResponse {
 /// Handler for the settings page
 pub async fn settings_page(
     State(app_state): State<AppState>,
-    cookies: Cookies,
-    user: Option<Extension<User>>,
+    cookies: NoApi<Cookies>,
+    user: NoApi<Option<Extension<User>>>,
 ) -> Result<Json<SettingsResponse>, Response> {
+    let cookies = cookies.0;
     // get current user
     let current_user = user
+        .0
         .expect("User should be authenticated since middleware validated authentication")
         .0;
 

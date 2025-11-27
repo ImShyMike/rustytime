@@ -1,3 +1,16 @@
+use std::sync::Arc;
+
+use aide::{
+    axum::{routing::get_with, routing::post_with, ApiRouter, IntoApiResponse},
+    openapi::OpenApi,
+    scalar::Scalar,
+};
+use axum::{
+    routing::{delete as axum_delete, get as axum_get, post as axum_post, put as axum_put},
+    Extension, Json, Router,
+};
+use axum::{http::StatusCode, middleware as axum_middleware};
+use axum_prometheus::PrometheusMetricLayer;
 use crate::handlers::admin::change_user_admin_level;
 use crate::handlers::api::user::{create_heartbeats, get_statusbar_today};
 use crate::handlers::data::project_aliases::{
@@ -14,25 +27,34 @@ use crate::handlers::page::projects::projects_dashboard;
 use crate::handlers::page::settings::settings_page;
 use crate::state::AppState;
 use crate::utils::middleware;
-use axum::response::Redirect;
-use axum::routing::{delete, get, post, put};
-use axum::{Router, http::StatusCode, middleware as axum_middleware, response::IntoResponse};
-use axum_prometheus::PrometheusMetricLayer;
 
 /// Create the main application router
-pub fn create_app_router(app_state: AppState) -> Router {
+pub fn create_app_router(app_state: AppState) -> ApiRouter {
     let (prometheus_layer, metric_handle) = PrometheusMetricLayer::pair();
-    Router::new()
+    ApiRouter::new()
+        .api_route_with(
+            "/docs",
+            get_with(
+                Scalar::new("/docs/private/api.json")
+                    .with_title("rustytime")
+                    .axum_handler(),
+                |op| op.description("The documentation page.").tag("Documentation"),
+            ),
+            |p| p.security_requirement("ApiKey"),
+        )
+        .route("/docs/private/api.json", axum_get(openapi_docs))
         // public routes
-        .merge(Router::new().route("/", get(home_page)))
+        .route("/", axum_get(home_page))
         // auth routes
-        .nest(
-            "/auth/github",
-            Router::new()
-                .route("/login", get(login))
-                .route("/callback", get(callback))
-                .route("/logout", get(logout))
-                .route("/verify", get(verify_session)),
+        .merge(
+            Router::new().nest(
+                "/auth/github",
+                Router::new()
+                    .route("/login", axum_get(login))
+                    .route("/callback", axum_get(callback))
+                    .route("/logout", axum_get(logout))
+                    .route("/verify", axum_get(verify_session)),
+            ),
         )
         // required authentication
         .merge(
@@ -40,19 +62,22 @@ pub fn create_app_router(app_state: AppState) -> Router {
                 .nest(
                     "/page",
                     Router::new()
-                        .route("/dashboard", get(dashboard))
-                        .route("/projects", get(projects_dashboard))
-                        .route("/settings", get(settings_page))
-                        .route("/leaderboard", get(leaderboard_page)),
+                        .route("/dashboard", axum_get(dashboard))
+                        .route("/projects", axum_get(projects_dashboard))
+                        .route("/settings", axum_get(settings_page))
+                        .route("/leaderboard", axum_get(leaderboard_page)),
                 )
                 .nest(
                     "/data",
                     Router::new()
-                        .route("/projects", get(projects_list))
-                        .route("/project_aliases/{id}/{alias_id}", put(add_project_alias))
-                        .route("/project_aliases/{id}", delete(delete_project_alias))
-                        .route("/project_aliases", get(project_aliases))
-                        .route("/projects/{id}/repo", post(set_project_repo)),
+                        .route("/projects", axum_get(projects_list))
+                        .route(
+                            "/project_aliases/{id}/{alias_id}",
+                            axum_put(add_project_alias),
+                        )
+                        .route("/project_aliases/{id}", axum_delete(delete_project_alias))
+                        .route("/project_aliases", axum_get(project_aliases))
+                        .route("/projects/{id}/repo", axum_post(set_project_repo)),
                 )
                 .layer(axum_middleware::from_fn_with_state(
                     app_state.clone(),
@@ -61,15 +86,15 @@ pub fn create_app_router(app_state: AppState) -> Router {
         )
         // admin routes
         .merge(
-            Router::new()
-                .route("/page/admin", get(admin_dashboard))
+            ApiRouter::new()
+                .route("/page/admin", axum_get(admin_dashboard))
                 .nest(
                     "/admin",
-                    Router::new()
-                        .route("/impersonate/{user_id}", get(impersonate_user))
+                    ApiRouter::new()
+                        .route("/impersonate/{user_id}", axum_get(impersonate_user))
                         .route(
                             "/admin_level/{user_id}/{admin_level}",
-                            put(change_user_admin_level),
+                            axum_put(change_user_admin_level),
                         )
                         .layer(axum_middleware::from_fn_with_state(
                             app_state.clone(),
@@ -84,24 +109,70 @@ pub fn create_app_router(app_state: AppState) -> Router {
         // API routes
         .nest(
             "/api/v1",
-            Router::new()
-                .route("/", get(|| async { Redirect::permanent("/") }))
+            ApiRouter::new()
+                .api_route(
+                    "/",
+                    get_with(
+                        home_page,
+                        |op| {
+                            op.id("api_root_redirect")
+                                .summary("Redirect API entry point")
+                                .description(
+                                    "Redirects to the frontend.",
+                                )
+                                .tag("Root")
+                        },
+                    ),
+                )
                 .nest(
                     "/users",
-                    Router::new().nest(
+                    ApiRouter::new().nest(
                         "/{id}",
-                        Router::new()
+                        ApiRouter::new()
                             // WakaTime compatibility routes
-                            .route("/heartbeats", post(create_heartbeats))
-                            .route("/heartbeats.bulk", post(create_heartbeats))
-                            .route("/statusbar/today", get(get_statusbar_today)),
+                            .api_route(
+                                "/heartbeats",
+                                post_with(create_heartbeats, |op| {
+                                    op.id("create_heartbeat")
+                                        .summary("Create a heartbeat")
+                                        .description(
+                                            "Accepts a single heartbeat payload in the same format used by the WakaTime client.",
+                                        )
+                                        .tag("Heartbeats")
+                                }),
+                            )
+                            .api_route(
+                                "/heartbeats.bulk",
+                                post_with(create_heartbeats, |op| {
+                                    op.id("create_heartbeats_bulk")
+                                        .summary("Create multiple heartbeats")
+                                        .description(
+                                            "Bulk ingestion endpoint compatible with WakaTime's heartbeats.bulk route.",
+                                        )
+                                        .tag("Heartbeats")
+                                }),
+                            )
+                            .api_route(
+                                "/statusbar/today",
+                                get_with(get_statusbar_today, |op| {
+                                    op.id("statusbar_today")
+                                        .summary("Status bar stats for today")
+                                        .description(
+                                            "Returns the coding data for the current day.",
+                                        )
+                                        .tag("Users")
+                                }),
+                            ),
                     ),
                 ),
         )
         // metrics endpoint
-        .route("/metrics", get(|| async move { metric_handle.render() }))
+        .route(
+            "/metrics",
+            axum_get(|| async move { metric_handle.render() }),
+        )
         // method not allowed fallback
-        .method_not_allowed_fallback(method_not_allowed)
+        // .method_not_allowed_fallback(method_not_allowed) // aide does not support this :(
         // catch-all fallback for unmatched routes (must be last)
         .fallback(not_found)
         // inject application state
@@ -115,14 +186,21 @@ pub fn create_app_router(app_state: AppState) -> Router {
 }
 
 /// Handler for unmatched routes
-async fn not_found() -> impl IntoResponse {
+async fn not_found() -> impl IntoApiResponse {
     (StatusCode::NOT_FOUND, "Not Found")
 }
 
-/// Handler for method not allowed responses
-async fn method_not_allowed() -> impl IntoResponse {
-    (StatusCode::METHOD_NOT_ALLOWED, "Method Not Allowed")
+/// Serve the generated OpenAPI document
+async fn openapi_docs(
+    Extension(openapi): Extension<Arc<OpenApi>>,
+) -> impl IntoApiResponse {
+    Json(openapi.as_ref().clone())
 }
+
+// Handler for method not allowed responses
+// async fn method_not_allowed() -> impl IntoApiResponse {
+//     (StatusCode::METHOD_NOT_ALLOWED, "Method Not Allowed")
+// }
 
 #[cfg(test)]
 mod tests {
@@ -208,15 +286,5 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(body_bytes.as_ref(), b"Not Found");
-    }
-
-    #[tokio::test]
-    async fn method_not_allowed_returns_405_payload() {
-        let response = method_not_allowed().await.into_response();
-        assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
-        let body_bytes = body::to_bytes(response.into_body(), usize::MAX)
-            .await
-            .unwrap();
-        assert_eq!(body_bytes.as_ref(), b"Method Not Allowed");
     }
 }

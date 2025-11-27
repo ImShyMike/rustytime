@@ -4,6 +4,7 @@ use crate::state::AppState;
 use crate::utils::session::SessionManager;
 use crate::utils::time::{TimeFormat, human_readable_duration};
 use crate::{db_query, get_db_conn, models::heartbeat::Heartbeat};
+use aide::NoApi;
 use axum::{
     Extension,
     extract::State,
@@ -34,9 +35,10 @@ pub struct DashboardResponse {
 /// Handler for the dashboard page
 pub async fn dashboard(
     State(app_state): State<AppState>,
-    cookies: Cookies,
+    cookies: NoApi<Cookies>,
     user: Option<Extension<User>>,
 ) -> Result<Json<DashboardResponse>, Response> {
+    let cookies = cookies.0;
     // check if user is authenticated
     if user.is_none() {
         return Err((

@@ -2,6 +2,7 @@ use crate::models::project::Project as ProjectModel;
 use crate::models::user::User;
 use crate::state::AppState;
 use crate::{db_query, get_db_conn};
+use aide::NoApi;
 use axum::Json;
 use axum::extract::Path;
 use axum::{
@@ -31,10 +32,11 @@ pub struct RepoUrlRequest {
 /// Handler for the projects list
 pub async fn projects_list(
     State(app_state): State<AppState>,
-    user: Option<Extension<User>>,
+    user: NoApi<Option<Extension<User>>>,
 ) -> Result<Json<ProjectsListResponse>, Response> {
     // get current user
     let current_user = user
+        .0
         .expect("User should be authenticated since middleware validated authentication")
         .0;
 
@@ -58,12 +60,13 @@ pub async fn projects_list(
 
 pub async fn set_project_repo(
     State(app_state): State<AppState>,
-    user: Option<Extension<User>>,
+    user: NoApi<Option<Extension<User>>>,
     Path(project_id): Path<i32>,
     repo_url: Json<RepoUrlRequest>,
 ) -> Result<Response, Response> {
     // get current user
     let current_user = user
+        .0
         .expect("User should be authenticated since middleware validated authentication")
         .0;
 

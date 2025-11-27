@@ -1,3 +1,4 @@
+use aide::NoApi;
 use axum::extract::Path;
 use axum::{
     Extension,
@@ -13,9 +14,10 @@ use crate::{db_query, get_db_conn};
 pub async fn change_user_admin_level(
     State(app_state): State<AppState>,
     Path((user_id, new_level)): Path<(i32, i16)>,
-    user: Option<Extension<User>>,
+    user: NoApi<Option<Extension<User>>>,
 ) -> Result<StatusCode, Response> {
     let current_user = user
+        .0
         .expect("User should be authenticated since middleware validated authentication")
         .0;
 

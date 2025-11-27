@@ -3,6 +3,7 @@ use crate::models::user::User;
 use crate::state::AppState;
 use crate::utils::time::{TimeFormat, human_readable_duration};
 use crate::{db_query, get_db_conn};
+use aide::NoApi;
 use axum::Json;
 use axum::{
     Extension,
@@ -32,10 +33,11 @@ pub struct ProjectsDashboardResponse {
 /// Handler for the projects dashboard page
 pub async fn projects_dashboard(
     State(app_state): State<AppState>,
-    user: Option<Extension<User>>,
+    user: NoApi<Option<Extension<User>>>,
 ) -> Result<Json<ProjectsDashboardResponse>, Response> {
     // get current user
     let current_user = user
+        .0
         .expect("User should be authenticated since middleware validated authentication")
         .0;
 

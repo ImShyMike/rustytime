@@ -1,3 +1,4 @@
+use aide::NoApi;
 use axum::Json;
 use axum::extract::Path;
 use axum::{
@@ -35,10 +36,11 @@ pub struct AdminDashboardResponse {
 
 pub async fn admin_dashboard(
     State(app_state): State<AppState>,
-    user: Option<Extension<User>>,
+    user: NoApi<Option<Extension<User>>>,
 ) -> Result<Json<AdminDashboardResponse>, Response> {
     // check if user is an admin
     let current_user = user
+        .0
         .expect("User should be authenticated since middleware validated authentication")
         .0;
 
@@ -97,11 +99,14 @@ pub async fn admin_dashboard(
 pub async fn impersonate_user(
     State(app_state): State<AppState>,
     Path(user_id): Path<i64>,
-    cookies: Cookies,
-    impersonation: Option<Extension<ImpersonationContext>>,
-    user: Option<Extension<User>>,
+    cookies: NoApi<Cookies>,
+    impersonation: NoApi<Option<Extension<ImpersonationContext>>>,
+    user: NoApi<Option<Extension<User>>>,
 ) -> Result<StatusCode, Response> {
+    let cookies = cookies.0;
+    let impersonation = impersonation.0;
     let session_user = user
+        .0
         .expect("User should be authenticated since middleware validated authentication")
         .0;
 

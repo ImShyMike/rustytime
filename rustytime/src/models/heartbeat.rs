@@ -3,6 +3,7 @@ use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use diesel::sql_types::{BigInt, Date, Int4, Nullable as SqlNullable, Text, Timestamptz};
 use ipnetwork::IpNetwork;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::schema::heartbeats;
@@ -147,7 +148,7 @@ pub struct DailyActivity {
     pub count: i64,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, JsonSchema)]
 #[serde(untagged)]
 pub enum HeartbeatInput {
     Single(Box<HeartbeatRequest>),
@@ -165,7 +166,7 @@ pub struct DurationInput {
     pub type_filter: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, JsonSchema)]
 pub struct WrappedHeartbeatRequest {
     pub heartbeats: Vec<HeartbeatRequest>,
 }
@@ -180,7 +181,7 @@ impl HeartbeatInput {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, JsonSchema)]
 pub struct HeartbeatRequest {
     pub entity: String,
     #[serde(rename = "type")]
@@ -200,14 +201,14 @@ pub struct HeartbeatRequest {
     pub is_write: Option<bool>,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, JsonSchema)]
 #[serde(untagged)]
 pub enum HeartbeatApiResponseVariant {
     Single(HeartbeatApiResponse),
     Multiple(HeartbeatBulkApiResponse),
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, JsonSchema)]
 pub struct HeartbeatResponse {
     pub id: i64,
     pub entity: String,
@@ -216,17 +217,17 @@ pub struct HeartbeatResponse {
     pub time: f64,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, JsonSchema)]
 pub struct HeartbeatApiResponse {
     pub data: HeartbeatResponse,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, JsonSchema)]
 pub struct HeartbeatBulkApiResponse {
     pub responses: Vec<BulkResponseItem>,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, JsonSchema)]
 pub struct BulkResponseItem(pub HeartbeatResponse, pub u16);
 
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]

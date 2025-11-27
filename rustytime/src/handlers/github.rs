@@ -1,3 +1,4 @@
+use aide::NoApi;
 use axum::{
     extract::{Query, State},
     http::StatusCode,
@@ -99,7 +100,11 @@ pub fn create_github_client()
 }
 
 /// Handler to initiate GitHub OAuth login
-pub async fn login(State(app_state): State<AppState>, cookies: Cookies) -> Json<AuthUrlResponse> {
+pub async fn login(
+    State(app_state): State<AppState>,
+    cookies: NoApi<Cookies>,
+) -> Json<AuthUrlResponse> {
+    let cookies = cookies.0;
     let csrf_token = CsrfToken::new_random();
     let csrf_token_secret = csrf_token.secret().clone();
     let (auth_url, _) = app_state
@@ -129,9 +134,10 @@ pub async fn login(State(app_state): State<AppState>, cookies: Cookies) -> Json<
 /// Handler for GitHub OAuth callback
 pub async fn callback(
     State(app_state): State<AppState>,
-    cookies: Cookies,
+    cookies: NoApi<Cookies>,
     Query(params): Query<AuthRequest>,
 ) -> Result<Redirect, Response> {
+    let cookies = cookies.0;
     // get frontend URL from environment variable
     let frontend_url =
         env::var("FRONTEND_URL").unwrap_or_else(|_| "http://localhost:5173".to_string());
@@ -228,8 +234,9 @@ pub async fn callback(
 pub async fn verify_session(
     State(app_state): State<AppState>,
     Query(params): Query<serde_json::Value>,
-    cookies: Cookies,
+    cookies: NoApi<Cookies>,
 ) -> Result<Json<VerifySessionResponse>, Response> {
+    let cookies = cookies.0;
     let session_id = params
         .get("session_id")
         .and_then(|v| v.as_str())
@@ -308,8 +315,9 @@ pub async fn verify_session(
 /// Handler to log out the user
 pub async fn logout(
     State(app_state): State<AppState>,
-    cookies: Cookies,
+    cookies: NoApi<Cookies>,
 ) -> Result<Response, Response> {
+    let cookies = cookies.0;
     // get session from cookie
     if let Some(session_id) = SessionManager::get_session_from_cookies(&cookies) {
         // delete session from database
