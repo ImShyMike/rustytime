@@ -141,18 +141,20 @@
 
 		<div class="flex flex-col justify-between transition-all duration-300 mt-0">
 			<nav class="space-y-2 flex flex-col transition-all duration-300">
-				<a
-					href={resolve('/')}
-					onclick={() => setTimeout(closeMobileSidebar, 100)}
-					data-sveltekit-preload-data="hover"
-					class="py-2 rounded-md items-center inline-flex {page.url.pathname === '/'
-						? 'bg-surface0/70 text-lavender'
-						: 'hover:bg-surface1/50'} {collapsed ? 'justify-center' : 'px-3'}"
-				>
-					<LucideHouse class="w-6 h-6 inline" /><span class={collapsed ? 'hidden' : 'ml-2'}
-						>Home</span
+				{#if !$auth.isAuthenticated || !$auth.user}
+					<a
+						href={resolve('/')}
+						onclick={() => setTimeout(closeMobileSidebar, 100)}
+						data-sveltekit-preload-data="hover"
+						class="py-2 rounded-md items-center inline-flex {page.url.pathname === '/'
+							? 'bg-surface0/70 text-lavender'
+							: 'hover:bg-surface1/50'} {collapsed ? 'justify-center' : 'px-3'}"
 					>
-				</a>
+						<LucideHouse class="w-6 h-6 inline" /><span class={collapsed ? 'hidden' : 'ml-2'}
+							>Home</span
+						>
+					</a>
+				{/if}
 				<a
 					href={resolve('/dashboard')}
 					onclick={() => setTimeout(closeMobileSidebar, 100)}
