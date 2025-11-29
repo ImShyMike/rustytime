@@ -16,68 +16,150 @@ use crate::handlers::page::projects::projects_dashboard;
 use crate::handlers::page::settings::settings_page;
 use crate::state::AppState;
 use crate::utils::middleware;
+use aide::axum::routing::{delete_with, put_with};
 use aide::{
     axum::{ApiRouter, IntoApiResponse, routing::get_with, routing::post_with},
     openapi::OpenApi,
     scalar::Scalar,
 };
-use axum::{
-    Extension, Json, Router,
-    routing::{delete as axum_delete, get as axum_get, post as axum_post, put as axum_put},
-};
+use axum::{Extension, Json, routing::get as axum_get};
 use axum::{http::StatusCode, middleware as axum_middleware};
 use axum_prometheus::PrometheusMetricLayer;
+use axum_tracing_opentelemetry::middleware::{OtelAxumLayer, OtelInResponseLayer};
 
 /// Create the main application router
-pub fn create_app_router(app_state: AppState) -> ApiRouter {
+pub fn create_app_router(app_state: AppState, use_cloudflare: bool) -> ApiRouter {
     let (prometheus_layer, metric_handle) = PrometheusMetricLayer::pair();
     ApiRouter::new()
-        .api_route_with(
+        .api_route(
             "/docs",
             get_with(
                 Scalar::new("/docs/private/api.json")
                     .with_title("rustytime")
                     .axum_handler(),
-                |op| op.description("The documentation page.").tag("Documentation"),
-            ),
-            |p| p.security_requirement("ApiKey"),
+                |op| op.hidden(true)
+            )
         )
+        // serve OpenAPI docs
         .route("/docs/private/api.json", axum_get(openapi_docs))
         // public routes
         .route("/", axum_get(home_page))
         // auth routes
         .merge(
-            Router::new().nest(
+            ApiRouter::new().nest(
                 "/auth/github",
-                Router::new()
-                    .route("/login", axum_get(login))
-                    .route("/callback", axum_get(callback))
-                    .route("/logout", axum_get(logout))
-                    .route("/verify", axum_get(verify_session)),
+                ApiRouter::new()
+                    .api_route("/login", get_with(login, |op| {
+                        op.id("github_login")
+                            .summary("GitHub OAuth Login")
+                            .description("Initiates the GitHub OAuth login process.")
+                            .tag("Authentication")
+                    }))
+                    .api_route("/callback", get_with(callback, |op| {
+                        op.id("github_callback")
+                            .summary("GitHub OAuth Callback")
+                            .description("Handles the callback from GitHub after OAuth authentication.")
+                            .tag("Authentication")
+                    }))
+                    .api_route("/logout", get_with(logout, |op| {
+                        op.id("github_logout")
+                            .summary("Logout User")
+                            .description("Logs out the currently authenticated user.")
+                            .tag("Authentication")
+                            .security_requirement("Authenticated")
+                    }))
+                    .api_route("/verify", get_with(verify_session, |op| {
+                        op.id("verify_session")
+                            .summary("Verify User Session")
+                            .description("Verifies the current user's session and returns user information.")
+                            .tag("Authentication")
+                    })),
             ),
         )
         // required authentication
         .merge(
-            Router::new()
+            ApiRouter::new()
                 .nest(
                     "/page",
-                    Router::new()
-                        .route("/dashboard", axum_get(dashboard))
-                        .route("/projects", axum_get(projects_dashboard))
-                        .route("/settings", axum_get(settings_page))
-                        .route("/leaderboard", axum_get(leaderboard_page)),
+                    ApiRouter::new()
+                        .api_route("/dashboard", get_with(dashboard, |op| {
+                            op.id("user_dashboard")
+                                .summary("User Dashboard Page")
+                                .description("Data for the dashboard page.")
+                                .tag("Pages")
+                                .security_requirement("Authenticated")
+                        }))
+                        .api_route("/projects", get_with(projects_dashboard, |op| {
+                            op.id("projects_dashboard")
+                                .summary("Projects Dashboard Page")
+                                .description("Data for the projects page.")
+                                .tag("Pages")
+                                .security_requirement("Authenticated")
+                        }))
+                        .api_route("/settings", get_with(settings_page, |op| {
+                            op.id("settings_page")
+                                .summary("User Settings Page")
+                                .description("Data for the settings page.")
+                                .tag("Pages")
+                                .security_requirement("Authenticated")
+                        }))
+                        .api_route("/leaderboard", get_with(leaderboard_page, |op| {
+                            op.id("leaderboard_page")
+                                .summary("Leaderboard Page")
+                                .description("Data for the leaderboard page.")
+                                .tag("Pages")
+                                .security_requirement("Authenticated")
+                        })),
                 )
                 .nest(
                     "/data",
-                    Router::new()
-                        .route("/projects", axum_get(projects_list))
-                        .route(
+                    ApiRouter::new()
+                        .api_route("/projects", get_with(projects_list, |op| {
+                            op.id("projects_list")
+                                .summary("Projects List")
+                                .description("Retrieves the list of projects.")
+                                .tag("Data")
+                                .security_requirement("Authenticated")
+                        }))
+                        .api_route(
                             "/project_aliases/{id}/{alias_id}",
-                            axum_put(add_project_alias),
-                        )
-                        .route("/project_aliases/{id}", axum_delete(delete_project_alias))
-                        .route("/project_aliases", axum_get(project_aliases))
-                        .route("/projects/{id}/repo", axum_post(set_project_repo)),
+                            put_with(add_project_alias, |op| {
+                                op.id("add_project_alias")
+                                    .summary("Add Project Alias")
+                                    .description(
+                                        "Adds an alias to the specified project.",
+                                    )
+                                    .tag("Data")
+                                    .security_requirement("Authenticated")
+                            },
+                        ))
+                        .api_route("/project_aliases/{id}", delete_with(delete_project_alias, |op| {
+                            op.id("delete_project_alias")
+                                .summary("Delete Project Alias")
+                                .description(
+                                    "Deletes an alias from the specified project.",
+                                )
+                                .tag("Data")
+                                .security_requirement("Authenticated")
+                        }))
+                        .api_route("/project_aliases", get_with(project_aliases, |op| {
+                            op.id("list_project_aliases")
+                                .summary("List Project Aliases")
+                                .description(
+                                    "Retrieves all project aliases.",
+                                )
+                                .tag("Data")
+                                .security_requirement("Authenticated")
+                        }))
+                        .api_route("/projects/{id}/repo", post_with(set_project_repo, |op| {
+                            op.id("set_project_repo")
+                                .summary("Set Project Repository")
+                                .description(
+                                    "Sets the repository URL for the specified project.",
+                                )
+                                .tag("Data")
+                                .security_requirement("Authenticated")
+                        })),
                 )
                 .layer(axum_middleware::from_fn_with_state(
                     app_state.clone(),
@@ -87,15 +169,37 @@ pub fn create_app_router(app_state: AppState) -> ApiRouter {
         // admin routes
         .merge(
             ApiRouter::new()
-                .route("/page/admin", axum_get(admin_dashboard))
+                .api_route("/page/admin", get_with(admin_dashboard, |op| {
+                    op.id("admin_dashboard")
+                        .summary("Admin Dashboard Page")
+                        .description("Data for the admin page.")
+                        .tag("Pages")
+                        .security_requirement("Authenticated")
+                }))
                 .nest(
                     "/admin",
                     ApiRouter::new()
-                        .route("/impersonate/{user_id}", axum_get(impersonate_user))
-                        .route(
+                        .api_route("/impersonate/{user_id}", get_with(impersonate_user, |op| {
+                            op.id("impersonate_user")
+                                .summary("Impersonate User")
+                                .description(
+                                    "Allows an admin to impersonate another user.",
+                                )
+                                .tag("Admin")
+                                .security_requirement("Authenticated")
+                        }))
+                        .api_route(
                             "/admin_level/{user_id}/{admin_level}",
-                            axum_put(change_user_admin_level),
-                        )
+                             put_with(change_user_admin_level, |op| {
+                                op.id("change_user_admin_level")
+                                    .summary("Change User Admin Level")
+                                    .description(
+                                        "Allows an admin to change another user's admin level.",
+                                    )
+                                    .tag("Admin")
+                                    .security_requirement("Authenticated")
+                            }
+                        ))
                         .layer(axum_middleware::from_fn_with_state(
                             app_state.clone(),
                             middleware::require_admin,
@@ -110,19 +214,9 @@ pub fn create_app_router(app_state: AppState) -> ApiRouter {
         .nest(
             "/api/v1",
             ApiRouter::new()
-                .api_route(
+                .route(
                     "/",
-                    get_with(
-                        home_page,
-                        |op| {
-                            op.id("api_root_redirect")
-                                .summary("Redirect API entry point")
-                                .description(
-                                    "Redirects to the frontend.",
-                                )
-                                .tag("Root")
-                        },
-                    ),
+                    axum_get(home_page),
                 )
                 .nest(
                     "/users",
@@ -138,7 +232,8 @@ pub fn create_app_router(app_state: AppState) -> ApiRouter {
                                         .description(
                                             "Accepts a single heartbeat payload in the same format used by the WakaTime client.",
                                         )
-                                        .tag("Heartbeats")
+                                        .tag("WakaTime Compatibility")
+                                        .security_requirement("ApiKey")
                                 }),
                             )
                             .api_route(
@@ -149,7 +244,8 @@ pub fn create_app_router(app_state: AppState) -> ApiRouter {
                                         .description(
                                             "Bulk ingestion endpoint compatible with WakaTime's heartbeats.bulk route.",
                                         )
-                                        .tag("Heartbeats")
+                                        .tag("WakaTime Compatibility")
+                                        .security_requirement("ApiKey")
                                 }),
                             )
                             .api_route(
@@ -160,7 +256,8 @@ pub fn create_app_router(app_state: AppState) -> ApiRouter {
                                         .description(
                                             "Returns the coding data for the current day.",
                                         )
-                                        .tag("Users")
+                                        .tag("WakaTime Compatibility")
+                                        .security_requirement("ApiKey")
                                 }),
                             ),
                     ),
@@ -171,6 +268,17 @@ pub fn create_app_router(app_state: AppState) -> ApiRouter {
             "/metrics",
             axum_get(|| async move { metric_handle.render() }),
         )
+        // health check endpoint
+        .api_route("/health", get_with(|| async { "OK" }, |op| {
+            op.id("health_check")
+                .summary("Health Check Endpoint")
+                .description("Returns OK if the server is running.")
+                .tag("Health")
+        }))
+        // include trace context as header into the response
+        .layer(OtelInResponseLayer)
+        //start OpenTelemetry trace on incoming request
+        .layer(OtelAxumLayer::default().try_extract_client_ip(use_cloudflare))
         // method not allowed fallback
         // .method_not_allowed_fallback(method_not_allowed) // aide does not support this :(
         // catch-all fallback for unmatched routes (must be last)
@@ -242,7 +350,7 @@ mod tests {
     #[tokio::test]
     async fn create_app_router_wires_routes_and_state() {
         let app_state = build_test_state();
-        let app = create_app_router(app_state);
+        let app = create_app_router(app_state, false);
 
         let response = app
             .clone()

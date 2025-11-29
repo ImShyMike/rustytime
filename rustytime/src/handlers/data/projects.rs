@@ -11,20 +11,21 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 pub struct SimpleProject {
     pub id: i32,
     pub name: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 pub struct ProjectsListResponse {
     pub projects: Vec<SimpleProject>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, JsonSchema)]
 pub struct RepoUrlRequest {
     pub repo_url: Option<String>,
 }

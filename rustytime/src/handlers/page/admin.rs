@@ -7,6 +7,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
+use schemars::JsonSchema;
 use serde::Serialize;
 use tower_cookies::Cookies;
 
@@ -17,13 +18,13 @@ use crate::state::AppState;
 use crate::utils::session::{ImpersonationContext, SessionManager};
 use crate::{db_query, get_db_conn};
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 pub struct FormattedDailyActivity {
     pub date: String,
     pub count: i64,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 pub struct AdminDashboardResponse {
     pub total_users: i64,
     pub total_heartbeats: i64,

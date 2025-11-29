@@ -11,10 +11,11 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Json, Response},
 };
+use schemars::JsonSchema;
 use serde::Serialize;
 use tower_cookies::Cookies;
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 pub struct DashboardResponse {
     avatar_url: String,
     username: String,

@@ -124,7 +124,7 @@ struct NullableNameDurationRow {
     total_seconds: i64,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, JsonSchema)]
 pub struct UsageStat {
     pub name: String,
     pub total_seconds: i64,

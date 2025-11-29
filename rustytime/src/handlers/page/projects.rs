@@ -11,9 +11,10 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
+use schemars::JsonSchema;
 use serde::Serialize;
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 pub struct Project {
     pub id: i32,
     pub user_id: i32,
@@ -25,7 +26,7 @@ pub struct Project {
     pub human_readable_total: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 pub struct ProjectsDashboardResponse {
     pub projects: Vec<Project>,
 }

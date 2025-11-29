@@ -11,22 +11,23 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
+use schemars::JsonSchema;
 use serde::Serialize;
 use std::collections::HashMap;
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 pub struct AliasRecord {
     pub id: i32,
     pub project_id: i32,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 pub struct ParsedProjectAlias {
     pub project_id: i32,
     pub aliases: Vec<AliasRecord>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 pub struct ProjectAliasesResponse {
     pub aliases: Vec<ParsedProjectAlias>,
 }

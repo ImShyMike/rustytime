@@ -1,5 +1,6 @@
 use chrono::{DateTime, NaiveDate, Utc};
 use diesel::prelude::*;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::schema::leaderboards;
@@ -27,7 +28,7 @@ pub struct NewLeaderboard {
     pub rank: i32,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, JsonSchema)]
 pub struct LeaderboardEntry {
     pub user_id: i32,
     pub user_name: String,

@@ -68,6 +68,21 @@ $ cd frontend && bun run dev
 
 The app should now be available at [http://localhost:5173](http://localhost:5173)
 
+### Observability (OTel + LGTM)
+
+If you're running the self-hosted Grafana LGTM (Loki/Grafana/Tempo/Mimir) stack or an OpenTelemetry Collector on the same machine, expose its OTLP receiver (default gRPC on `4317`). Then add the following to your `.env` (already scaffolded in `.env.example`):
+
+```env
+OTEL_SERVICE_NAME=rustytime-server
+OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://127.0.0.1:4317
+OTEL_EXPORTER_OTLP_TRACES_PROTOCOL=grpc
+OTEL_RESOURCE_ATTRIBUTES=deployment.environment=development
+# Only when your collector requires authentication headers (comma-separated k=v)
+# OTEL_EXPORTER_OTLP_HEADERS=x-otlp-token=changeme
+```
+
+Restart the backend (`cargo run`) after updating the env vars. The warning about missing OTEL exporter configuration disappears, and spans begin flowing into Tempo. From there you can wire Grafana dashboards against the same Tempo instance alongside your LGTM stack.
+
 ### Seeding the DB
 
 The `seed` feature can be enabled in the build to seed the database with a single user and 10000 heartbeats.

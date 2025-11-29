@@ -1,7 +1,7 @@
 [package]
 name = "rustytime-server"
 description = "🕒 blazingly fast time tracking for developers"
-version = "0.10.1"
+version = "0.11.0"
 edition = "2024"
 authors = ["ImShyMike"]
 readme = "../README.md"
@@ -65,3 +65,7 @@ axum-prometheus = { version = "0.9.0", features = ["prometheus"], default-featur
 tower_governor = { version = "0.8.0", features = ["axum", "tracing"], default-features = false }
 aide = { version = "0.15.1", features = ["axum", "axum-extra", "axum-extra-cookie", "axum-extra-cookie-private", "axum-extra-form", "axum-extra-headers", "axum-extra-json-deserializer", "axum-extra-query", "axum-extra-typed-routing", "axum-form", "axum-json", "axum-matched-path", "axum-multipart", "axum-original-uri", "axum-query", "axum-tokio", "http", "macros", "scalar", "skip_serializing_defaults"] }
 schemars = { version = "0.9", features = ["chrono04", "derive"] }
+axum-tracing-opentelemetry = { version = "0.32.2", default-features = false }
+init-tracing-opentelemetry = { version = "0.34.0", features = ["tracing_subscriber_ext"], default-features = false }
+opentelemetry = { version = "0.31.0", default-features = false }
+indexmap = { version = "2.12.1", default-features = false }

@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -19,12 +20,13 @@ pub struct User {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, JsonSchema)]
 pub struct PartialUser {
     pub id: i32,
     pub github_id: i64,
     pub name: String,
     pub avatar_url: String,
+    #[schemars(with = "Option<String>")]
     pub api_key: Option<Uuid>,
     pub admin_level: i16,
     pub is_banned: bool,

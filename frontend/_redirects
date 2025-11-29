@@ -1,1 +1,2 @@
 /api/* https://api-rustytime.shymike.dev/api/:splat 301
+/docs https://api-rustytime.shymike.dev/docs 301

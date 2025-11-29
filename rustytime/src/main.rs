@@ -1,4 +1,5 @@
 mod db;
+mod docs;
 mod handlers;
 mod models;
 mod routes;
@@ -6,12 +7,7 @@ mod schema;
 mod state;
 mod utils;
 
-use aide::openapi::OpenApi;
-use axum::{
-    Extension,
-    body::Body,
-    http::{Request, Response},
-};
+use axum::{Extension, body::Body, http::Request};
 use std::{env, net::SocketAddr, sync::Arc, time::Duration};
 use tower_cookies::CookieManagerLayer;
 use tower_governor::{GovernorLayer, governor::GovernorConfigBuilder};
@@ -25,7 +21,6 @@ use tracing::{error, info};
 use db::connection::create_pool;
 use state::AppState;
 use utils::http::{CloudflareAwareKeyExtractor, extract_client_ip};
-use utils::logging::init_tracing;
 use utils::middleware::cors_layer;
 
 use crate::{
@@ -45,11 +40,24 @@ async fn main() {
     // load environment variables from .env file
     dotenvy::dotenv().ok();
 
-    // logging stuff
-    init_tracing();
-
     // check if running in production
     let is_production = is_production_env();
+
+    // initialize tracing with OpenTelemetry
+    let _guard = if is_production {
+        init_tracing_opentelemetry::TracingConfig::production().init_subscriber()
+    } else if cfg!(debug_assertions) {
+        init_tracing_opentelemetry::TracingConfig::development().init_subscriber()
+    } else {
+        init_tracing_opentelemetry::TracingConfig::minimal().init_subscriber()
+    };
+
+    // logging stuff
+    // tracing_subscriber::fmt()
+    //     .with_env_filter(
+    //         EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+    //     )
+    //     .init();
 
     // check if should use cloudflare headers
     let use_cloudflare = use_cloudflare_headers();
@@ -125,17 +133,14 @@ async fn main() {
         }
     });
 
-    aide::generate::all_error_responses(true);
-    aide::generate::inferred_empty_response_status(200);
-
     aide::generate::on_error(|error| {
         println!("{error}");
     });
 
     // create the main application router
-    let api_router = create_app_router(app_state);
-    let mut openapi = OpenApi::default();
-    let mut app = api_router.finish_api(&mut openapi);
+    let api_router = create_app_router(app_state, use_cloudflare);
+    let mut openapi = docs::get_openapi_docs();
+    let mut app: axum::Router = api_router.finish_api(&mut openapi);
     let openapi = Arc::new(openapi);
     app = app.layer(Extension(openapi));
     app = app.layer(CookieManagerLayer::new());
@@ -156,26 +161,16 @@ async fn main() {
         .layer(NormalizePathLayer::trim_trailing_slash()) // normalize paths
         .layer(
             // add request logging
-            TraceLayer::new_for_http()
-                .make_span_with(|request: &Request<Body>| {
-                    let client_ip = extract_client_ip(request);
-                    tracing::info_span!(
-                        "http",
-                        ip = %client_ip,
-                        method = %request.method(),
-                        uri = %request.uri().path(),
-                    )
-                })
-                .on_response(
-                    |response: &Response<Body>,
-                     latency: std::time::Duration,
-                     _span: &tracing::Span| {
-                        info!(
-                            status = %response.status(),
-                            latency = ?latency
-                        );
-                    },
-                ),
+            TraceLayer::new_for_http().make_span_with(|request: &Request<Body>| {
+                let client_ip = extract_client_ip(request);
+                tracing::info_span!(
+                    "request",
+                    method = ?request.method(),
+                    uri = %request.uri(),
+                    version = ?request.version(),
+                    client_ip = %client_ip
+                )
+            }),
         );
 
     // bind to address
@@ -197,12 +192,33 @@ async fn main() {
         listener,
         app.into_make_service_with_connect_info::<SocketAddr>(),
     )
-    .with_graceful_shutdown(async {
-        tokio::signal::ctrl_c().await.unwrap_or_else(|err| {
-            error!("❌ Failed to install Ctrl+C handler: {}", err);
-            std::process::exit(1);
-        })
-    })
+    .with_graceful_shutdown(shutdown_signal())
     .await
     .unwrap();
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("❌ Failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+            .expect("❌ Failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
+
+    info!("🔄 Shutdown signal received, terminating...");
 }

@@ -11,16 +11,17 @@ use axum::{
 };
 use chrono::{DateTime, NaiveDate, Utc};
 use diesel::prelude::*;
+use schemars::JsonSchema;
 use serde::Serialize;
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 pub struct LeaderboardResponse {
     daily: LeaderboardData,
     weekly: LeaderboardData,
     all_time: LeaderboardData,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 struct LeaderboardData {
     generated_at: DateTime<Utc>,
     entries: Vec<LeaderboardEntry>,

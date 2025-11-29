@@ -10,6 +10,7 @@ use oauth2::{
     AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EndpointNotSet, EndpointSet,
     RedirectUrl, Scope, TokenResponse, TokenUrl, basic::BasicClient, reqwest,
 };
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::env;
 use tower_cookies::Cookies;
@@ -20,7 +21,7 @@ use crate::{get_db_conn, models::session::Session};
 use crate::{models::user::User, utils::env::is_production_env};
 use axum::Json;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, JsonSchema)]
 pub struct AuthRequest {
     pub code: String,
     pub state: String,
@@ -33,12 +34,12 @@ pub struct GitHubUser {
     pub avatar_url: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 pub struct AuthUrlResponse {
     pub auth_url: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 pub struct CallbackUserResponse {
     pub id: i32,
     pub github_id: u64,
@@ -46,7 +47,7 @@ pub struct CallbackUserResponse {
     pub avatar_url: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 pub struct UserResponse {
     pub id: i32,
     pub github_id: i64,
@@ -55,14 +56,14 @@ pub struct UserResponse {
     pub admin_level: i16,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 pub struct ImpersonationResponse {
     pub admin_id: i32,
     pub admin_name: String,
     pub admin_avatar_url: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 pub struct VerifySessionResponse {
     pub valid: bool,
     #[serde(skip_serializing_if = "Option::is_none")]

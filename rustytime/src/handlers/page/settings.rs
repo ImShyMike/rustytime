@@ -13,12 +13,14 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
+use schemars::JsonSchema;
 use serde::Serialize;
 use tower_cookies::Cookies;
 use uuid::Uuid;
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 pub struct SettingsResponse {
+    #[schemars(with = "Option<String>")]
     pub api_key: Option<Uuid>,
 }
 
