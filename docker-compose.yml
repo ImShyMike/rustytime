@@ -37,8 +37,15 @@ services:
       PRODUCTION: ${PRODUCTION:-false}
       USE_CLOUDFLARE: ${USE_CLOUDFLARE:-false}
       PORT: ${PORT:-3000}
+      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-rustytime-server}
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://host.docker.internal:4317}
+      OTEL_EXPORTER_OTLP_TRACES_PROTOCOL: ${OTEL_EXPORTER_OTLP_TRACES_PROTOCOL:-grpc}
+      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-deployment.environment=development}
+      OTEL_EXPORTER_OTLP_TRACES_INSECURE: ${OTEL_EXPORTER_OTLP_TRACES_INSECURE:-true}
     ports:
       - "${PORT:-3000}:3000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
 
   frontend:
