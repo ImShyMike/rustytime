@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 mod db;
 mod docs;
 mod handlers;
@@ -40,8 +42,15 @@ async fn main() {
     // load environment variables from .env file
     dotenvy::dotenv().ok();
 
+    // get git sha from environment variable set at build time
+    let git_sha = option_env!("GIT_SHA").unwrap_or("unknown");
+
     // check if running in production
     let is_production = is_production_env();
+
+    // get service name for tracing and profiling
+    let service_name =
+        env::var("OTEL_SERVICE_NAME").unwrap_or_else(|_| "rustytime-backend".to_string());
 
     // initialize tracing with OpenTelemetry
     let _guard = if is_production {
@@ -63,11 +72,14 @@ async fn main() {
     let use_cloudflare = use_cloudflare_headers();
 
     let version = env!("CARGO_PKG_VERSION");
-    info!("🚀 Starting the rustytime (v{}) server...", version);
+    info!(version = %version, git_sha = %git_sha, "🚀 Starting the rustytime server...");
 
     if use_cloudflare {
         info!("✅ Cloudflare IP extraction enabled!");
     }
+
+    let pyroscope_agent =
+        utils::tracing::init_pyroscope_agent(&service_name, git_sha, is_production);
 
     // create database connection pool
     let pool = create_pool();
@@ -195,6 +207,13 @@ async fn main() {
     .with_graceful_shutdown(shutdown_signal())
     .await
     .unwrap();
+
+    if let Some(agent) = pyroscope_agent {
+        match agent.stop() {
+            Ok(ready) => ready.shutdown(),
+            Err(err) => error!("❌ Failed to stop Pyroscope profiler: {}", err),
+        }
+    }
 }
 
 async fn shutdown_signal() {

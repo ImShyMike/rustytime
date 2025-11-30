@@ -6,9 +6,9 @@ use crate::models::leaderboard::NewLeaderboard;
 use chrono::{DateTime, Datelike, NaiveDate, Utc};
 use diesel::prelude::*;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
-use tracing::error;
+use tracing::{error, info};
 
 pub struct LeaderboardGenerator {
     db_pool: DbPool,
@@ -33,8 +33,13 @@ impl LeaderboardGenerator {
             let mut interval = tokio::time::interval(Duration::from_secs(60));
             loop {
                 interval.tick().await;
-                if let Err(e) = self.generate_leaderboards_if_needed().await {
-                    error!("Error generating leaderboards: {:?}", e);
+                let tick_started = Instant::now();
+                match self.generate_leaderboards_if_needed().await {
+                    Ok(_) => tracing::debug!(
+                        elapsed_ms = tick_started.elapsed().as_millis() as u64,
+                        "Leaderboard refresh tick completed"
+                    ),
+                    Err(e) => error!("Error generating leaderboards: {:?}", e),
                 }
             }
         });
@@ -120,6 +125,16 @@ impl LeaderboardGenerator {
         end_time: DateTime<Utc>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         conn.transaction(|conn| {
+            let span = tracing::info_span!(
+                "generate_leaderboard",
+                period = period_type,
+                date = %period_date,
+                start = %start_time,
+                end = %end_time
+            );
+            let _enter = span.enter();
+            let started = Instant::now();
+
             let results: Vec<UserDurationRow> =
                 Heartbeat::get_all_user_durations(conn, start_time, end_time)?;
 
@@ -136,6 +151,13 @@ impl LeaderboardGenerator {
                 .collect();
 
             Leaderboard::upsert_batch(conn, leaderboard_entries)?;
+
+            info!(
+                period = period_type,
+                rows = results.len(),
+                elapsed_ms = started.elapsed().as_millis() as u64,
+                "Leaderboard updated"
+            );
 
             Ok(())
         })
