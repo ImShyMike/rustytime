@@ -10,6 +10,7 @@ mod state;
 mod utils;
 
 use axum::{Extension, body::Body, http::Request};
+use reqwest::StatusCode;
 use std::{env, net::SocketAddr, sync::Arc, time::Duration};
 use tower_cookies::CookieManagerLayer;
 use tower_governor::{GovernorLayer, governor::GovernorConfigBuilder};
@@ -19,6 +20,7 @@ use tower_http::{
 };
 
 use tracing::{error, info};
+use tracing_subscriber::layer::SubscriberExt;
 
 use db::connection::create_pool;
 use state::AppState;
@@ -38,7 +40,7 @@ const DEFAULT_BURST_SIZE: u32 = 60;
 const DEFAULT_RATE_LIMIT_REPLENISH_DURATION: Duration = Duration::from_millis(250);
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // load environment variables from .env file
     dotenvy::dotenv().ok();
 
@@ -52,14 +54,31 @@ async fn main() {
     let service_name =
         env::var("OTEL_SERVICE_NAME").unwrap_or_else(|_| "rustytime-backend".to_string());
 
-    // initialize tracing with OpenTelemetry
-    let _guard = if is_production {
-        init_tracing_opentelemetry::TracingConfig::production().init_subscriber()
-    } else if cfg!(debug_assertions) {
-        init_tracing_opentelemetry::TracingConfig::development().init_subscriber()
-    } else {
-        init_tracing_opentelemetry::TracingConfig::minimal().init_subscriber()
+    let otel_logging = utils::tracing::init_otlp_logging_layer()?;
+    let (otel_log_layer, otel_log_guard) = match otel_logging {
+        Some(logging) => {
+            let (layer, guard) = logging.into_parts();
+            (Some(layer), Some(guard))
+        }
+        None => (None, None),
     };
+
+    // initialize tracing with OpenTelemetry
+    let tracing_config = if is_production {
+        init_tracing_opentelemetry::TracingConfig::production()
+    } else if cfg!(debug_assertions) {
+        init_tracing_opentelemetry::TracingConfig::development()
+    } else {
+        init_tracing_opentelemetry::TracingConfig::minimal()
+    };
+
+    let _guard = if let Some(layer) = otel_log_layer {
+        tracing_config.init_subscriber_ext(|subscriber| subscriber.with(layer))?
+    } else {
+        tracing_config.init_subscriber()?
+    };
+
+    let _otel_log_guard = otel_log_guard;
 
     // logging stuff
     // tracing_subscriber::fmt()
@@ -168,7 +187,10 @@ async fn main() {
         .layer(CompressionLayer::new().gzip(true)) // enable gzip
         .layer(DecompressionLayer::new().gzip(true)) // accept gzip
         .layer(RequestBodyLimitLayer::new(16 * 1024 * 1024)) // 16 MB size limit
-        .layer(TimeoutLayer::new(Duration::from_secs(15))) // 15 second timeout
+        .layer(TimeoutLayer::with_status_code(
+            StatusCode::REQUEST_TIMEOUT,
+            Duration::from_secs(15),
+        )) // 15 second timeout
         .layer(GovernorLayer::new(governor_conf)) // rate limiting
         .layer(NormalizePathLayer::trim_trailing_slash()) // normalize paths
         .layer(
@@ -213,7 +235,11 @@ async fn main() {
             Ok(ready) => ready.shutdown(),
             Err(err) => error!("❌ Failed to stop Pyroscope profiler: {}", err),
         }
-    }
+    };
+
+    info!("✅ Server has shut down gracefully.");
+
+    Ok(())
 }
 
 async fn shutdown_signal() {
