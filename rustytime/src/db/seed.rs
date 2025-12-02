@@ -1,7 +1,7 @@
 #![cfg(feature = "seed")]
 
 use crate::db::connection::DbPool;
-use crate::handlers::api::user::store_heartbeats_in_db;
+use crate::handlers::api::user::store_heartbeats_in_db_count_only;
 use crate::models::heartbeat::{NewHeartbeat, SourceType};
 use crate::models::user::User;
 use chrono::Utc;
@@ -89,13 +89,13 @@ async fn generate_random_heartbeats(
 
         if batch.len() == BATCH_SIZE {
             let current_batch = std::mem::take(&mut batch);
-            store_heartbeats_in_db(pool, current_batch).await?;
+            store_heartbeats_in_db_count_only(pool, current_batch).await?;
         }
     }
 
     if !batch.is_empty() {
         let current_batch = std::mem::take(&mut batch);
-        store_heartbeats_in_db(pool, current_batch).await?;
+        store_heartbeats_in_db_count_only(pool, current_batch).await?;
     }
 
     info!("✅ Inserted {} heartbeats into the database", count);

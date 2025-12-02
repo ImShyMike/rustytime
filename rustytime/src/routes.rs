@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use crate::handlers::admin::change_user_admin_level;
 use crate::handlers::api::user::{create_heartbeats, get_statusbar_today};
+use crate::handlers::data::import::import_heartbeats;
 use crate::handlers::data::project_aliases::{
     add_project_alias, delete_project_alias, project_aliases,
 };
@@ -16,9 +17,9 @@ use crate::handlers::page::projects::projects_dashboard;
 use crate::handlers::page::settings::settings_page;
 use crate::state::AppState;
 use crate::utils::middleware;
-use aide::axum::routing::{delete_with, put_with};
+use aide::axum::routing::{delete_with, get_with, post_with, put_with};
 use aide::{
-    axum::{ApiRouter, IntoApiResponse, routing::get_with, routing::post_with},
+    axum::{ApiRouter, IntoApiResponse},
     openapi::OpenApi,
     scalar::Scalar,
 };
@@ -159,7 +160,18 @@ pub fn create_app_router(app_state: AppState, use_cloudflare: bool) -> ApiRouter
                                 )
                                 .tag("Data")
                                 .security_requirement("Authenticated")
-                        })),
+                        }))
+                        .api_route(
+                            "/import",
+                            post_with(import_heartbeats, |op| {
+                                op.id("import_heartbeats")
+                                    .summary("Import Heartbeats")
+                                    .description(
+                                        "Imports heartbeats from Hackatime using the provided api key.",
+                                    )
+                                    .tag("Data")
+                            }),
+                        )
                 )
                 .layer(axum_middleware::from_fn_with_state(
                     app_state.clone(),
@@ -321,6 +333,9 @@ mod tests {
         r2d2::{ConnectionManager, Pool},
     };
     use oauth2::{AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
+    use std::collections::HashSet;
+    use std::sync::Arc;
+    use tokio::sync::Mutex;
     use tower::ServiceExt;
 
     fn build_test_state() -> AppState {
@@ -341,6 +356,7 @@ mod tests {
             github_client,
             http_client: reqwest::Client::new(),
             metrics: MetricsTracker::new(),
+            import_locks: Arc::new(Mutex::new(HashSet::new())),
         }
     }
 

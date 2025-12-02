@@ -20,7 +20,7 @@ pub fn init_pyroscope_agent(
     is_production: bool,
 ) -> Option<PyroscopeAgent<PyroscopeAgentRunning>> {
     let server_url =
-        env::var("PYROSCOPE_SERVER_URL").unwrap_or_else(|_| "http://localhost:4040".to_string());
+        env::var("PYROSCOPE_SERVER_URL").unwrap_or_else(|_| "".to_string());
     if server_url.trim().is_empty() {
         info!("⚠️  Pyroscope profiler disabled (PYROSCOPE_SERVER_URL not set)");
         return None;

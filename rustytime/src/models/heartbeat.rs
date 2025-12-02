@@ -4,9 +4,11 @@ use diesel::prelude::*;
 use diesel::sql_types::{BigInt, Date, Int4, Nullable as SqlNullable, Text, Timestamptz};
 use ipnetwork::IpNetwork;
 use schemars::JsonSchema;
+use serde::de::{self, Deserializer, Visitor};
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
-use crate::schema::heartbeats;
+use crate::schema::heartbeats::{self};
 use crate::utils::http::parse_user_agent;
 use crate::utils::time::{TimeFormat, human_readable_duration};
 
@@ -99,13 +101,22 @@ pub fn datetime_to_f64(time: DateTime<Utc>) -> f64 {
     time.timestamp() as f64 + time.timestamp_subsec_nanos() as f64 / 1e9
 }
 
+/// Convert f64 timestamp to DateTime<Utc>
+#[inline(always)]
+pub fn f64_to_datetime(timestamp: f64) -> DateTime<Utc> {
+    let secs = timestamp.trunc() as i64;
+    let nsecs = (timestamp.fract() * 1e9) as u32;
+    DateTime::from_timestamp(secs, nsecs).unwrap_or_else(Utc::now)
+}
+
 #[repr(i16)]
 #[allow(dead_code)]
 pub enum SourceType {
     DirectEntry = 0,
-    Import = 1,
-    WakaTimeImport = 2,
-    Seeding = 3,
+    Seeding = 1,
+    TestEntry = 2,
+    HackatimeImport = 3,
+    WakaTimeImport = 4,
 }
 
 #[derive(QueryableByName)]
@@ -146,6 +157,159 @@ pub struct DailyActivity {
     pub date: chrono::NaiveDate,
     #[diesel(sql_type = BigInt)]
     pub count: i64,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[allow(dead_code)]
+pub struct HackatimeHeartbeat {
+    pub id: i64,
+    pub user_id: i32,
+    pub branch: Option<String>,
+    pub category: Option<String>,
+    pub dependencies: Option<Vec<String>>,
+    pub editor: Option<String>,
+    pub entity: String,
+    pub language: Option<String>,
+    pub machine: Option<String>,
+    pub operating_system: Option<String>,
+    pub project: Option<String>,
+    #[serde(rename = "type")]
+    pub type_: String,
+    pub user_agent: Option<String>,
+    pub line_additions: Option<i32>,
+    pub line_deletions: Option<i32>,
+    pub lineno: Option<i32>,
+    pub lines: Option<i32>,
+    pub cursorpos: Option<i32>,
+    pub project_root_count: Option<i32>,
+    #[serde(deserialize_with = "deserialize_hackatime_time")]
+    pub time: f64,
+    pub is_write: Option<bool>,
+    pub created_at: Option<String>,
+    pub updated_at: Option<String>,
+    pub fields_hash: Option<String>,
+    pub source_type: Option<String>,
+    pub ip_address: Option<String>,
+    pub ysws_program: Option<String>,
+    pub deleted_at: Option<String>,
+    #[serde(default)]
+    pub raw_data: serde_json::Value,
+    pub raw_heartbeat_upload_id: Option<i64>,
+}
+
+impl HackatimeHeartbeat {
+    pub fn to_new_heartbeat(&self, user_id: i32) -> NewHeartbeat {
+        let source_type_ = match self.source_type.as_deref() {
+            Some("direct_entry") => SourceType::HackatimeImport,
+            Some("wakapi_import") => SourceType::WakaTimeImport,
+            Some("test_entry") => SourceType::TestEntry,
+            _ => SourceType::HackatimeImport,
+        };
+
+        let dependencies = self.dependencies.clone().map(|deps| {
+            deps.into_iter()
+                .take(MAX_DEPENDENCIES)
+                .map(|dep| {
+                    Some(if dep.len() > MAX_DEPENDENCY_LENGTH {
+                        dep.chars().take(MAX_DEPENDENCY_LENGTH).collect::<String>()
+                    } else {
+                        dep
+                    })
+                })
+                .collect()
+        });
+
+        NewHeartbeat {
+            user_id,
+            project_id: None,
+            branch: truncate_optional_string(self.branch.clone(), MAX_BRANCH_LENGTH),
+            category: truncate_optional_string(self.category.clone(), MAX_CATEGORY_LENGTH),
+            dependencies,
+            editor: truncate_optional_string(self.editor.clone(), MAX_EDITOR_LENGTH),
+            entity: truncate_string(self.entity.clone(), MAX_ENTITY_LENGTH),
+            language: truncate_optional_string(self.language.clone(), MAX_LANGUAGE_LENGTH),
+            machine: truncate_optional_string(self.machine.clone(), MAX_MACHINE_LENGTH),
+            operating_system: truncate_optional_string(
+                self.operating_system.clone(),
+                MAX_OS_LENGTH,
+            ),
+            project: truncate_optional_string(self.project.clone(), MAX_PROJECT_LENGTH),
+            type_: truncate_string(self.type_.clone(), MAX_TYPE_LENGTH),
+            user_agent: truncate_string(
+                self.user_agent.clone().unwrap_or_default(),
+                MAX_USER_AGENT_LENGTH,
+            ),
+            line_additions: self.line_additions,
+            line_deletions: self.line_deletions,
+            lineno: self.lineno,
+            lines: self.lines,
+            cursorpos: self.cursorpos,
+            project_root_count: self.project_root_count,
+            is_write: self.is_write,
+            time: f64_to_datetime(self.time),
+            ip_address: self
+                .ip_address
+                .as_deref()
+                .unwrap_or("127.0.0.1/32")
+                .parse()
+                .unwrap_or_else(|_| "127.0.0.1/32".parse().unwrap()),
+            source_type: Some(source_type_ as i16),
+        }
+    }
+}
+
+fn deserialize_hackatime_time<'de, D>(deserializer: D) -> Result<f64, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    struct TimeVisitor;
+
+    impl<'de> Visitor<'de> for TimeVisitor {
+        type Value = f64;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a numeric timestamp or RFC3339 string")
+        }
+
+        fn visit_f64<E>(self, value: f64) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(value)
+        }
+
+        fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(value as f64)
+        }
+
+        fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(value as f64)
+        }
+
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            if let Ok(parsed) = value.parse::<f64>() {
+                return Ok(parsed);
+            }
+
+            if let Ok(dt) = DateTime::parse_from_rfc3339(value) {
+                let utc = dt.with_timezone(&Utc);
+                return Ok(datetime_to_f64(utc));
+            }
+
+            Err(E::custom(format!("invalid Hackatime timestamp: {value}")))
+        }
+    }
+
+    deserializer.deserialize_any(TimeVisitor)
 }
 
 #[derive(Deserialize, Debug, JsonSchema)]
@@ -307,6 +471,7 @@ pub struct SanitizedHeartbeatRequest {
     pub lineno: Option<i32>,
     pub cursorpos: Option<i32>,
     pub is_write: Option<bool>,
+    pub source_type: Option<i16>,
 }
 
 impl SanitizedHeartbeatRequest {
@@ -319,18 +484,18 @@ impl SanitizedHeartbeatRequest {
         .unwrap_or_else(Utc::now);
 
         // Handle test heartbeats
-        let type_ = if request.entity == "test.txt" {
-            "test".to_string()
+        let source_type_ = if request.entity == "test.txt" {
+            SourceType::TestEntry
         } else {
-            request.type_
+            SourceType::DirectEntry
         };
 
         // Parse the category
         let category = if let Some(cat) = request.category {
             Some(cat)
-        } else if type_ == "domain" || type_ == "url" {
+        } else if request.type_ == "domain" || request.type_ == "url" {
             Some("browsing".to_string())
-        } else if type_ == "file" && request.language.is_some() {
+        } else if request.type_ == "file" && request.language.is_some() {
             Some("coding".to_string())
         } else {
             None
@@ -352,7 +517,7 @@ impl SanitizedHeartbeatRequest {
 
         Self {
             entity: truncate_string(request.entity, MAX_ENTITY_LENGTH),
-            type_: truncate_string(type_, MAX_TYPE_LENGTH),
+            type_: truncate_string(request.type_, MAX_TYPE_LENGTH),
             time,
             category: truncate_optional_string(category, MAX_CATEGORY_LENGTH),
             project: truncate_optional_string(request.project, MAX_PROJECT_LENGTH),
@@ -366,6 +531,7 @@ impl SanitizedHeartbeatRequest {
             lineno: request.lineno,
             cursorpos: request.cursorpos,
             is_write: request.is_write,
+            source_type: Some(source_type_ as i16),
         }
     }
 
@@ -421,7 +587,7 @@ impl SanitizedHeartbeatRequest {
             line_deletions: self.line_deletions,
             lineno: self.lineno,
             cursorpos: self.cursorpos,
-            source_type: Some(SourceType::DirectEntry as i16),
+            source_type: self.source_type,
             project_id: None,
         }
     }
@@ -700,6 +866,7 @@ impl Heartbeat {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
 
     fn sample_request() -> HeartbeatRequest {
         HeartbeatRequest {
@@ -828,5 +995,78 @@ mod tests {
         };
         let response = HeartbeatResponse::from(heartbeat.clone());
         assert_eq!(response.id, heartbeat.id);
+    }
+
+    #[test]
+    fn hackatime_heartbeat_handles_missing_fields() {
+        let heartbeat = HackatimeHeartbeat {
+            id: 42,
+            user_id: 7,
+            branch: None,
+            category: None,
+            dependencies: None,
+            editor: None,
+            entity: "missing.rs".to_string(),
+            language: None,
+            machine: None,
+            operating_system: None,
+            project: None,
+            type_: "file".to_string(),
+            user_agent: None,
+            line_additions: None,
+            line_deletions: None,
+            lineno: None,
+            lines: None,
+            cursorpos: None,
+            project_root_count: None,
+            time: 1_700_000_000.0,
+            is_write: None,
+            created_at: None,
+            updated_at: None,
+            fields_hash: None,
+            source_type: None,
+            ip_address: None,
+            ysws_program: None,
+            deleted_at: None,
+            raw_data: serde_json::Value::Null,
+            raw_heartbeat_upload_id: None,
+        };
+
+        let new_heartbeat = heartbeat.to_new_heartbeat(99);
+
+        assert_eq!(new_heartbeat.user_agent, "");
+        assert_eq!(new_heartbeat.ip_address, "127.0.0.1/32".parse().unwrap());
+        assert_eq!(
+            new_heartbeat.source_type,
+            Some(SourceType::HackatimeImport as i16)
+        );
+    }
+
+    fn minimal_hackatime_payload() -> serde_json::Value {
+        json!({
+            "id": 1,
+            "user_id": 1,
+            "entity": "main.rs",
+            "type": "file",
+            "time": 1_700_000_000.0
+        })
+    }
+
+    #[test]
+    fn hackatime_time_accepts_stringified_numbers() {
+        let mut payload = minimal_hackatime_payload();
+        payload["time"] = json!("1700000000.5");
+
+        let parsed: HackatimeHeartbeat = serde_json::from_value(payload).expect("time as string");
+        assert!((parsed.time - 1_700_000_000.5).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn hackatime_time_accepts_rfc3339_strings() {
+        let mut payload = minimal_hackatime_payload();
+        payload["time"] = json!("2024-11-28T12:34:56.789Z");
+
+        let parsed: HackatimeHeartbeat = serde_json::from_value(payload).expect("time as RFC3339");
+        assert_eq!(datetime_to_f64(f64_to_datetime(parsed.time)), parsed.time);
     }
 }

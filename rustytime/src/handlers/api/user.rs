@@ -22,6 +22,7 @@ use crate::utils::time::{TimeFormat, human_readable_duration};
 use std::collections::{HashMap, hash_map};
 
 const MAX_HEARTBEATS_PER_REQUEST: usize = 25;
+const HEARTBEAT_INSERT_BATCH_SIZE: usize = 1_000; // avoids hitting Postgres' 65k parameter limit
 
 /// Process heartbeat request and store in the database
 async fn process_heartbeat_request(
@@ -203,14 +204,37 @@ pub async fn store_heartbeats_in_db(
     pool: &DbPool,
     new_heartbeats: Vec<NewHeartbeat>,
 ) -> Result<Vec<HeartbeatResponse>, diesel::result::Error> {
+    store_heartbeats_in_db_internal(pool, new_heartbeats, true)
+        .await
+        .map(|(responses, _)| responses)
+}
+
+/// Store heartbeats and report how many unique entries were inserted
+pub async fn store_heartbeats_in_db_count_only(
+    pool: &DbPool,
+    new_heartbeats: Vec<NewHeartbeat>,
+) -> Result<usize, diesel::result::Error> {
+    store_heartbeats_in_db_internal(pool, new_heartbeats, false)
+        .await
+        .map(|(_, inserted)| inserted)
+}
+
+async fn store_heartbeats_in_db_internal(
+    pool: &DbPool,
+    new_heartbeats: Vec<NewHeartbeat>,
+    include_responses: bool,
+) -> Result<(Vec<HeartbeatResponse>, usize), diesel::result::Error> {
     let pool = pool.clone();
 
     tokio::task::spawn_blocking(move || {
         let mut connection = pool.get().expect("Failed to get DB connection from pool");
 
         connection.transaction(|conn| {
-            let mut keys_to_insert = Vec::with_capacity(new_heartbeats.len());
-            let mut heartbeat_keys = Vec::with_capacity(new_heartbeats.len());
+            let mut heartbeat_keys = if include_responses {
+                Some(Vec::with_capacity(new_heartbeats.len()))
+            } else {
+                None
+            };
             let mut seen: HashMap<(i32, chrono::DateTime<Utc>), ()> =
                 HashMap::with_capacity(new_heartbeats.len());
             let mut deduplicated = Vec::with_capacity(new_heartbeats.len());
@@ -225,41 +249,50 @@ pub async fn store_heartbeats_in_db(
                 }
 
                 let key = (heartbeat.user_id, heartbeat.time);
-                heartbeat_keys.push(key);
+                if let Some(keys) = heartbeat_keys.as_mut() {
+                    keys.push(key);
+                }
 
                 if let hash_map::Entry::Vacant(e) = seen.entry(key) {
                     e.insert(());
                     deduplicated.push(heartbeat);
-                    keys_to_insert.push(key);
                 }
             }
 
-            diesel::insert_into(heartbeats::table)
-                .values(&deduplicated)
-                .on_conflict((heartbeats::user_id, heartbeats::time))
-                .do_nothing()
-                .execute(conn)?;
-
-            let unique_keys: Vec<_> = seen.keys().copied().collect();
-            let mut heartbeat_cache: HashMap<(i32, chrono::DateTime<Utc>), Heartbeat> =
-                HashMap::new();
-            for (uid, t) in unique_keys {
-                let hb = heartbeats::table
-                    .filter(heartbeats::user_id.eq(uid))
-                    .filter(heartbeats::time.eq(t))
-                    .first::<Heartbeat>(conn)?;
-                heartbeat_cache.insert((uid, t), hb);
+            let mut inserted_total = 0usize;
+            for chunk in deduplicated.chunks(HEARTBEAT_INSERT_BATCH_SIZE) {
+                inserted_total += diesel::insert_into(heartbeats::table)
+                    .values(chunk)
+                    .on_conflict((heartbeats::user_id, heartbeats::time))
+                    .do_nothing()
+                    .execute(conn)?;
             }
 
-            let responses: Vec<HeartbeatResponse> = heartbeat_keys
-                .into_iter()
-                .map(|key| {
-                    let hb = heartbeat_cache.get(&key).unwrap().clone();
-                    HeartbeatResponse::from(hb)
-                })
-                .collect();
+            let responses = if include_responses {
+                let unique_keys: Vec<_> = seen.keys().copied().collect();
+                let mut heartbeat_cache: HashMap<(i32, chrono::DateTime<Utc>), Heartbeat> =
+                    HashMap::new();
+                for (uid, t) in unique_keys {
+                    let hb = heartbeats::table
+                        .filter(heartbeats::user_id.eq(uid))
+                        .filter(heartbeats::time.eq(t))
+                        .first::<Heartbeat>(conn)?;
+                    heartbeat_cache.insert((uid, t), hb);
+                }
 
-            Ok(responses)
+                heartbeat_keys
+                    .unwrap()
+                    .into_iter()
+                    .map(|key| {
+                        let hb = heartbeat_cache.get(&key).unwrap().clone();
+                        HeartbeatResponse::from(hb)
+                    })
+                    .collect()
+            } else {
+                Vec::new()
+            };
+
+            Ok((responses, inserted_total))
         })
     })
     .await

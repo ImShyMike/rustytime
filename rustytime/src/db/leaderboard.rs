@@ -3,7 +3,7 @@ use crate::models::heartbeat::Heartbeat;
 use crate::models::heartbeat::UserDurationRow;
 use crate::models::leaderboard::Leaderboard;
 use crate::models::leaderboard::NewLeaderboard;
-use chrono::{DateTime, Datelike, NaiveDate, Utc};
+use chrono::{DateTime, Datelike, NaiveDate, Timelike, Utc};
 use diesel::prelude::*;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -12,9 +12,9 @@ use tracing::{error, info};
 
 pub struct LeaderboardGenerator {
     db_pool: DbPool,
-    last_daily_update: Arc<Mutex<DateTime<Utc>>>,
-    last_weekly_update: Arc<Mutex<DateTime<Utc>>>,
-    last_all_time_update: Arc<Mutex<DateTime<Utc>>>,
+    next_daily_update: Arc<Mutex<DateTime<Utc>>>,
+    next_weekly_update: Arc<Mutex<DateTime<Utc>>>,
+    next_all_time_update: Arc<Mutex<DateTime<Utc>>>,
 }
 
 impl LeaderboardGenerator {
@@ -22,13 +22,17 @@ impl LeaderboardGenerator {
         let now = Utc::now();
         Self {
             db_pool,
-            last_daily_update: Arc::new(Mutex::new(now - chrono::Duration::minutes(10))),
-            last_weekly_update: Arc::new(Mutex::new(now - chrono::Duration::hours(2))),
-            last_all_time_update: Arc::new(Mutex::new(now - chrono::Duration::days(2))),
+            next_daily_update: Arc::new(Mutex::new(next_five_minute_boundary(now))),
+            next_weekly_update: Arc::new(Mutex::new(next_top_of_hour(now))),
+            next_all_time_update: Arc::new(Mutex::new(next_midnight(now))),
         }
     }
 
     pub async fn start(self) {
+        if let Err(e) = self.generate_full_refresh() {
+            error!("Error during initial leaderboard generation: {:?}", e);
+        }
+
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(60));
             loop {
@@ -50,11 +54,12 @@ impl LeaderboardGenerator {
 
         let mut conn = self.db_pool.get()?;
 
-        // generate daily leaderboard (every 5 minutes)
+        // generate daily leaderboard (every 5 minutes) aligned to midnight
         {
-            let last = self.last_daily_update.lock().await;
-            if now - *last >= chrono::Duration::minutes(5) {
-                drop(last);
+            let next = self.next_daily_update.lock().await;
+            if now >= *next {
+                let scheduled_time = *next;
+                drop(next);
                 let today = now.date_naive();
                 let start_time = today.and_hms_opt(0, 0, 0).unwrap().and_utc();
                 let end_time = (today + chrono::Duration::days(1))
@@ -62,15 +67,17 @@ impl LeaderboardGenerator {
                     .unwrap()
                     .and_utc();
                 self.generate_leaderboard(&mut conn, "daily", today, start_time, end_time)?;
-                *self.last_daily_update.lock().await = now;
+                let mut next = self.next_daily_update.lock().await;
+                *next = advance_schedule(scheduled_time, chrono::Duration::minutes(5), now);
             }
         }
 
-        // generate weekly leaderboard (every 1 hour)
+        // generate weekly leaderboard (every 1 hour) aligned to hour boundary
         {
-            let last = self.last_weekly_update.lock().await;
-            if now - *last >= chrono::Duration::hours(1) {
-                drop(last);
+            let next = self.next_weekly_update.lock().await;
+            if now >= *next {
+                let scheduled_time = *next;
+                drop(next);
                 let week_start = get_week_start(now.date_naive());
                 let start_time = week_start.and_hms_opt(0, 0, 0).unwrap().and_utc();
                 let end_time = (week_start + chrono::Duration::days(7))
@@ -78,15 +85,17 @@ impl LeaderboardGenerator {
                     .unwrap()
                     .and_utc();
                 self.generate_leaderboard(&mut conn, "weekly", week_start, start_time, end_time)?;
-                *self.last_weekly_update.lock().await = now;
+                let mut next = self.next_weekly_update.lock().await;
+                *next = advance_schedule(scheduled_time, chrono::Duration::hours(1), now);
             }
         }
 
-        // generate all-time leaderboard (every 24 hours)
+        // generate all-time leaderboard (every 24 hours) aligned to midnight
         {
-            let last = self.last_all_time_update.lock().await;
-            if now - *last >= chrono::Duration::days(1) {
-                drop(last);
+            let next = self.next_all_time_update.lock().await;
+            if now >= *next {
+                let scheduled_time = *next;
+                drop(next);
                 let all_time_date = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap();
                 let start_time = all_time_date.and_hms_opt(0, 0, 0).unwrap().and_utc();
                 let end_time = Utc::now();
@@ -97,7 +106,8 @@ impl LeaderboardGenerator {
                     start_time,
                     end_time,
                 )?;
-                *self.last_all_time_update.lock().await = now;
+                let mut next = self.next_all_time_update.lock().await;
+                *next = advance_schedule(scheduled_time, chrono::Duration::days(1), now);
             }
         }
 
@@ -112,6 +122,39 @@ impl LeaderboardGenerator {
 
             Ok(())
         })?;
+        Ok(())
+    }
+
+    fn generate_full_refresh(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let mut conn = self.db_pool.get()?;
+        let now = Utc::now();
+
+        let today = now.date_naive();
+        let daily_start = today.and_hms_opt(0, 0, 0).unwrap().and_utc();
+        let daily_end = (today + chrono::Duration::days(1))
+            .and_hms_opt(0, 0, 0)
+            .unwrap()
+            .and_utc();
+        self.generate_leaderboard(&mut conn, "daily", today, daily_start, daily_end)?;
+
+        let week_start = get_week_start(now.date_naive());
+        let weekly_start = week_start.and_hms_opt(0, 0, 0).unwrap().and_utc();
+        let weekly_end = (week_start + chrono::Duration::days(7))
+            .and_hms_opt(0, 0, 0)
+            .unwrap()
+            .and_utc();
+        self.generate_leaderboard(&mut conn, "weekly", week_start, weekly_start, weekly_end)?;
+
+        let all_time_date = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap();
+        let all_time_start = all_time_date.and_hms_opt(0, 0, 0).unwrap().and_utc();
+        let all_time_end = now;
+        self.generate_leaderboard(
+            &mut conn,
+            "all_time",
+            all_time_date,
+            all_time_start,
+            all_time_end,
+        )?;
 
         Ok(())
     }
@@ -162,6 +205,55 @@ impl LeaderboardGenerator {
             Ok(())
         })
     }
+}
+
+fn next_five_minute_boundary(now: DateTime<Utc>) -> DateTime<Utc> {
+    const STEP_SECS: i64 = 300;
+    const DAY_SECS: i64 = 86_400;
+
+    let secs = now.time().num_seconds_from_midnight() as i64;
+    let next_secs = ((secs / STEP_SECS) + 1) * STEP_SECS;
+    let (target_day, secs_in_day) = if next_secs >= DAY_SECS {
+        (
+            now.date_naive() + chrono::Duration::days(1),
+            next_secs - DAY_SECS,
+        )
+    } else {
+        (now.date_naive(), next_secs)
+    };
+
+    let midnight = target_day
+        .and_hms_opt(0, 0, 0)
+        .expect("valid midnight")
+        .and_utc();
+    midnight + chrono::Duration::seconds(secs_in_day)
+}
+
+fn next_top_of_hour(now: DateTime<Utc>) -> DateTime<Utc> {
+    (now + chrono::Duration::hours(1))
+        .with_minute(0)
+        .and_then(|dt| dt.with_second(0))
+        .and_then(|dt| dt.with_nanosecond(0))
+        .expect("valid next hour")
+}
+
+fn next_midnight(now: DateTime<Utc>) -> DateTime<Utc> {
+    (now.date_naive() + chrono::Duration::days(1))
+        .and_hms_opt(0, 0, 0)
+        .expect("valid midnight")
+        .and_utc()
+}
+
+fn advance_schedule(
+    scheduled_time: DateTime<Utc>,
+    step: chrono::Duration,
+    reference: DateTime<Utc>,
+) -> DateTime<Utc> {
+    let mut next = scheduled_time + step;
+    while next <= reference {
+        next += step;
+    }
+    next
 }
 
 #[inline(always)]

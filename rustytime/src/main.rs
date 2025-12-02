@@ -38,6 +38,7 @@ use crate::{
 // about 4 requests per second with a max burst of 60
 const DEFAULT_BURST_SIZE: u32 = 60;
 const DEFAULT_RATE_LIMIT_REPLENISH_DURATION: Duration = Duration::from_millis(250);
+const DEFAULT_REQUEST_TIMEOUT: Duration = Duration::from_secs(300);
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -64,12 +65,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     };
 
     // initialize tracing with OpenTelemetry
-    let tracing_config = if is_production {
-        init_tracing_opentelemetry::TracingConfig::production()
-    } else if cfg!(debug_assertions) {
+    let tracing_config = if cfg!(debug_assertions) {
         init_tracing_opentelemetry::TracingConfig::development()
     } else {
-        init_tracing_opentelemetry::TracingConfig::minimal()
+        init_tracing_opentelemetry::TracingConfig::minimal().with_otel(true)
     };
 
     let _guard = if let Some(layer) = otel_log_layer {
@@ -189,8 +188,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         .layer(RequestBodyLimitLayer::new(16 * 1024 * 1024)) // 16 MB size limit
         .layer(TimeoutLayer::with_status_code(
             StatusCode::REQUEST_TIMEOUT,
-            Duration::from_secs(15),
-        )) // 15 second timeout
+            DEFAULT_REQUEST_TIMEOUT,
+        )) // allow long-running operations (e.g., Hackatime imports)
         .layer(GovernorLayer::new(governor_conf)) // rate limiting
         .layer(NormalizePathLayer::trim_trailing_slash()) // normalize paths
         .layer(
