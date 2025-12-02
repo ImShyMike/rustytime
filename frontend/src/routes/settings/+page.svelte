@@ -538,7 +538,7 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 					{#if isImportingFromHackatime}
 						<div class="flex items-center gap-2 text-subtext0 text-sm">
 							<LucideLoader2 class="w-4 h-4 animate-spin text-blue" />
-							<span>Please wait, this can take a minute.</span>
+							<span>This may take a minute, please don't leave the page.</span>
 						</div>
 					{/if}
 
@@ -551,7 +551,7 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 							<div class="grid gap-3 sm:grid-cols-2">
 								<div class="rounded-md border border-surface1 bg-ctp-surface1/30 p-3">
 									<p class="text-xs text-subtext0 uppercase tracking-wide">Imported Heartbeats</p>
-									<p class="text-2xl font-semibold text-text">{importStats.imported.toLocaleString()}</p>
+									<p class="text-2xl font-semibold text-green">{importStats.imported.toLocaleString()}</p>
 								</div>
 								<div class="rounded-md border border-surface1 bg-ctp-surface1/30 p-3">
 									<p class="text-xs text-subtext0 uppercase tracking-wide">Processed Heartbeats</p>
