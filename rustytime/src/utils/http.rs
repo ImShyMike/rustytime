@@ -19,7 +19,7 @@ static USER_AGENT_PATTERN: Lazy<Regex> = Lazy::new(|| {
 
 /// Parse user agent into OS and editor
 /// Based on https://github.com/muety/wakapi/blob/master/utils/http.go#L89-L127
-pub fn parse_user_agent(ua: String) -> Result<(String, String), String> {
+pub fn parse_user_agent(ua: String) -> Result<(Option<String>, Option<String>), String> {
     // try to parse wakatime client user agents first
     if let Some(groups) = USER_AGENT_PATTERN.captures(&ua)
         && groups.len() == 4
@@ -27,19 +27,16 @@ pub fn parse_user_agent(ua: String) -> Result<(String, String), String> {
         // extract OS
         let os = groups
             .get(1)
-            .map_or("", |m| m.as_str())
-            .to_ascii_lowercase();
+            .map(|m| m.as_str().to_ascii_lowercase());
 
         // parse editor
         let mut editor = groups
             .get(2)
-            .map_or("", |m| m.as_str())
-            .to_ascii_lowercase();
-        if editor.is_empty() {
+            .map(|m| m.as_str().to_ascii_lowercase());
+        if editor.is_none() {
             editor = groups
                 .get(3)
-                .map_or("", |m| m.as_str())
-                .to_ascii_lowercase();
+                .map(|m| m.as_str().to_ascii_lowercase());
         }
 
         return Ok((os, editor));
@@ -60,7 +57,7 @@ pub fn parse_user_agent(ua: String) -> Result<(String, String), String> {
             return Err("failed to parse user agent string".to_string());
         };
 
-        return Ok((os, result.name.to_ascii_lowercase()));
+        return Ok((Some(os), Some(result.name.to_ascii_lowercase())));
     }
 
     Err("failed to parse user agent string".to_string())
@@ -157,16 +154,16 @@ mod tests {
             "wakatime/v1.115.2 (linux-6.14.1) go1.24.2 vscode/1.100.0 vscode-wakatime/25.0.3"
                 .to_string();
         let (os, editor) = parse_user_agent(user_agent).unwrap();
-        assert_eq!(os, "linux".to_string());
-        assert_eq!(editor, "vscode".to_string());
+        assert_eq!(os, Some("linux".to_string()));
+        assert_eq!(editor, Some("vscode".to_string()));
     }
 
     #[test]
     fn parses_wakatime_user_agent_signature_windows() {
         let user_agent = "wakatime/v1.115.2 (windows-10.0.26100.1742-x86_64) go1.24.2 vscode/1.100.2 vscode-wakatime/25.0.3".to_string();
         let (os, editor) = parse_user_agent(user_agent).unwrap();
-        assert_eq!(os, "windows".to_string());
-        assert_eq!(editor, "vscode".to_string());
+        assert_eq!(os, Some("windows".to_string()));
+        assert_eq!(editor, Some("vscode".to_string()));
     }
 
     #[test]
@@ -175,8 +172,8 @@ mod tests {
             "wakatime/v1.131.0 (darwin-24.6.0-arm64) go1.24.4 zsh/5.9 terminal-wakatime/v1.1.5"
                 .to_string();
         let (os, editor) = parse_user_agent(user_agent).unwrap();
-        assert_eq!(os, "darwin".to_string());
-        assert_eq!(editor, "zsh".to_string());
+        assert_eq!(os, Some("darwin".to_string()));
+        assert_eq!(editor, Some("zsh".to_string()));
     }
 
     #[test]
@@ -184,8 +181,8 @@ mod tests {
         let browser_ua =
             "Mozilla/5.0 (X11; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0".to_string();
         let (os, editor) = parse_user_agent(browser_ua).unwrap();
-        assert_eq!(os, "linux".to_string());
-        assert_eq!(editor, "firefox".to_string());
+        assert_eq!(os, Some("linux".to_string()));
+        assert_eq!(editor, Some("firefox".to_string()));
     }
 
     #[test]

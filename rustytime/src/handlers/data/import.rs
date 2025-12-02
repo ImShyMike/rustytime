@@ -13,7 +13,7 @@ use serde::Serialize;
 use serde_json::{Value, from_str};
 use std::collections::HashSet;
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::{oneshot, Mutex};
 use tracing::{debug, error, info, info_span, warn};
 
 use crate::db::connection::DbPool;
@@ -116,9 +116,42 @@ pub async fn import_heartbeats(
             .into_response());
     }
 
+    let user_id = current_user.id;
+    let (result_tx, result_rx) = oneshot::channel();
+    let background_state = app_state.clone();
+
+    // detach the import process to run in the background
+    tokio::spawn(async move {
+        let result = run_hackatime_import(background_state, user_id, api_key).await;
+        if result_tx.send(result).is_err() {
+            info!(user_id = user_id, "Hackatime import completed after client disconnected");
+        }
+    });
+
+    match result_rx.await {
+        Ok(Ok(response)) => Ok(Json(response)),
+        Ok(Err(response)) => Err(response),
+        Err(_) => {
+            error!(user_id = user_id, "Hackatime import task ended before reporting result");
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Hackatime import task ended unexpectedly",
+            )
+                .into_response())
+        }
+    }
+}
+
+async fn run_hackatime_import(
+    app_state: AppState,
+    user_id: i32,
+    api_key: String,
+) -> Result<ImportResponse, Response> {
+    let http_client = app_state.http_client.clone();
+    let db_pool = app_state.db_pool.clone();
+
     // acquire import lock for user
-    let _import_guard =
-        ImportRunGuard::acquire(app_state.import_locks.clone(), current_user.id).await?;
+    let _import_guard = ImportRunGuard::acquire(app_state.import_locks.clone(), user_id).await?;
 
     let cutoff = NaiveDate::from_ymd_opt(CUTOFF_YEAR, CUTOFF_MONTH_DAY[0], CUTOFF_MONTH_DAY[1])
         .expect("valid cutoff date")
@@ -126,7 +159,7 @@ pub async fn import_heartbeats(
         .expect("valid cutoff time")
         .and_utc();
 
-    let span = info_span!("import_heartbeats", user_id = current_user.id);
+    let span = info_span!("import_heartbeats", user_id = user_id);
     let _guard = span.enter();
     info!(cutoff = %cutoff, "Starting Hackatime import");
 
@@ -147,15 +180,14 @@ pub async fn import_heartbeats(
         debug!(start = %range_start, end = %period_end, "Requesting Hackatime heartbeats");
 
         let fetch_result =
-            fetch_hackatime_heartbeats(&app_state.http_client, &api_key, range_start, period_end)
-                .await?;
+            fetch_hackatime_heartbeats(&http_client, &api_key, range_start, period_end).await?;
         requests_made += fetch_result.requests;
         earliest_requested = Some(range_start);
         let heartbeats = fetch_result.heartbeats;
 
         if !heartbeats.is_empty() {
             info!(
-                user_id = current_user.id,
+                user_id = user_id,
                 start = %range_start,
                 end = %period_end,
                 count = heartbeats.len(),
@@ -166,10 +198,9 @@ pub async fn import_heartbeats(
 
             let mut chunked_heartbeats = Vec::with_capacity(HEARTBEAT_IMPORT_BATCH_SIZE);
             for hb in heartbeats {
-                chunked_heartbeats.push(hb.to_new_heartbeat(current_user.id));
+                chunked_heartbeats.push(hb.to_new_heartbeat(user_id));
                 if chunked_heartbeats.len() == HEARTBEAT_IMPORT_BATCH_SIZE {
-                    match persist_heartbeat_chunk(&app_state.db_pool, &mut chunked_heartbeats).await
-                    {
+                    match persist_heartbeat_chunk(&db_pool, &mut chunked_heartbeats).await {
                         Ok(inserted) => total_inserted += inserted,
                         Err(err) => {
                             error!("Failed to persist imported heartbeats: {err}");
@@ -184,7 +215,7 @@ pub async fn import_heartbeats(
             }
 
             if !chunked_heartbeats.is_empty() {
-                match persist_heartbeat_chunk(&app_state.db_pool, &mut chunked_heartbeats).await {
+                match persist_heartbeat_chunk(&db_pool, &mut chunked_heartbeats).await {
                     Ok(inserted) => total_inserted += inserted,
                     Err(err) => {
                         error!("Failed to persist imported heartbeats: {err}");
@@ -216,7 +247,7 @@ pub async fn import_heartbeats(
 
     let time_taken = timer.elapsed().as_secs_f64();
 
-    Ok(Json(ImportResponse {
+    Ok(ImportResponse {
         imported: total_inserted,
         processed: total_processed,
         requests: requests_made,
@@ -224,7 +255,7 @@ pub async fn import_heartbeats(
             .map(format_rfc3339)
             .unwrap_or_else(|| cutoff.to_rfc3339_opts(SecondsFormat::Millis, true)),
         time_taken,
-    }))
+    })
 }
 
 fn determine_range(
