@@ -13,7 +13,7 @@ use serde::Serialize;
 use serde_json::{Value, from_str};
 use std::collections::HashSet;
 use std::sync::Arc;
-use tokio::sync::{oneshot, Mutex};
+use tokio::sync::{Mutex, oneshot};
 use tracing::{debug, error, info, info_span, warn};
 
 use crate::db::connection::DbPool;
@@ -124,7 +124,10 @@ pub async fn import_heartbeats(
     tokio::spawn(async move {
         let result = run_hackatime_import(background_state, user_id, api_key).await;
         if result_tx.send(result).is_err() {
-            info!(user_id = user_id, "Hackatime import completed after client disconnected");
+            info!(
+                user_id = user_id,
+                "Hackatime import completed after client disconnected"
+            );
         }
     });
 
@@ -132,7 +135,10 @@ pub async fn import_heartbeats(
         Ok(Ok(response)) => Ok(Json(response)),
         Ok(Err(response)) => Err(response),
         Err(_) => {
-            error!(user_id = user_id, "Hackatime import task ended before reporting result");
+            error!(
+                user_id = user_id,
+                "Hackatime import task ended before reporting result"
+            );
             Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Hackatime import task ended unexpectedly",

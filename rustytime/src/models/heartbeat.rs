@@ -225,12 +225,19 @@ impl HackatimeHeartbeat {
             branch: truncate_optional_string(self.branch.clone(), MAX_BRANCH_LENGTH),
             category: truncate_optional_string(self.category.clone(), MAX_CATEGORY_LENGTH),
             dependencies,
-            editor: truncate_optional_string(self.editor.clone().map(|editor| editor.to_ascii_lowercase()), MAX_EDITOR_LENGTH),
+            editor: truncate_optional_string(
+                self.editor
+                    .clone()
+                    .map(|editor| editor.to_ascii_lowercase()),
+                MAX_EDITOR_LENGTH,
+            ),
             entity: truncate_string(self.entity.clone(), MAX_ENTITY_LENGTH),
             language: truncate_optional_string(self.language.clone(), MAX_LANGUAGE_LENGTH),
             machine: truncate_optional_string(self.machine.clone(), MAX_MACHINE_LENGTH),
             operating_system: truncate_optional_string(
-                self.operating_system.clone().map(|os| os.to_ascii_lowercase()),
+                self.operating_system
+                    .clone()
+                    .map(|os| os.to_ascii_lowercase()),
                 MAX_OS_LENGTH,
             ),
             project: truncate_optional_string(self.project.clone(), MAX_PROJECT_LENGTH),
