@@ -32,7 +32,7 @@
 
 ## What is this?
 
-`rustytime` is a [WakaTime](https://wakatime.com) compatible server that can be used to track time in most apps with any of the existing [plugins](https://wakatime.com/plugins)!
+`rustytime` is a [WakaTime](https://wakatime.com) compatible backend that can be used to track time in most apps/IDEs with any of the existing [plugins](https://wakatime.com/plugins)! (or you could even [make your own](https://wakatime.com/help/creating-plugin) plugin)
 
 ## Local Development
 
@@ -60,7 +60,7 @@ $ docker compose up
 
 # OR
 
-# Run the databse + backend 
+# Run the database + backend 
 $ docker compose up timescaledb rustytime
 # Run the frontend
 $ cd frontend && bun run dev
@@ -68,24 +68,9 @@ $ cd frontend && bun run dev
 
 The app should now be available at [http://localhost:5173](http://localhost:5173)
 
-### Observability (OTel + LGTM)
-
-If you're running the self-hosted Grafana LGTM (Loki/Grafana/Tempo/Mimir) stack or an OpenTelemetry Collector on the same machine, expose its OTLP receiver (default gRPC on `4317`). Then add the following to your `.env` (already scaffolded in `.env.example`):
-
-```env
-OTEL_SERVICE_NAME=rustytime-server
-OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://127.0.0.1:4317
-OTEL_EXPORTER_OTLP_TRACES_PROTOCOL=grpc
-OTEL_RESOURCE_ATTRIBUTES=deployment.environment=development
-# Only when your collector requires authentication headers (comma-separated k=v)
-# OTEL_EXPORTER_OTLP_HEADERS=x-otlp-token=changeme
-```
-
-Restart the backend (`cargo run`) after updating the env vars. The warning about missing OTEL exporter configuration disappears, and spans begin flowing into Tempo. From there you can wire Grafana dashboards against the same Tempo instance alongside your LGTM stack.
-
 ### Seeding the DB
 
-The `seed` feature can be enabled in the build to seed the database with a single user and 10000 heartbeats.
+The `seed` feature can be enabled with a build flag to seed the database with a single user and 10000 fake heartbeats.
 
 ```bash
 cargo run --features seed
@@ -94,6 +79,31 @@ cargo run --features seed
 ## WakaTime
 
 When using a WakaTime client, point your requests to `http://localhost:3000/api/v1` (or `https://api-rustytime.shymike.dev/api/v1` if using the deployed version)
+
+### Observability (OTel + LGTM)
+
+If you're running the self-hosted Grafana LGTM (Loki/Grafana/Tempo/Mimir) stack or an OpenTelemetry Collector on the same machine, expose its OTLP receiver (default gRPC on `4317`). Then add the following to your `.env`:
+
+```env
+OTEL_SERVICE_NAME=rustytime-backend
+OTEL_RESOURCE_ATTRIBUTES=deployment.environment=dev,service.version=local-dev
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+OTEL_TRACES_EXPORTER=otlp
+OTEL_METRICS_EXPORTER=otlp
+OTEL_LOGS_EXPORTER=otlp
+# Only when your collector requires authentication headers (comma-separated k=v)
+# OTEL_EXPORTER_OTLP_HEADERS=x-otlp-token=changeme
+```
+
+### Profiling (Pyroscope)
+
+If you're also running Pyroscope for profiling, it can be enabled with:
+
+```env
+PYROSCOPE_SERVER_URL=http://localhost:4040
+PYROSCOPE_SAMPLE_RATE=99
+```
 
 ## Star History
 
