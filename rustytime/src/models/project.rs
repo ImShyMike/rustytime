@@ -1,7 +1,8 @@
 use crate::models::heartbeat::TIMEOUT_SECONDS;
+use diesel::QueryableByName;
 use diesel::insert_into;
 use diesel::prelude::*;
-use diesel::sql_types::Int4;
+use diesel::sql_types::{BigInt, Int4, Nullable as SqlNullable, Text, Timestamptz};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -11,12 +12,20 @@ use crate::schema::projects;
 use std::time::SystemTime;
 
 diesel::define_sql_function! {
-    /// Calculate project time with alias resolution
-    fn calculate_project_time_with_aliases(
+    fn list_projects_with_time(
         user_id: Int4,
-        project_id: Int4,
         timeout_seconds: Int4
-    ) -> diesel::sql_types::BigInt;
+    ) -> diesel::sql_types::Array<
+        diesel::sql_types::Record<(
+            Int4,
+            Int4,
+            Text,
+            SqlNullable<Text>,
+            SqlNullable<Timestamptz>,
+            SqlNullable<Timestamptz>,
+            BigInt,
+        )>
+    >;
 }
 
 struct CachedProjectId {
@@ -45,6 +54,24 @@ pub struct Project {
     pub repo_url: Option<String>,
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,
     pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+#[derive(QueryableByName)]
+struct ProjectWithTimeRow {
+    #[diesel(sql_type = Int4)]
+    id: i32,
+    #[diesel(sql_type = Int4)]
+    user_id: i32,
+    #[diesel(sql_type = Text)]
+    name: String,
+    #[diesel(sql_type = SqlNullable<Text>)]
+    repo_url: Option<String>,
+    #[diesel(sql_type = SqlNullable<Timestamptz>)]
+    created_at: Option<chrono::DateTime<chrono::Utc>>,
+    #[diesel(sql_type = SqlNullable<Timestamptz>)]
+    updated_at: Option<chrono::DateTime<chrono::Utc>>,
+    #[diesel(sql_type = BigInt)]
+    total_seconds: i64,
 }
 
 pub fn get_or_create_project_id(
@@ -143,43 +170,29 @@ impl Project {
         conn: &mut PgConnection,
         user_id_param: i32,
     ) -> QueryResult<Vec<(Project, i64)>> {
-        use crate::schema::projects::dsl::*;
+        let rows: Vec<ProjectWithTimeRow> = diesel::sql_query(
+            "SELECT id, user_id, name, repo_url, created_at, updated_at, total_seconds \
+             FROM list_projects_with_time($1, $2)",
+        )
+        .bind::<Int4, _>(user_id_param)
+        .bind::<Int4, _>(TIMEOUT_SECONDS)
+        .load(conn)?;
 
-        conn.transaction::<_, diesel::result::Error, _>(|conn| {
-            // get projects that are not aliases
-            let project_list: Vec<Project> = projects
-                .filter(user_id.eq(user_id_param))
-                .filter(
-                    id.ne_all(
-                        crate::schema::project_aliases::table
-                            .filter(crate::schema::project_aliases::user_id.eq(user_id_param))
-                            .select(crate::schema::project_aliases::project_id),
-                    ),
+        Ok(rows
+            .into_iter()
+            .map(|row| {
+                (
+                    Project {
+                        id: row.id,
+                        user_id: row.user_id,
+                        name: row.name,
+                        repo_url: row.repo_url,
+                        created_at: row.created_at,
+                        updated_at: row.updated_at,
+                    },
+                    row.total_seconds,
                 )
-                .load::<Project>(conn)?;
-
-            // calculate time for each project
-            let mut results = Vec::with_capacity(project_list.len());
-            for project in project_list {
-                let total_seconds: i64 = diesel::select(calculate_project_time_with_aliases(
-                    user_id_param,
-                    project.id,
-                    TIMEOUT_SECONDS,
-                ))
-                .get_result(conn)?;
-
-                results.push((project, total_seconds));
-            }
-
-            // sort by total_seconds DESC, then by name ASC
-            results.sort_by(
-                |(a_proj, a_time), (b_proj, b_time)| match b_time.cmp(a_time) {
-                    std::cmp::Ordering::Equal => a_proj.name.cmp(&b_proj.name),
-                    other => other,
-                },
-            );
-
-            Ok(results)
-        })
+            })
+            .collect())
     }
 }

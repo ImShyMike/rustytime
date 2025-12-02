@@ -745,7 +745,6 @@ impl Heartbeat {
         start_time: DateTime<Utc>,
         end_time: DateTime<Utc>,
     ) -> QueryResult<Vec<UserDurationRow>> {
-        // Call the database function using parameter binding to avoid malformed SQL
         diesel::sql_query(
             "SELECT user_id, total_seconds \
              FROM calculate_all_user_durations($1, $2, $3)",
