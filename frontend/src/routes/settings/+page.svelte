@@ -22,7 +22,7 @@
 
 	let { data }: Props = $props();
 
-	let settingsData = $state(data);
+	let settingsData = $derived(data);
 
 	const api = createApi(fetch);
 	let aliases = $state<Awaited<ReturnType<typeof getProjectAliases>> | null>(null);
