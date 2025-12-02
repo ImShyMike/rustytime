@@ -5,6 +5,7 @@
 	import LucideCopyCheck from '~icons/lucide/copy-check';
 	import LucideTrash2 from '~icons/lucide/trash-2';
 	import LucidePlus from '~icons/lucide/plus';
+	import LucideLoader2 from '~icons/lucide/loader-2';
 	import { onMount } from 'svelte';
 	import { createApi } from '$lib/api/api';
 	import {
@@ -13,7 +14,10 @@
 		addProjectAlias,
 		deleteProjectAlias
 	} from '$lib/api/project';
+	import { importFromHackatime } from '$lib/api/import';
+	import type { ImportResponse } from '$lib/types/settings';
 	import { safeText } from '$lib/utils/text';
+	import { formatDuration } from '$lib/utils/time';
 	import { PUBLIC_BACKEND_API_URL, PUBLIC_SITE_URL } from '$env/static/public';
 
 	interface Props {
@@ -104,15 +108,50 @@
 		}
 	});
 
-	let selectedTab = $state<'setup' | 'projects'>('setup');
+	let selectedTab = $state<'setup' | 'projects' | 'migration'>('setup');
 	const tabs = [
 		{ id: 'setup' as const, label: 'Setup' },
-		{ id: 'projects' as const, label: 'Projects' }
+		{ id: 'projects' as const, label: 'Projects' },
+		{ id: 'migration' as const, label: 'Migration' }
 	];
 
 	let config: string = $state('');
 	let commandCopied: boolean = $state(false);
 	let os: string = $state('windows');
+	let hackatimeApiKey: string = $state('');
+	let isImportingFromHackatime = $state(false);
+	let importError: string | null = $state(null);
+	let importStats: ImportResponse | null = $state(null);
+	const uuidV4Regex =
+		/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/;
+	const isValidHackatimeApiKey = $derived(uuidV4Regex.test(hackatimeApiKey.trim()));
+
+	function formatStartDate(value: string) {
+		const date = new Date(value);
+		return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+	}
+
+	async function handleHackatimeImport() {
+		const trimmedKey = hackatimeApiKey.trim();
+		if (!trimmedKey || !uuidV4Regex.test(trimmedKey)) {
+			importError = 'Enter a valid Hackatime API key to start the import.';
+			return;
+		}
+		isImportingFromHackatime = true;
+		importError = null;
+		try {
+			const result = await importFromHackatime(api, trimmedKey);
+			importStats = result;
+		} catch (error) {
+			console.error('Failed to import from Hackatime:', error);
+			importError =
+				error instanceof Error
+					? error.message
+					: 'Something went wrong while importing from Hackatime.';
+		} finally {
+			isImportingFromHackatime = false;
+		}
+	}
 
 	function copySetupContent() {
 		let textToCopy = '';
@@ -397,7 +436,7 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 								<button
 									onclick={handleAddAlias}
 									disabled={!selectedMainProject || !selectedAliasProject || isAddingAlias}
-									class="cursor-pointer pl-3 pr-4 py-2 bg-blue hover:bg-blue/80 disabled:bg-surface2 disabled:cursor-not-allowed text-crust rounded-md text-sm font-medium transition-colors flex items-center gap-2"
+									class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-md bg-blue text-crust text-sm font-semibold transition-colors hover:bg-blue/80 disabled:bg-overlay1 disabled:cursor-not-allowed whitespace-nowrap"
 								>
 									<LucidePlus class="w-4 h-4" />
 									Add
@@ -459,6 +498,77 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 						<p class="text-subtext0">Loading projects...</p>
 					</div>
 				{/if}
+			</Container>
+		{:else if selectedTab === 'migration'}
+			<Container>
+				<SectionTitle level="h2" className="mb-3">Hackatime Import</SectionTitle>
+				<div class="space-y-4">
+					<p class="text-ctp-text">
+						Import your existing Hackatime heartbeats directly into rustytime. Provide a Hackatime API key
+						to begin importing. Your key is only used for this session and is not stored.
+					</p>
+					<div class="bg-ctp-surface0/40 border border-surface1 rounded-lg p-4 space-y-3">
+						<h3 class="text-sm font-semibold text-text mb-3">Hackatime API Key</h3>
+						<div class="flex flex-col sm:flex-row gap-3 items-center">
+							<input
+								id="hackatime-api-key"
+								type="password"
+								placeholder="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+								bind:value={hackatimeApiKey}
+								class="w-full px-3 py-2 rounded-md border border-surface2 bg-ctp-surface1/40 text-text text-sm focus:outline-none focus:ring-2 focus:ring-blue"
+							/>
+							<button
+								onclick={handleHackatimeImport}
+								disabled={isImportingFromHackatime || !isValidHackatimeApiKey}
+								class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-md bg-blue text-crust text-sm font-semibold transition-colors hover:bg-blue/80 disabled:bg-overlay1 disabled:cursor-not-allowed whitespace-nowrap"
+							>
+								{#if isImportingFromHackatime}
+									<LucideLoader2 class="w-4 h-4 animate-spin" />
+									<span>Importing…</span>
+								{:else}
+									<span>Start Import</span>
+								{/if}
+							</button>
+						</div>
+						{#if importError}
+							<p class="text-sm text-red">{importError}</p>
+						{/if}
+					</div>
+
+					{#if isImportingFromHackatime}
+						<div class="flex items-center gap-2 text-subtext0 text-sm">
+							<LucideLoader2 class="w-4 h-4 animate-spin text-blue" />
+							<span>Please wait, this can take a minute.</span>
+						</div>
+					{/if}
+
+					{#if importStats}
+						<div class="bg-ctp-surface0/40 border border-surface1 rounded-lg p-4 space-y-4">
+							<div class="flex items-center justify-between">
+								<h3 class="text-sm font-semibold text-text">Import Completed!</h3>
+								<p class="text-xs text-subtext0">Started {formatStartDate(importStats.start_date)}</p>
+							</div>
+							<div class="grid gap-3 sm:grid-cols-2">
+								<div class="rounded-md border border-surface1 bg-ctp-surface1/30 p-3">
+									<p class="text-xs text-subtext0 uppercase tracking-wide">Imported Heartbeats</p>
+									<p class="text-2xl font-semibold text-text">{importStats.imported.toLocaleString()}</p>
+								</div>
+								<div class="rounded-md border border-surface1 bg-ctp-surface1/30 p-3">
+									<p class="text-xs text-subtext0 uppercase tracking-wide">Processed Heartbeats</p>
+									<p class="text-2xl font-semibold text-text">{importStats.processed.toLocaleString()}</p>
+								</div>
+								<div class="rounded-md border border-surface1 bg-ctp-surface1/30 p-3">
+									<p class="text-xs text-subtext0 uppercase tracking-wide">API Requests</p>
+									<p class="text-2xl font-semibold text-text">{importStats.requests.toLocaleString()}</p>
+								</div>
+								<div class="rounded-md border border-surface1 bg-ctp-surface1/30 p-3">
+									<p class="text-xs text-subtext0 uppercase tracking-wide">Duration</p>
+									<p class="text-2xl font-semibold text-text">{formatDuration(importStats.time_taken)}</p>
+								</div>
+							</div>
+						</div>
+					{/if}
+				</div>
 			</Container>
 		{/if}
 	</PageScaffold>

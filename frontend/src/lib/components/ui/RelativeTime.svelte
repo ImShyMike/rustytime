@@ -11,15 +11,13 @@
 	let { datetime, className, updateInterval }: Props = $props();
 
 	const resolvedClassName = $derived(className ?? 'inline');
-	const fallbackDatetime = datetime ?? new Date();
-	let fixedDatetime: Date = fallbackDatetime;
-
-	let text = $state(formatRelativeTime(fallbackDatetime));
+	const fallbackDatetime = $derived(datetime ?? new Date());
+	let fixedDatetime: Date = $state(new Date());
+	let text: string = $state('');
 
 	$effect(() => {
-		const nextDatetime = datetime ?? fallbackDatetime;
-		fixedDatetime = nextDatetime;
-		text = formatRelativeTime(nextDatetime);
+		fixedDatetime = fallbackDatetime;
+		text = formatRelativeTime(fallbackDatetime);
 	});
 
 	onMount(() => {
