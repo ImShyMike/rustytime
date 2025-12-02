@@ -55,6 +55,22 @@ diesel::define_sql_function! {
     ) -> diesel::sql_types::Array<diesel::sql_types::Record<(Int4, BigInt)>>;
 }
 
+diesel::define_sql_function! {
+    /// Calculate dashboard statistics (projects, editors, os, languages) in one call
+    fn calculate_dashboard_stats(
+        user_id: Int4,
+        timeout_seconds: Int4,
+        limit_count: Int4
+    ) -> diesel::sql_types::Array<
+        diesel::sql_types::Record<(
+            Text,
+            SqlNullable<Text>,
+            BigInt,
+            BigInt,
+        )>
+    >;
+}
+
 pub const TIMEOUT_SECONDS: i32 = 120; // 2 minutes in seconds
 
 // Character limits
@@ -133,6 +149,18 @@ struct NullableNameDurationRow {
     name: Option<String>,
     #[diesel(sql_type = BigInt)]
     total_seconds: i64,
+}
+
+#[derive(QueryableByName)]
+struct DashboardMetricRow {
+    #[diesel(sql_type = Text)]
+    metric_type: String,
+    #[diesel(sql_type = SqlNullable<Text>)]
+    name: Option<String>,
+    #[diesel(sql_type = BigInt)]
+    total_seconds: i64,
+    #[diesel(sql_type = BigInt)]
+    total_time: i64,
 }
 
 #[derive(Debug, Clone, Serialize, JsonSchema)]
@@ -755,73 +783,12 @@ impl Heartbeat {
         .load::<UserDurationRow>(conn)
     }
 
-    /// Calculate total duration in seconds using SQL
-    pub fn get_user_total_duration_seconds(
-        conn: &mut PgConnection,
-        user_id: i32,
-    ) -> QueryResult<i64> {
-        let result = Self::get_user_duration_seconds(
-            conn,
-            DurationInput {
-                user_id: Some(user_id),
-                start_date: None,
-                end_date: None,
-                project: None,
-                language: None,
-                entity: None,
-                type_filter: None,
-            },
-        );
-
-        match result {
-            Ok(total_seconds) => Ok(total_seconds),
-            Err(err) => {
-                eprintln!("❌ Error calculating total duration: {}", err);
-                Err(err)
-            }
-        }
-    }
-
     /// Get the count of heartbeats for a user
     pub fn get_user_heartbeat_count(conn: &mut PgConnection, user_id: i32) -> QueryResult<i64> {
         heartbeats::table
             .filter(heartbeats::user_id.eq(user_id))
             .count()
             .get_result(conn)
-    }
-
-    /// Get top 10 projects by total seconds
-    fn get_project_stats_with_aliases(
-        conn: &mut PgConnection,
-        user_id: i32,
-        total_time: i64,
-    ) -> QueryResult<Vec<UsageStat>> {
-        let rows: Vec<NullableNameDurationRow> = diesel::sql_query(
-            "SELECT name, total_seconds \
-             FROM calculate_project_stats_with_aliases($1, $2, $3)",
-        )
-        .bind::<Int4, _>(user_id)
-        .bind::<Int4, _>(TIMEOUT_SECONDS)
-        .bind::<Int4, _>(10)
-        .load(conn)?;
-
-        Ok(Self::map_usage_stats(rows, total_time))
-    }
-
-    fn load_field_stats(
-        conn: &mut PgConnection,
-        user_id: i32,
-        field: &str,
-    ) -> QueryResult<Vec<NullableNameDurationRow>> {
-        diesel::sql_query(
-            "SELECT name, total_seconds \
-             FROM calculate_field_stats($1, $2, $3, $4)",
-        )
-        .bind::<Int4, _>(user_id)
-        .bind::<Text, _>(field)
-        .bind::<Int4, _>(TIMEOUT_SECONDS)
-        .bind::<Int4, _>(10)
-        .load(conn)
     }
 
     fn map_usage_stats(rows: Vec<NullableNameDurationRow>, total_time: i64) -> Vec<UsageStat> {
@@ -845,26 +812,50 @@ impl Heartbeat {
         conn: &mut PgConnection,
         user_id: i32,
     ) -> QueryResult<DashboardStats> {
-        conn.transaction::<_, diesel::result::Error, _>(|conn| {
-            let total_time = Self::get_user_total_duration_seconds(conn, user_id)?;
-            let top_projects = Self::get_project_stats_with_aliases(conn, user_id, total_time)?;
+        let rows: Vec<DashboardMetricRow> = diesel::sql_query(
+            "SELECT metric_type, name, total_seconds, total_time \
+             FROM calculate_dashboard_stats($1, $2, $3)",
+        )
+        .bind::<Int4, _>(user_id)
+        .bind::<Int4, _>(TIMEOUT_SECONDS)
+        .bind::<Int4, _>(10)
+        .load(conn)?;
 
-            let mut get_stats = |field: &str| -> QueryResult<Vec<UsageStat>> {
-                let rows = Self::load_field_stats(conn, user_id, field)?;
-                Ok(Self::map_usage_stats(rows, total_time))
-            };
+        let mut total_time: i64 = 0;
+        let mut project_rows = Vec::new();
+        let mut editor_rows = Vec::new();
+        let mut os_rows = Vec::new();
+        let mut language_rows = Vec::new();
 
-            let top_editors = get_stats("editor")?;
-            let top_oses = get_stats("operating_system")?;
-            let top_languages = get_stats("language")?;
+        for row in rows {
+            match row.metric_type.as_str() {
+                "total_time" => total_time = row.total_time,
+                "project" => project_rows.push(NullableNameDurationRow {
+                    name: row.name,
+                    total_seconds: row.total_seconds,
+                }),
+                "editor" => editor_rows.push(NullableNameDurationRow {
+                    name: row.name,
+                    total_seconds: row.total_seconds,
+                }),
+                "operating_system" => os_rows.push(NullableNameDurationRow {
+                    name: row.name,
+                    total_seconds: row.total_seconds,
+                }),
+                "language" => language_rows.push(NullableNameDurationRow {
+                    name: row.name,
+                    total_seconds: row.total_seconds,
+                }),
+                _ => {}
+            }
+        }
 
-            Ok(DashboardStats {
-                total_time,
-                top_projects,
-                top_languages,
-                top_oses,
-                top_editors,
-            })
+        Ok(DashboardStats {
+            total_time,
+            top_projects: Self::map_usage_stats(project_rows, total_time),
+            top_languages: Self::map_usage_stats(language_rows, total_time),
+            top_oses: Self::map_usage_stats(os_rows, total_time),
+            top_editors: Self::map_usage_stats(editor_rows, total_time),
         })
     }
 }
