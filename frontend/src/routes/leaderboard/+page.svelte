@@ -14,7 +14,7 @@
 
 	let { data }: Props = $props();
 
-	let leaderboardData = $state(data);
+	let leaderboardData = $derived(data);
 	let lastUpdatedAt = $state(new Date());
 
 	const refreshLeaderboard = async () => {
@@ -29,8 +29,9 @@
 	});
 
 	$effect(() => {
-		leaderboardData = data;
-		lastUpdatedAt = new Date();
+		if (data) {
+			lastUpdatedAt = new Date();
+		}
 	});
 
 	let selectedTab = $state<'daily' | 'weekly' | 'all_time'>('daily');

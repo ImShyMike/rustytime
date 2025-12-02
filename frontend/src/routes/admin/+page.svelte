@@ -25,7 +25,7 @@
 
 	let { data }: Props = $props();
 
-	let adminData = $state(data);
+	let adminData = $derived(data);
 	let lastUpdatedAt = $state(new Date());
 
 	const api = createApi(fetch);
@@ -65,9 +65,7 @@
 	});
 
 	$effect(() => {
-		const payload = data;
-		adminData = payload;
-		if (payload) {
+		if (data) {
 			lastUpdatedAt = new Date();
 		}
 	});

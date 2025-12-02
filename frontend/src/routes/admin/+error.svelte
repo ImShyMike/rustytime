@@ -1,8 +1,6 @@
 <script lang="ts">
-    import ErrorPage from '$lib/components/ErrorPage.svelte';
-
-    export let error: Error;
-    export let status: number;
+	import ErrorPage from '$lib/components/ErrorPage.svelte';
+	import { page } from '$app/state';
 </script>
 
-<ErrorPage {status} {error} />
+<ErrorPage status={page.status} error={page.error} />

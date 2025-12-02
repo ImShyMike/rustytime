@@ -24,7 +24,7 @@
 
 	let { data }: Props = $props();
 
-	let dashboardData = $state(data);
+	let dashboardData = $derived(data);
 	let lastUpdatedAt = $state(new Date());
 
 	let projectsChart: ApexCharts | null = null;
@@ -52,9 +52,7 @@
 	});
 
 	$effect(() => {
-		const payload = data;
-		dashboardData = payload;
-		if (payload) {
+		if (data) {
 			lastUpdatedAt = new Date();
 		}
 	});
