@@ -21,6 +21,7 @@ use uuid::Uuid;
 #[derive(Serialize, JsonSchema)]
 pub struct SettingsResponse {
     #[schemars(with = "Option<String>")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub api_key: Option<Uuid>,
 }
 
@@ -57,11 +58,9 @@ pub async fn settings_page(
 
     let show_api_key = session_data.impersonated_by.is_none() || current_user.is_owner();
 
-    Ok(Json(SettingsResponse {
-        api_key: if show_api_key {
-            Some(current_user.api_key)
-        } else {
-            None
-        },
-    }))
+    if show_api_key {
+        return Ok(Json(SettingsResponse { api_key: Some(current_user.api_key) }));
+    } else {
+        return Ok(Json(SettingsResponse { api_key: None }));
+    }
 }

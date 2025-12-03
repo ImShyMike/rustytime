@@ -11,16 +11,19 @@ use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::{Value, from_str};
+use tower_cookies::Cookies;
 use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::{Mutex, oneshot};
 use tracing::{debug, error, info, info_span, warn};
 
 use crate::db::connection::DbPool;
+use crate::db_query;
 use crate::handlers::api::user::store_heartbeats_in_db_count_only;
 use crate::models::heartbeat::{HackatimeHeartbeat, NewHeartbeat};
 use crate::models::user::User;
 use crate::state::AppState;
+use crate::utils::session::SessionManager;
 
 const HACKATIME_HEARTBEATS_ENDPOINT: &str = "https://hackatime.hackclub.com/api/v1/my/heartbeats";
 const HEARTBEAT_IMPORT_BATCH_SIZE: usize = 1_000;
@@ -99,6 +102,7 @@ impl Drop for ImportRunGuard {
 pub async fn import_heartbeats(
     State(app_state): State<AppState>,
     Query(query): Query<ImportQuery>,
+    cookies: NoApi<Cookies>,
     user: NoApi<Option<Extension<User>>>,
 ) -> Result<Json<ImportResponse>, Response> {
     // get current user
@@ -106,6 +110,31 @@ pub async fn import_heartbeats(
         .0
         .expect("User should be authenticated since middleware validated authentication")
         .0;
+
+    let Some(session_id) = SessionManager::get_session_from_cookies(&cookies) else {
+        return Err((
+            StatusCode::UNAUTHORIZED,
+            "User session is invalid").into_response()
+        )
+    };
+
+    let Some(session_data) = db_query!(
+        SessionManager::validate_session(&app_state.db_pool, session_id).await,
+        "Session validation error"
+    ) else {
+        return Err((
+            StatusCode::UNAUTHORIZED,
+            "User session is invalid").into_response()
+        )
+    };
+
+    if session_data.impersonated_by.is_some() && !current_user.is_owner() {
+        return Err((
+            StatusCode::FORBIDDEN,
+            "Impersonators cannot perform data imports",
+        )
+            .into_response());
+    }
 
     let api_key = query.api_key.trim().to_string();
     if api_key.is_empty() {
