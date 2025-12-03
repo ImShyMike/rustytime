@@ -11,10 +11,10 @@ use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::{Value, from_str};
-use tower_cookies::Cookies;
 use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::{Mutex, oneshot};
+use tower_cookies::Cookies;
 use tracing::{debug, error, info, info_span, warn};
 
 use crate::db::connection::DbPool;
@@ -112,20 +112,14 @@ pub async fn import_heartbeats(
         .0;
 
     let Some(session_id) = SessionManager::get_session_from_cookies(&cookies) else {
-        return Err((
-            StatusCode::UNAUTHORIZED,
-            "User session is invalid").into_response()
-        )
+        return Err((StatusCode::UNAUTHORIZED, "User session is invalid").into_response());
     };
 
     let Some(session_data) = db_query!(
         SessionManager::validate_session(&app_state.db_pool, session_id).await,
         "Session validation error"
     ) else {
-        return Err((
-            StatusCode::UNAUTHORIZED,
-            "User session is invalid").into_response()
-        )
+        return Err((StatusCode::UNAUTHORIZED, "User session is invalid").into_response());
     };
 
     if session_data.impersonated_by.is_some() && !current_user.is_owner() {

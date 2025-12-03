@@ -59,8 +59,10 @@ pub async fn settings_page(
     let show_api_key = session_data.impersonated_by.is_none() || current_user.is_owner();
 
     if show_api_key {
-        return Ok(Json(SettingsResponse { api_key: Some(current_user.api_key) }));
+        Ok(Json(SettingsResponse {
+            api_key: Some(current_user.api_key),
+        }))
     } else {
-        return Ok(Json(SettingsResponse { api_key: None }));
+        Ok(Json(SettingsResponse { api_key: None }))
     }
 }
