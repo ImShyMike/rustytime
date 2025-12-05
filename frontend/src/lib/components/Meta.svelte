@@ -56,7 +56,7 @@
 	{/if}
 	{#if image}
 		<meta property="og:image" content={image} />
-		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:card" content="summary" />
 		<meta name="twitter:image" content={image} />
 		{#if imageAlt}
 			<meta property="og:image:alt" content={imageAlt} />
