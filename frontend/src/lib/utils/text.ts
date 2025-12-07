@@ -27,6 +27,13 @@ export function safeText(text: string, maxLength: number = 0): string {
 	return escapeHtml(truncateText(text, maxLength));
 }
 
+export function noUnknownText(text: string): string {
+	if (!text) {
+		return 'Unknown';
+	}
+	return text;
+}
+
 export function safeGraphData(entry: UsageStat[]): UsageStat[] {
 	return entry.map((stat) => ({
 		...stat,

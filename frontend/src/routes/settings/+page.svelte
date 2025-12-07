@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import { Container, PageScaffold, SectionTitle } from '$lib';
+	import { Container, PageScaffold, SectionTitle, Button } from '$lib';
 	import LucideCopy from '~icons/lucide/copy';
 	import LucideCopyCheck from '~icons/lucide/copy-check';
 	import LucideTrash2 from '~icons/lucide/trash-2';
@@ -433,14 +433,14 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 								</select>
 							</div>
 							<div class="flex items-end">
-								<button
-									onclick={handleAddAlias}
+								<Button
+									onClick={handleAddAlias}
 									disabled={!selectedMainProject || !selectedAliasProject || isAddingAlias}
-									class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-md bg-blue text-crust text-sm font-semibold transition-colors hover:bg-blue/80 disabled:bg-overlay1 disabled:cursor-not-allowed whitespace-nowrap"
+									className="inline-flex items-center gap-2 px-4 py-2 whitespace-nowrap"
 								>
 									<LucidePlus class="w-4 h-4" />
 									Add
-								</button>
+								</Button>
 							</div>
 						</div>
 					</div>
@@ -504,8 +504,8 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 				<SectionTitle level="h2" className="mb-3">Hackatime Import</SectionTitle>
 				<div class="space-y-4">
 					<p class="text-ctp-text">
-						Import your existing Hackatime heartbeats directly into rustytime. Provide a Hackatime API key
-						to begin importing. Your key is only used for this session and is not stored.
+						Import your existing Hackatime heartbeats directly into rustytime. Provide a Hackatime
+						API key to begin importing. Your key is only used for this session and is not stored.
 					</p>
 					<div class="bg-ctp-surface0/40 border border-surface1 rounded-lg p-4 space-y-3">
 						<h3 class="text-sm font-semibold text-text mb-3">Hackatime API Key</h3>
@@ -517,10 +517,10 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 								bind:value={hackatimeApiKey}
 								class="w-full px-3 py-2 rounded-md border border-surface2 bg-ctp-surface1/40 text-text text-sm focus:outline-none focus:ring-2 focus:ring-blue"
 							/>
-							<button
-								onclick={handleHackatimeImport}
+							<Button
+								onClick={handleHackatimeImport}
 								disabled={isImportingFromHackatime || !isValidHackatimeApiKey}
-								class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-md bg-blue text-crust text-sm font-semibold transition-colors hover:bg-blue/80 disabled:bg-overlay1 disabled:cursor-not-allowed whitespace-nowrap"
+								className="inline-flex items-center gap-2 whitespace-nowrap"
 							>
 								{#if isImportingFromHackatime}
 									<LucideLoader2 class="w-4 h-4 animate-spin" />
@@ -528,7 +528,7 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 								{:else}
 									<span>Start Import</span>
 								{/if}
-							</button>
+							</Button>
 						</div>
 						{#if importError}
 							<p class="text-sm text-red">{importError}</p>
@@ -546,24 +546,34 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 						<div class="bg-ctp-surface0/40 border border-surface1 rounded-lg p-4 space-y-4">
 							<div class="flex items-center justify-between">
 								<h3 class="text-sm font-semibold text-text">Import Completed!</h3>
-								<p class="text-xs text-subtext0">Started {formatStartDate(importStats.start_date)}</p>
+								<p class="text-xs text-subtext0">
+									Started {formatStartDate(importStats.start_date)}
+								</p>
 							</div>
 							<div class="grid gap-3 sm:grid-cols-2">
 								<div class="rounded-md border border-surface1 bg-ctp-surface1/30 p-3">
 									<p class="text-xs text-subtext0 uppercase tracking-wide">Imported Heartbeats</p>
-									<p class="text-2xl font-semibold text-green">{importStats.imported.toLocaleString()}</p>
+									<p class="text-2xl font-semibold text-green">
+										{importStats.imported.toLocaleString()}
+									</p>
 								</div>
 								<div class="rounded-md border border-surface1 bg-ctp-surface1/30 p-3">
 									<p class="text-xs text-subtext0 uppercase tracking-wide">Processed Heartbeats</p>
-									<p class="text-2xl font-semibold text-text">{importStats.processed.toLocaleString()}</p>
+									<p class="text-2xl font-semibold text-text">
+										{importStats.processed.toLocaleString()}
+									</p>
 								</div>
 								<div class="rounded-md border border-surface1 bg-ctp-surface1/30 p-3">
 									<p class="text-xs text-subtext0 uppercase tracking-wide">API Requests</p>
-									<p class="text-2xl font-semibold text-text">{importStats.requests.toLocaleString()}</p>
+									<p class="text-2xl font-semibold text-text">
+										{importStats.requests.toLocaleString()}
+									</p>
 								</div>
 								<div class="rounded-md border border-surface1 bg-ctp-surface1/30 p-3">
 									<p class="text-xs text-subtext0 uppercase tracking-wide">Duration</p>
-									<p class="text-2xl font-semibold text-text">{formatDuration(importStats.time_taken)}</p>
+									<p class="text-2xl font-semibold text-text">
+										{formatDuration(importStats.time_taken)}
+									</p>
 								</div>
 							</div>
 						</div>

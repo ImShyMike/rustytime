@@ -11,3 +11,4 @@ export { default as SideBar } from './components/SideBar.svelte';
 export { default as StatCard } from './components/ui/StatCard.svelte';
 export { default as UserTag } from './components/ui/UserTag.svelte';
 export { default as RelativeTime } from './components/ui/RelativeTime.svelte';
+export { default as Button } from './components/ui/Button.svelte';
