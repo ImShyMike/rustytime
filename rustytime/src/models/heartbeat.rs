@@ -398,6 +398,8 @@ pub struct HeartbeatRequest {
     pub lineno: Option<i32>,
     pub cursorpos: Option<i32>,
     pub is_write: Option<bool>,
+    pub plugin: Option<String>,
+    pub user_agent: Option<String>,
 }
 
 #[derive(Serialize, Debug, JsonSchema)]
@@ -507,6 +509,8 @@ pub struct SanitizedHeartbeatRequest {
     pub cursorpos: Option<i32>,
     pub is_write: Option<bool>,
     pub source_type: Option<i16>,
+    pub plugin: Option<String>,
+    pub user_agent: Option<String>,
 }
 
 impl SanitizedHeartbeatRequest {
@@ -530,10 +534,8 @@ impl SanitizedHeartbeatRequest {
             Some(cat)
         } else if request.type_ == "domain" || request.type_ == "url" {
             Some("browsing".to_string())
-        } else if request.type_ == "file" && request.language.is_some() {
-            Some("coding".to_string())
         } else {
-            None
+            Some("coding".to_string())
         };
 
         // Convert dependencies and apply limits
@@ -567,21 +569,29 @@ impl SanitizedHeartbeatRequest {
             cursorpos: request.cursorpos,
             is_write: request.is_write,
             source_type: Some(source_type_ as i16),
+            user_agent: request.user_agent,
+            plugin: request.plugin,
         }
     }
 
     pub fn into_new_heartbeat(
-        self,
+        mut self,
         user_id: i32,
         ip_address: IpNetwork,
         headers: &HeaderMap,
     ) -> NewHeartbeat {
-        // Extract user agent from headers
-        let user_agent = headers
-            .get("user-agent")
-            .and_then(|value| value.to_str().ok())
-            .unwrap_or("")
-            .to_string();
+        // Get user agent with fallbacks (user_agent -> header -> plugin)
+        let user_agent = self
+            .user_agent
+            .take()
+            .or_else(|| {
+                headers
+                    .get("user-agent")
+                    .and_then(|value| value.to_str().ok())
+                    .map(|value| value.to_string())
+            })
+            .or_else(|| self.plugin.take())
+            .unwrap_or_default();
 
         // Extract machine name from headers
         let machine = headers
@@ -589,10 +599,14 @@ impl SanitizedHeartbeatRequest {
             .and_then(|value| value.to_str().ok())
             .map(|s| s.to_string());
 
-        // Parse user agent to get OS and editor info
-        let (operating_system, editor) = match parse_user_agent(user_agent.clone()) {
-            Ok((os, ed)) => (os, ed),
-            Err(_) => (None, None),
+        let (operating_system, editor) = if user_agent.is_empty() {
+            (None, None)
+        } else {
+            // Parse user agent to get OS and editor info
+            match parse_user_agent(user_agent.clone()) {
+                Ok((os, ed)) => (os, ed),
+                Err(_) => (None, None),
+            }
         };
 
         // Convert dependencies Vec<String> to Vec<Option<String>> if present
@@ -882,6 +896,8 @@ mod tests {
             lineno: Some(42),
             cursorpos: Some(128),
             is_write: Some(true),
+            plugin: None,
+            user_agent: None,
         }
     }
 

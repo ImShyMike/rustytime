@@ -21,7 +21,7 @@ use crate::utils::http::extract_client_ip_from_headers;
 use crate::utils::time::{TimeFormat, human_readable_duration};
 use std::collections::{HashMap, hash_map};
 
-const MAX_HEARTBEATS_PER_REQUEST: usize = 25;
+const MAX_HEARTBEATS_PER_REQUEST: usize = 100;
 const HEARTBEAT_INSERT_BATCH_SIZE: usize = 1_000; // avoids hitting Postgres' 65k parameter limit
 
 /// Process heartbeat request and store in the database
