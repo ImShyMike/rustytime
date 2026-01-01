@@ -328,8 +328,8 @@ fn split_range_midpoint(start: DateTime<Utc>, end: DateTime<Utc>) -> Option<Date
 }
 
 enum HackatimeFetchError {
-    Transport(Response),
-    Parse {
+    Unrecoverable(Response),
+    Recoverable {
         error: serde_json::Error,
         preview: String,
         body_length: usize,
@@ -378,8 +378,8 @@ async fn fetch_hackatime_range(
             Ok(mut heartbeats) => {
                 aggregated.heartbeats.append(&mut heartbeats);
             }
-            Err(HackatimeFetchError::Transport(response)) => return Err(response),
-            Err(HackatimeFetchError::Parse {
+            Err(HackatimeFetchError::Unrecoverable(response)) => return Err(response),
+            Err(HackatimeFetchError::Recoverable {
                 error,
                 preview,
                 body_length,
@@ -455,32 +455,44 @@ async fn fetch_hackatime_once(
         .await
         .map_err(|err| {
             error!("Failed to reach the Hackatime API: {err}");
-            HackatimeFetchError::Transport(
+            HackatimeFetchError::Unrecoverable(
                 (StatusCode::BAD_GATEWAY, "Failed to reach the Hackatime API").into_response(),
             )
         })?;
 
     let status = response.status();
     if status == StatusCode::UNAUTHORIZED {
-        return Err(HackatimeFetchError::Transport(
+        return Err(HackatimeFetchError::Unrecoverable(
             (StatusCode::UNAUTHORIZED, "Hackatime API key is invalid").into_response(),
         ));
     }
 
     if !status.is_success() {
-        error!("Hackatime API returned status {}", status);
-        return Err(HackatimeFetchError::Transport(
-            (
-                StatusCode::BAD_GATEWAY,
-                "Hackatime API responded with an error",
-            )
-                .into_response(),
-        ));
+        if status.as_u16() == 524 {
+            warn!("Hackatime API request timed out (524)");
+            return Err(HackatimeFetchError::Recoverable {
+                error: serde_json::Error::io(std::io::Error::new(
+                    std::io::ErrorKind::TimedOut,
+                    "Cloudflare timeout (524)",
+                )),
+                preview: String::from("Cloudflare timeout (524)"),
+                body_length: 0,
+            });
+        } else {
+            error!("Hackatime API returned status {}", status);
+            return Err(HackatimeFetchError::Unrecoverable(
+                (
+                    StatusCode::BAD_GATEWAY,
+                    "Hackatime API responded with an error",
+                )
+                    .into_response(),
+            ));
+        }
     }
 
     let raw_body = response.text().await.map_err(|err| {
         error!("Failed to read Hackatime response body: {err}");
-        HackatimeFetchError::Transport(
+        HackatimeFetchError::Unrecoverable(
             (
                 StatusCode::BAD_GATEWAY,
                 "Failed to read Hackatime response body",
@@ -505,7 +517,7 @@ async fn fetch_hackatime_once(
                 .chars()
                 .take(HACKATIME_BODY_LOG_LIMIT)
                 .collect::<String>();
-            Err(HackatimeFetchError::Parse {
+            Err(HackatimeFetchError::Recoverable {
                 error,
                 preview,
                 body_length: raw_body.len(),
