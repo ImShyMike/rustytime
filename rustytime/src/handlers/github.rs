@@ -8,7 +8,7 @@ use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use oauth2::{
     AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EndpointNotSet, EndpointSet,
-    RedirectUrl, Scope, TokenResponse, TokenUrl, basic::BasicClient, reqwest as oauth2_reqwest
+    RedirectUrl, Scope, TokenResponse, TokenUrl, basic::BasicClient, reqwest as oauth2_reqwest,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
