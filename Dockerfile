@@ -35,7 +35,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/rustytime/target \
-    cargo build --release --no-default-features
+    cargo build --profile good --no-default-features
 
 # Remove dummy source
 RUN rm -rf src/
@@ -48,9 +48,9 @@ COPY rustytime/migrations ./migrations
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/rustytime/target \
     touch src/main.rs && \
-    cargo build --release --no-default-features && \
+    cargo build --profile good --no-default-features && \
     mkdir -p /tmp/target && \
-    cp /app/rustytime/target/release/rustytime /tmp/target/rustytime
+    cp /app/rustytime/target/good/rustytime /tmp/target/rustytime
 
 # Runtime stage
 FROM alpine:latest
