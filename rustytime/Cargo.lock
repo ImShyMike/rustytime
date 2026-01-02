@@ -1514,7 +1514,7 @@ dependencies = [
  "getrandom 0.2.16",
  "http",
  "rand 0.8.5",
- "reqwest",
+ "reqwest 0.12.28",
  "serde",
  "serde_json",
  "serde_path_to_error",
@@ -1579,7 +1579,7 @@ dependencies = [
  "bytes",
  "http",
  "opentelemetry",
- "reqwest",
+ "reqwest 0.12.28",
 ]
 
 [[package]]
@@ -1594,7 +1594,7 @@ dependencies = [
  "opentelemetry-proto",
  "opentelemetry_sdk",
  "prost 0.14.1",
- "reqwest",
+ "reqwest 0.12.28",
  "thiserror 2.0.17",
  "tokio",
  "tonic",
@@ -1857,7 +1857,7 @@ dependencies = [
  "log",
  "names",
  "prost 0.11.9",
- "reqwest",
+ "reqwest 0.12.28",
  "serde_json",
  "thiserror 1.0.69",
  "url",
@@ -2114,8 +2114,6 @@ checksum = "eddd3ca559203180a307f12d114c268abf583f59b03cb906fd0b3ff8646c1147"
 dependencies = [
  "base64",
  "bytes",
- "cookie",
- "cookie_store",
  "futures-channel",
  "futures-core",
  "futures-util",
@@ -2139,6 +2137,40 @@ dependencies = [
  "sync_wrapper",
  "tokio",
  "tokio-rustls",
+ "tower",
+ "tower-http",
+ "tower-service",
+ "url",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
+
+[[package]]
+name = "reqwest"
+version = "0.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "04e9018c9d814e5f30cc16a0f03271aeab3571e609612d9fe78c1aa8d11c2f62"
+dependencies = [
+ "base64",
+ "bytes",
+ "cookie",
+ "cookie_store",
+ "futures-core",
+ "http",
+ "http-body",
+ "http-body-util",
+ "hyper",
+ "hyper-util",
+ "js-sys",
+ "log",
+ "percent-encoding",
+ "pin-project-lite",
+ "serde",
+ "serde_json",
+ "serde_urlencoded",
+ "sync_wrapper",
+ "tokio",
  "tower",
  "tower-http",
  "tower-service",
@@ -2248,7 +2280,7 @@ checksum = "b39cdef0fa800fc44525c84ccb54a029961a8215f9619753635a9c0d2538d46d"
 
 [[package]]
 name = "rustytime-server"
-version = "0.12.5"
+version = "0.12.6"
 dependencies = [
  "aide",
  "axum",
@@ -2272,7 +2304,7 @@ dependencies = [
  "pyroscope_pprofrs",
  "rand 0.9.2",
  "regex",
- "reqwest",
+ "reqwest 0.13.1",
  "schemars",
  "serde",
  "serde_json",

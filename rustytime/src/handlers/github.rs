@@ -8,7 +8,7 @@ use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use oauth2::{
     AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EndpointNotSet, EndpointSet,
-    RedirectUrl, Scope, TokenResponse, TokenUrl, basic::BasicClient, reqwest,
+    RedirectUrl, Scope, TokenResponse, TokenUrl, basic::BasicClient, reqwest as oauth2_reqwest
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -165,11 +165,17 @@ pub async fn callback(
 
     let code = AuthorizationCode::new(params.code.clone());
 
+    // i hate this so much but oauth2 crate is stuck on reqwest 0.12
+    let client = oauth2_reqwest::Client::builder()
+        .redirect(oauth2_reqwest::redirect::Policy::none())
+        .build()
+        .expect("Failed to build OAuth HTTP client");
+
     // exchange code for access token
     let token_response = match app_state
         .github_client
         .exchange_code(code)
-        .request_async(&app_state.http_client)
+        .request_async(&client)
         .await
     {
         Ok(response) => response,
