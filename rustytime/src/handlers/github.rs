@@ -194,10 +194,12 @@ pub async fn callback(
     // fetch user info from GitHub
     let user_info = match fetch_github_user(&app_state.http_client, access_token).await {
         Ok(info) => info,
-        Err(err) => return Ok({
-            error!("Failed to fetch user info from GitHub: {}", err);
-            Redirect::to(&format!("{}/?error=github_api", frontend_url))
-        }),
+        Err(err) => {
+            return Ok({
+                error!("Failed to fetch user info from GitHub: {}", err);
+                Redirect::to(&format!("{}/?error=github_api", frontend_url))
+            });
+        }
     };
 
     // get database connection
@@ -218,10 +220,12 @@ pub async fn callback(
         Ok((user, session))
     }) {
         Ok(result) => result,
-        Err(err) => return Ok({
-            error!("Database error during user/session creation: {}", err);
-            Redirect::to(&format!("{}/?error=database", frontend_url))
-        }),
+        Err(err) => {
+            return Ok({
+                error!("Database error during user/session creation: {}", err);
+                Redirect::to(&format!("{}/?error=database", frontend_url))
+            });
+        }
     };
 
     // set session cookie
