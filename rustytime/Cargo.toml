@@ -1,7 +1,7 @@
 [package]
 name = "rustytime-server"
 description = "🕒 blazingly fast time tracking for developers"
-version = "0.12.8"
+version = "0.12.9"
 edition = "2024"
 authors = ["ImShyMike"]
 readme = "../README.md"
@@ -53,9 +53,9 @@ ipnetwork = { version = "0.21.1", features = ["serde"], default-features = false
 oauth2 = { version = "5.0.0",  features = ["reqwest"], default-features = false }
 reqwest = { version = "0.13.1", features = ["json", "cookies", "query", "rustls"], default-features = false }
 url = { version = "2.5.8", default-features = false }
-tower = { version = "0.5.2", default-features = false }
+tower = { version = "0.5.3", default-features = false }
 tower-cookies = { version = "0.11.0", features = ["axum-core"], default-features = false }
-time = { version = "0.3.44", default-features = false }
+time = { version = "0.3.45", default-features = false }
 urlencoding = { version = "2.1.3", default-features = false }
 regex = { version = "1.12.2", default-features = false }
 once_cell = { version = "1.21.3", default-features = false }
