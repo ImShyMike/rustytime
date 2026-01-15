@@ -116,13 +116,14 @@ $heartbeat = @{
     entity = 'test.txt'
     language = 'Text'
 }
+$heartbeatJson = $heartbeat | ConvertTo-Json -Depth 5
 
 try {
     $response = Invoke-WebRequest -Uri ("{0}/users/current/heartbeats" -f $apiUrl.TrimEnd('/')) `
         -Method Post `
         -Headers @{ Authorization = "Bearer $apiKey" } `
         -ContentType 'application/json' `
-        -Body $heartbeat
+        -Body $heartbeatJson
     $statusCode = [int]$response.StatusCode
     $body = $response.Content
 } catch {
