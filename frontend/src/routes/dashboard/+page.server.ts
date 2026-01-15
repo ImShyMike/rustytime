@@ -3,13 +3,14 @@ import { createApi, ApiError } from '$lib/api/api';
 import { redirect, error } from '@sveltejs/kit';
 import type { DashboardResponse } from '$lib/types/dashboard';
 
-export const load: PageServerLoad = async ({ fetch, depends, request }) => {
+export const load: PageServerLoad = async ({ fetch, depends, request, url }) => {
 	depends('app:dashboard');
 
 	try {
 		const cookieHeader = request.headers.get('cookie') || undefined;
 		const api = createApi(fetch, cookieHeader);
-		return await api.get<DashboardResponse>('/page/dashboard');
+		const range = url.searchParams.get('range') || 'month';
+		return await api.get<DashboardResponse>(`/page/dashboard?range=${range}`);
 	} catch (e) {
 		console.error('Error loading dashboard page data:', e);
 		const err = e as ApiError;

@@ -1,4 +1,4 @@
-use crate::models::heartbeat::UsageStat;
+use crate::models::heartbeat::{TimeRange, UsageStat};
 use crate::models::user::User;
 use crate::state::AppState;
 use crate::utils::session::SessionManager;
@@ -7,13 +7,19 @@ use crate::{db_query, get_db_conn, models::heartbeat::Heartbeat};
 use aide::NoApi;
 use axum::{
     Extension,
-    extract::State,
+    extract::{Query, State},
     http::StatusCode,
     response::{IntoResponse, Json, Response},
 };
 use schemars::JsonSchema;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tower_cookies::Cookies;
+
+#[derive(Deserialize, JsonSchema)]
+pub struct DashboardQuery {
+    #[serde(default)]
+    pub range: TimeRange,
+}
 
 #[derive(Serialize, JsonSchema)]
 pub struct DashboardResponse {
@@ -27,6 +33,7 @@ pub struct DashboardResponse {
     human_readable_total: String,
     admin_level: i16,
     dev_mode: bool,
+    range: String,
     projects: Vec<UsageStat>,
     editors: Vec<UsageStat>,
     operating_systems: Vec<UsageStat>,
@@ -38,6 +45,7 @@ pub async fn dashboard(
     State(app_state): State<AppState>,
     cookies: NoApi<Cookies>,
     user: Option<Extension<User>>,
+    Query(query): Query<DashboardQuery>,
 ) -> Result<Json<DashboardResponse>, Response> {
     let cookies = cookies.0;
     // check if user is authenticated
@@ -67,15 +75,15 @@ pub async fn dashboard(
 
     let mut conn = get_db_conn!(app_state);
 
-    // get heartbeat count
+    // get heartbeat count based on time range
     let total_heartbeats = db_query!(
-        Heartbeat::get_user_heartbeat_count(&mut conn, session_data.user_id),
+        Heartbeat::get_user_heartbeat_count_by_range(&mut conn, session_data.user_id, query.range),
         "Database error getting heartbeat count"
     );
 
-    // get dashboard stats
+    // get dashboard stats based on time range
     let dashboard_stats = db_query!(
-        Heartbeat::get_dashboard_stats(&mut conn, session_data.user_id),
+        Heartbeat::get_dashboard_stats_by_range(&mut conn, session_data.user_id, query.range),
         "Database error getting dashboard stats"
     );
 
@@ -94,6 +102,7 @@ pub async fn dashboard(
         .human_readable,
         admin_level: user.admin_level,
         dev_mode: cfg!(debug_assertions),
+        range: query.range.as_str().to_string(),
         projects: dashboard_stats.top_projects,
         editors: dashboard_stats.top_editors,
         operating_systems: dashboard_stats.top_oses,

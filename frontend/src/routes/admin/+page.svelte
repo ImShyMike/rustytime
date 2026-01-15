@@ -1,5 +1,4 @@
 <script lang="ts">
-	/* eslint-disable svelte/no-navigation-without-resolve -- External GitHub profile links */
 	import { tick } from 'svelte';
 	import { browser } from '$app/environment';
 	import { invalidate } from '$app/navigation';

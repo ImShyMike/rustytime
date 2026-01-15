@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { tick } from 'svelte';
 	import { browser } from '$app/environment';
-	import { invalidate } from '$app/navigation';
+	import { invalidate, goto } from '$app/navigation';
 	import { apexcharts } from '$lib/stores/apexcharts';
 	import { theme } from '$lib/stores/theme';
 	import type { Theme } from '$lib/stores/theme';
@@ -26,6 +26,7 @@
 
 	let dashboardData = $derived(data);
 	let lastUpdatedAt = $state(new Date());
+	let selectedRange = $derived(data?.range || 'month');
 
 	let projectsChart: ApexCharts | null = null;
 	let languagesChart: ApexCharts | null = null;
@@ -34,6 +35,12 @@
 
 	const refreshDashboardData = async () => {
 		await invalidate('app:dashboard');
+	};
+
+	const handleRangeChange = async (newRange: string) => {
+		selectedRange = newRange;
+		// eslint-disable-next-line svelte/no-navigation-without-resolve
+		await goto(`/dashboard?range=${newRange}`, { keepFocus: true });
 	};
 
 	function destroyCharts() {
@@ -160,6 +167,54 @@
 			</div>
 		</Container>
 
+		<!-- Time Range Filter -->
+		<Container className="mb-4">
+			<div class="flex flex-col gap-3">
+				<div class="flex flex-wrap items-center justify-between gap-3">
+					<button
+						class={`cursor-pointer flex-1 px-3 py-1 rounded text-sm font-medium transition-colors ${
+							selectedRange === 'day'
+								? 'bg-ctp-lavender/90 text-ctp-crust'
+								: 'bg-ctp-surface0/70 border border-ctp-surface1 text-text hover:bg-ctp-surface0'
+						}`}
+						onclick={() => handleRangeChange('day')}
+					>
+						Today
+					</button>
+					<button
+						class={`cursor-pointer flex-1 px-3 py-1 rounded text-sm font-medium transition-colors ${
+							selectedRange === 'week'
+								? 'bg-ctp-lavender/90 text-ctp-crust'
+								: 'bg-ctp-surface0/70 border border-ctp-surface1 text-text hover:bg-ctp-surface0'
+						}`}
+						onclick={() => handleRangeChange('week')}
+					>
+						This Week
+					</button>
+					<button
+						class={`cursor-pointer flex-1 px-3 py-1 rounded text-sm font-medium transition-colors ${
+							selectedRange === 'month'
+								? 'bg-ctp-lavender/90 text-ctp-crust'
+								: 'bg-ctp-surface0/70 border border-ctp-surface1 text-text hover:bg-ctp-surface0'
+						}`}
+						onclick={() => handleRangeChange('month')}
+					>
+						This Month
+					</button>
+					<button
+						class={`cursor-pointer flex-1 px-3 py-1 rounded text-sm font-medium transition-colors ${
+							selectedRange === 'all'
+								? 'bg-ctp-lavender/90 text-ctp-crust'
+								: 'bg-ctp-surface0/70 border border-ctp-surface1 text-text hover:bg-ctp-surface0'
+						}`}
+						onclick={() => handleRangeChange('all')}
+					>
+						All Time
+					</button>
+				</div>
+			</div>
+		</Container>
+
 		<!-- Top Stats -->
 		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
 			<StatCard
@@ -194,7 +249,7 @@
 					<div>
 						<SectionTitle>Top Projects</SectionTitle>
 						{#if dashboardData.projects.length > 0}
-							<div id="projects-chart" class="h-[350px]"></div>
+							<div id="projects-chart" class="h-87.5"></div>
 						{:else}
 							<p class="text-ctp-subtext0">No project data available</p>
 						{/if}
@@ -204,7 +259,7 @@
 					<div>
 						<SectionTitle size="sm" className="mb-4">Top Languages</SectionTitle>
 						{#if dashboardData.languages.length > 0}
-							<div id="languages-chart" class="h-[350px]"></div>
+							<div id="languages-chart" class="h-87.5"></div>
 						{:else}
 							<p class="text-ctp-subtext0">No language data available</p>
 						{/if}
@@ -214,7 +269,7 @@
 					<div>
 						<SectionTitle size="sm" className="mb-4">Top Editors</SectionTitle>
 						{#if dashboardData.editors.length > 0}
-							<div id="editors-chart" class="h-[350px]"></div>
+							<div id="editors-chart" class="h-87.5"></div>
 						{:else}
 							<p class="text-ctp-subtext0">No editor data available</p>
 						{/if}
@@ -224,7 +279,7 @@
 					<div>
 						<SectionTitle size="sm" className="mb-4">Top Operating Systems</SectionTitle>
 						{#if dashboardData.operating_systems.length > 0}
-							<div id="os-chart" class="h-[350px]"></div>
+							<div id="os-chart" class="h-87.5"></div>
 						{:else}
 							<p class="text-ctp-subtext0">No operating system data available</p>
 						{/if}

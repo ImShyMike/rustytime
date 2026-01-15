@@ -16,6 +16,7 @@ export interface DashboardResponse {
 	human_readable_total: string;
 	admin_level: number;
 	dev_mode: boolean;
+	range: string;
 	projects: UsageStat[];
 	editors: UsageStat[];
 	operating_systems: UsageStat[];

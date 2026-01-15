@@ -1,5 +1,4 @@
 <script lang="ts">
-	/* eslint-disable svelte/no-navigation-without-resolve -- External project links */
 	import { invalidate } from '$app/navigation';
 	import { setupVisibilityRefresh } from '$lib/utils/refresh';
 	import type { PageData } from './$types';
@@ -38,7 +37,7 @@
 
 	let { data }: Props = $props();
 
-	let projectsData = $state<PageData>();
+	let projectsData = $derived(data);
 
 	let searchQuery = $state('');
 	let sortOption = $state<SortOption>('time');
@@ -54,10 +53,6 @@
 
 	let editingProject = $state<Project | null>(null);
 	let lastUpdatedAt = $state(new Date());
-
-	$effect(() => {
-		projectsData = data;
-	});
 
 	setupVisibilityRefresh({
 		refresh: refreshProjectsData,
@@ -185,29 +180,8 @@
 		onclose={() => {
 			editingProject = null;
 		}}
-		onsuccess={(updatedRepoUrl) => {
-			// update data locally without fully reloading
-			const editingId = editingProject?.id;
-			if (!editingId || !projectsData?.projects?.length) {
-				return;
-			}
-
-			const projectIndex = projectsData.projects.findIndex((p) => p.id === editingId);
-			if (projectIndex === -1) {
-				return;
-			}
-
-			const updatedProjects = projectsData.projects.slice();
-			updatedProjects[projectIndex] = {
-				...updatedProjects[projectIndex],
-				repo_url: updatedRepoUrl,
-				updated_at: new Date().toISOString()
-			};
-
-			projectsData = {
-				...projectsData,
-				projects: updatedProjects
-			};
+		onsuccess={async () => {
+			await refreshProjectsData();
 		}}
 	/>
 {/if}
@@ -267,7 +241,7 @@
 								sortOption = target.value as SortOption;
 							}}
 						>
-							{#each sortOptions as option}
+							{#each sortOptions as option (option.value)}
 								<option value={option.value}>{option.label}</option>
 							{/each}
 						</select>

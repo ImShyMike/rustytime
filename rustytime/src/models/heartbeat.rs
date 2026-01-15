@@ -87,6 +87,27 @@ const MAX_USER_AGENT_LENGTH: usize = 255;
 const MAX_DEPENDENCIES: usize = 50;
 const MAX_DEPENDENCY_LENGTH: usize = 254;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum TimeRange {
+    Day,
+    Week,
+    #[default]
+    Month,
+    All,
+}
+
+impl TimeRange {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            TimeRange::Day => "day",
+            TimeRange::Week => "week",
+            TimeRange::Month => "month",
+            TimeRange::All => "all",
+        }
+    }
+}
+
 /// Truncate a string to the specified maximum length, respecting UTF-8 boundaries
 #[inline(always)]
 fn truncate_string(mut s: String, max_length: usize) -> String {
@@ -805,6 +826,43 @@ impl Heartbeat {
             .get_result(conn)
     }
 
+    /// Get the count of heartbeats for a user in a specific time range
+    pub fn get_user_heartbeat_count_by_range(
+        conn: &mut PgConnection,
+        user_id: i32,
+        range: TimeRange,
+    ) -> QueryResult<i64> {
+        let now = Utc::now();
+
+        match range {
+            TimeRange::Day => {
+                let start = now.date_naive().and_hms_opt(0, 0, 0).unwrap().and_utc();
+                heartbeats::table
+                    .filter(heartbeats::user_id.eq(user_id))
+                    .filter(heartbeats::time.ge(start))
+                    .count()
+                    .get_result(conn)
+            }
+            TimeRange::Week => {
+                let start = now - chrono::Duration::days(7);
+                heartbeats::table
+                    .filter(heartbeats::user_id.eq(user_id))
+                    .filter(heartbeats::time.ge(start))
+                    .count()
+                    .get_result(conn)
+            }
+            TimeRange::Month => {
+                let start = now - chrono::Duration::days(30);
+                heartbeats::table
+                    .filter(heartbeats::user_id.eq(user_id))
+                    .filter(heartbeats::time.ge(start))
+                    .count()
+                    .get_result(conn)
+            }
+            TimeRange::All => Self::get_user_heartbeat_count(conn, user_id),
+        }
+    }
+
     fn map_usage_stats(rows: Vec<NullableNameDurationRow>, total_time: i64) -> Vec<UsageStat> {
         rows.into_iter()
             .map(|row| UsageStat {
@@ -821,19 +879,101 @@ impl Heartbeat {
             .collect()
     }
 
-    /// Get top 10 projects, editors, OSes, and languages by total seconds
-    pub fn get_dashboard_stats(
+    // Get top 10 projects, editors, OSes, and languages by total seconds
+    // pub fn get_dashboard_stats(
+    //     conn: &mut PgConnection,
+    //     user_id: i32,
+    // ) -> QueryResult<DashboardStats> {
+    //     let rows: Vec<DashboardMetricRow> = diesel::sql_query(
+    //         "SELECT metric_type, name, total_seconds, total_time \
+    //          FROM calculate_dashboard_stats($1, $2, $3)",
+    //     )
+    //     .bind::<Int4, _>(user_id)
+    //     .bind::<Int4, _>(TIMEOUT_SECONDS)
+    //     .bind::<Int4, _>(10)
+    //     .load(conn)?;
+
+    //     let mut total_time: i64 = 0;
+    //     let mut project_rows = Vec::new();
+    //     let mut editor_rows = Vec::new();
+    //     let mut os_rows = Vec::new();
+    //     let mut language_rows = Vec::new();
+
+    //     for row in rows {
+    //         match row.metric_type.as_str() {
+    //             "total_time" => total_time = row.total_time,
+    //             "project" => project_rows.push(NullableNameDurationRow {
+    //                 name: row.name,
+    //                 total_seconds: row.total_seconds,
+    //             }),
+    //             "editor" => editor_rows.push(NullableNameDurationRow {
+    //                 name: row.name,
+    //                 total_seconds: row.total_seconds,
+    //             }),
+    //             "operating_system" => os_rows.push(NullableNameDurationRow {
+    //                 name: row.name,
+    //                 total_seconds: row.total_seconds,
+    //             }),
+    //             "language" => language_rows.push(NullableNameDurationRow {
+    //                 name: row.name,
+    //                 total_seconds: row.total_seconds,
+    //             }),
+    //             _ => {}
+    //         }
+    //     }
+
+    //     Ok(DashboardStats {
+    //         total_time,
+    //         top_projects: Self::map_usage_stats(project_rows, total_time),
+    //         top_languages: Self::map_usage_stats(language_rows, total_time),
+    //         top_oses: Self::map_usage_stats(os_rows, total_time),
+    //         top_editors: Self::map_usage_stats(editor_rows, total_time),
+    //     })
+    // }
+
+    /// Get dashboard stats filtered by time range (day, week, month, all)
+    pub fn get_dashboard_stats_by_range(
         conn: &mut PgConnection,
         user_id: i32,
+        range: TimeRange,
     ) -> QueryResult<DashboardStats> {
+        let _now = Utc::now();
+
         let rows: Vec<DashboardMetricRow> = diesel::sql_query(
             "SELECT metric_type, name, total_seconds, total_time \
-             FROM calculate_dashboard_stats($1, $2, $3)",
+             FROM calculate_dashboard_stats($1, $2, $3) \
+             WHERE total_seconds > 0 OR metric_type = 'total_time'",
         )
         .bind::<Int4, _>(user_id)
         .bind::<Int4, _>(TIMEOUT_SECONDS)
         .bind::<Int4, _>(10)
         .load(conn)?;
+
+        // Filter results based on time range for continuous aggregates
+        let filtered_rows = match range {
+            TimeRange::Day => Self::query_continuous_aggregates(
+                conn,
+                user_id,
+                "heartbeat_daily_agg",
+                "day",
+                "1 day",
+            )?,
+            TimeRange::Week => Self::query_continuous_aggregates(
+                conn,
+                user_id,
+                "heartbeat_weekly_agg",
+                "week",
+                "7 days",
+            )?,
+            TimeRange::Month => Self::query_continuous_aggregates(
+                conn,
+                user_id,
+                "heartbeat_monthly_agg",
+                "month",
+                "30 days",
+            )?,
+            TimeRange::All => rows,
+        };
 
         let mut total_time: i64 = 0;
         let mut project_rows = Vec::new();
@@ -841,7 +981,7 @@ impl Heartbeat {
         let mut os_rows = Vec::new();
         let mut language_rows = Vec::new();
 
-        for row in rows {
+        for row in filtered_rows {
             match row.metric_type.as_str() {
                 "total_time" => total_time = row.total_time,
                 "project" => project_rows.push(NullableNameDurationRow {
@@ -871,6 +1011,112 @@ impl Heartbeat {
             top_oses: Self::map_usage_stats(os_rows, total_time),
             top_editors: Self::map_usage_stats(editor_rows, total_time),
         })
+    }
+
+    /// Query continuous aggregates for a given view with time filtering
+    fn query_continuous_aggregates(
+        conn: &mut PgConnection,
+        user_id: i32,
+        view_name: &str,
+        time_column: &str,
+        bucket_size: &str,
+    ) -> QueryResult<Vec<DashboardMetricRow>> {
+        let query_str = format!(
+            "WITH 
+            total_time_calc AS (
+                SELECT CAST(COALESCE(SUM(total_duration), 0) AS BIGINT) as total
+                FROM {}
+                WHERE user_id = $1 
+                  AND {} = time_bucket('{}', NOW())
+            ),
+            projects AS (
+                SELECT 
+                    'project' as metric_type,
+                    project as name,
+                    CAST(SUM(total_duration) AS BIGINT) as total_seconds,
+                    (SELECT total FROM total_time_calc) as total_time
+                FROM {}
+                WHERE user_id = $1 
+                  AND project IS NOT NULL
+                  AND {} = time_bucket('{}', NOW())
+                GROUP BY project
+                ORDER BY total_seconds DESC
+                LIMIT 10
+            ),
+            editors AS (
+                SELECT 
+                    'editor' as metric_type,
+                    editor as name,
+                    CAST(SUM(total_duration) AS BIGINT) as total_seconds,
+                    (SELECT total FROM total_time_calc) as total_time
+                FROM {}
+                WHERE user_id = $1 
+                  AND editor IS NOT NULL
+                  AND {} = time_bucket('{}', NOW())
+                GROUP BY editor
+                ORDER BY total_seconds DESC
+                LIMIT 10
+            ),
+            oses AS (
+                SELECT 
+                    'operating_system' as metric_type,
+                    operating_system as name,
+                    CAST(SUM(total_duration) AS BIGINT) as total_seconds,
+                    (SELECT total FROM total_time_calc) as total_time
+                FROM {}
+                WHERE user_id = $1 
+                  AND operating_system IS NOT NULL
+                  AND {} = time_bucket('{}', NOW())
+                GROUP BY operating_system
+                ORDER BY total_seconds DESC
+                LIMIT 10
+            ),
+            languages AS (
+                SELECT 
+                    'language' as metric_type,
+                    language as name,
+                    CAST(SUM(total_duration) AS BIGINT) as total_seconds,
+                    (SELECT total FROM total_time_calc) as total_time
+                FROM {}
+                WHERE user_id = $1 
+                  AND language IS NOT NULL
+                  AND {} = time_bucket('{}', NOW())
+                GROUP BY language
+                ORDER BY total_seconds DESC
+                LIMIT 10
+            ),
+            total_time_row AS (
+                SELECT 
+                    'total_time' as metric_type,
+                    NULL as name,
+                    0::bigint as total_seconds,
+                    (SELECT total FROM total_time_calc) as total_time
+            )
+            SELECT * FROM projects
+            UNION ALL SELECT * FROM editors
+            UNION ALL SELECT * FROM oses
+            UNION ALL SELECT * FROM languages
+            UNION ALL SELECT * FROM total_time_row",
+            view_name,
+            time_column,
+            bucket_size,
+            view_name,
+            time_column,
+            bucket_size,
+            view_name,
+            time_column,
+            bucket_size,
+            view_name,
+            time_column,
+            bucket_size,
+            view_name,
+            time_column,
+            bucket_size
+        );
+
+        diesel::sql_query(&query_str)
+            .bind::<Int4, _>(user_id)
+            .load(conn)
     }
 }
 

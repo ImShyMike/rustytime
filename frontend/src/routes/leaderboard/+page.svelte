@@ -1,5 +1,4 @@
 <script lang="ts">
-	/* eslint-disable svelte/no-navigation-without-resolve -- External GitHub profile links */
 	import { invalidate } from '$app/navigation';
 	import { Container, PageScaffold, RelativeTime } from '$lib';
 	import type { PageData } from './$types';
