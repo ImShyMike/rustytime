@@ -228,6 +228,8 @@
 														: 'text-text'}"
 													href={user.name ? `https://github.com/${user.name}` : undefined}
 													target="_blank"
+													data-umami-event="github-profile-link"
+													data-umami-event-name={user.name}
 													rel="noopener noreferrer external">{user.name || 'Unknown'}</a
 												>
 											</div>

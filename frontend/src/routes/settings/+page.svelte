@@ -325,6 +325,8 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 							href="https://github.com/ImShyMike/timesplit"
 							target="_blank"
 							rel="noopener noreferrer"
+							data-umami-event="timesplit-link"
+							data-umami-event-name="Timesplit"
 							class="text-ctp-blue underline hover:text-ctp-blue/80">Timesplit</a
 						>!
 						<br />
