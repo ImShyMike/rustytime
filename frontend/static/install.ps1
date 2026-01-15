@@ -124,6 +124,7 @@ try {
         -Headers @{ Authorization = "Bearer $apiKey" } `
         -ContentType 'application/json' `
         -Body $heartbeatJson
+        -UseBasicParsing
     $statusCode = [int]$response.StatusCode
     $body = $response.Content
 } catch {
