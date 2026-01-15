@@ -28,7 +28,7 @@ if (Test-Path -Path $configPath) {
     $timestamp = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
     $backupPath = "$configPath.$timestamp.bak"
     Move-Item -Path $configPath -Destination $backupPath -Force
-    Write-Host "! Existing config file found. Backed up to $backupPath" -ForegroundColor Yellow
+    Write-Host "Existing config file found. Backed up to $backupPath" -ForegroundColor Yellow
 }
 
 $vscodeExt = "WakaTime.vscode-wakatime"
@@ -50,7 +50,7 @@ heartbeat_rate_limit_seconds = 60
 "@
 
 Set-Content -Path $configPath -Value $configContent -Encoding UTF8
-Write-Host "✓ Configuration file created at $configPath" -ForegroundColor Green
+Write-Host "Configuration file created at $configPath" -ForegroundColor Green
 Write-Host
 
 Write-Host "Installing WakaTime extensions..." -ForegroundColor White
@@ -62,7 +62,7 @@ function Install-VSCodeExtension {
 
     if (Get-Command $CliName -ErrorAction SilentlyContinue) {
         Write-Host
-        Write-Host "→ Installing WakaTime for $CliName..." -ForegroundColor Green
+        Write-Host "Installing WakaTime for $CliName..." -ForegroundColor Green
         & $CliName --install-extension $vscodeExt --force
     } else {
         Write-Host "$CliName CLI not found; skipping." -ForegroundColor DarkGray
@@ -86,7 +86,7 @@ foreach ($exe in $ideExes) {
     if ($cmd) {
         $jetbrainsFound = $true
         Write-Host
-        Write-Host "→ Installing WakaTime plugin in $exe..." -ForegroundColor Green
+        Write-Host "Installing WakaTime plugin in $exe..." -ForegroundColor Green
         & $cmd.Source installPlugins $jetbrainsPid
     }
 }
@@ -102,7 +102,7 @@ if (-not (Test-Path -Path $configPath)) {
     Write-Host "Error: Config file not found at $configPath" -ForegroundColor Red
     exit 1
 }
-Write-Host "✓ Successfully read config:" -ForegroundColor Green
+Write-Host "Successfully read config:" -ForegroundColor Green
 Write-Host "API URL: $apiUrl" -ForegroundColor DarkGray
 $maskedKey = if ($apiKey.Length -gt 8) { $apiKey.Substring(0, 8) + "..." } else { $apiKey }
 Write-Host "API Key: $maskedKey" -ForegroundColor DarkGray
@@ -146,10 +146,10 @@ try {
 }
 
 if ($statusCode -eq 200 -or $statusCode -eq 202) {
-    Write-Host "✓ Test heartbeat sent successfully!" -ForegroundColor Green
+    Write-Host "Test heartbeat sent successfully!" -ForegroundColor Green
     Write-Host
-    Write-Host "✓ Installation complete!" -ForegroundColor Green
-    Write-Host "Please restart your editors/IDEs for changes to take effect."
+    Write-Host "Installation complete!" -ForegroundColor Green
+    Write-Host "Please restart your editors/IDEs for changes to take effect." -ForegroundColor DarkGray
 } else {
     Write-Host "Error: Failed to send heartbeat: $body" -ForegroundColor Red
     exit 1
