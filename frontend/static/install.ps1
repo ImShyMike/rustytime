@@ -123,7 +123,7 @@ try {
         -Method Post `
         -Headers @{ Authorization = "Bearer $apiKey" } `
         -ContentType 'application/json' `
-        -Body $heartbeatJson
+        -Body $heartbeatJson `
         -UseBasicParsing
     $statusCode = [int]$response.StatusCode
     $body = $response.Content
