@@ -179,7 +179,7 @@
 						}`}
 						onclick={() => handleRangeChange('day')}
 					>
-						Today
+						Last 24 Hours
 					</button>
 					<button
 						class={`cursor-pointer flex-1 px-3 py-1 rounded text-sm font-medium transition-colors ${
@@ -189,7 +189,7 @@
 						}`}
 						onclick={() => handleRangeChange('week')}
 					>
-						This Week
+						Last 7 Days
 					</button>
 					<button
 						class={`cursor-pointer flex-1 px-3 py-1 rounded text-sm font-medium transition-colors ${
@@ -199,7 +199,7 @@
 						}`}
 						onclick={() => handleRangeChange('month')}
 					>
-						This Month
+						Last 30 Days
 					</button>
 					<button
 						class={`cursor-pointer flex-1 px-3 py-1 rounded text-sm font-medium transition-colors ${

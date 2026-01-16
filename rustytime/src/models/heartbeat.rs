@@ -939,16 +939,6 @@ impl Heartbeat {
     ) -> QueryResult<DashboardStats> {
         let _now = Utc::now();
 
-        let rows: Vec<DashboardMetricRow> = diesel::sql_query(
-            "SELECT metric_type, name, total_seconds, total_time \
-             FROM calculate_dashboard_stats($1, $2, $3) \
-             WHERE total_seconds > 0 OR metric_type = 'total_time'",
-        )
-        .bind::<Int4, _>(user_id)
-        .bind::<Int4, _>(TIMEOUT_SECONDS)
-        .bind::<Int4, _>(10)
-        .load(conn)?;
-
         // Filter results based on time range for continuous aggregates
         let filtered_rows = match range {
             TimeRange::Day => Self::query_continuous_aggregates(
@@ -972,7 +962,15 @@ impl Heartbeat {
                 "month",
                 "30 days",
             )?,
-            TimeRange::All => rows,
+            TimeRange::All => diesel::sql_query(
+                "SELECT metric_type, name, total_seconds, total_time \
+             FROM calculate_dashboard_stats($1, $2, $3) \
+             WHERE total_seconds > 0 OR metric_type = 'total_time'",
+            )
+            .bind::<Int4, _>(user_id)
+            .bind::<Int4, _>(TIMEOUT_SECONDS)
+            .bind::<Int4, _>(10)
+            .load(conn)?,
         };
 
         let mut total_time: i64 = 0;
@@ -1027,7 +1025,7 @@ impl Heartbeat {
                 SELECT CAST(COALESCE(SUM(total_duration), 0) AS BIGINT) as total
                 FROM {}
                 WHERE user_id = $1 
-                  AND {} = time_bucket('{}', NOW())
+                  AND {} >= NOW() - INTERVAL '{}'
             ),
             projects AS (
                 SELECT 
@@ -1038,7 +1036,7 @@ impl Heartbeat {
                 FROM {}
                 WHERE user_id = $1 
                   AND project IS NOT NULL
-                  AND {} = time_bucket('{}', NOW())
+                  AND {} >= NOW() - INTERVAL '{}'
                 GROUP BY project
                 ORDER BY total_seconds DESC
                 LIMIT 10
@@ -1052,7 +1050,7 @@ impl Heartbeat {
                 FROM {}
                 WHERE user_id = $1 
                   AND editor IS NOT NULL
-                  AND {} = time_bucket('{}', NOW())
+                  AND {} >= NOW() - INTERVAL '{}'
                 GROUP BY editor
                 ORDER BY total_seconds DESC
                 LIMIT 10
@@ -1066,7 +1064,7 @@ impl Heartbeat {
                 FROM {}
                 WHERE user_id = $1 
                   AND operating_system IS NOT NULL
-                  AND {} = time_bucket('{}', NOW())
+                  AND {} >= NOW() - INTERVAL '{}'
                 GROUP BY operating_system
                 ORDER BY total_seconds DESC
                 LIMIT 10
@@ -1080,7 +1078,7 @@ impl Heartbeat {
                 FROM {}
                 WHERE user_id = $1 
                   AND language IS NOT NULL
-                  AND {} = time_bucket('{}', NOW())
+                  AND {} >= NOW() - INTERVAL '{}'
                 GROUP BY language
                 ORDER BY total_seconds DESC
                 LIMIT 10
