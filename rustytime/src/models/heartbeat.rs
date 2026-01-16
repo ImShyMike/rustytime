@@ -937,31 +937,22 @@ impl Heartbeat {
         user_id: i32,
         range: TimeRange,
     ) -> QueryResult<DashboardStats> {
-        let _now = Utc::now();
+        let now = Utc::now();
 
-        // Filter results based on time range for continuous aggregates
+        // Filter results based on time range
         let filtered_rows = match range {
-            TimeRange::Day => Self::query_continuous_aggregates(
-                conn,
-                user_id,
-                "heartbeat_daily_agg",
-                "day",
-                "1 day",
-            )?,
-            TimeRange::Week => Self::query_continuous_aggregates(
-                conn,
-                user_id,
-                "heartbeat_weekly_agg",
-                "week",
-                "7 days",
-            )?,
-            TimeRange::Month => Self::query_continuous_aggregates(
-                conn,
-                user_id,
-                "heartbeat_monthly_agg",
-                "month",
-                "30 days",
-            )?,
+            TimeRange::Day => {
+                let start_time = now - chrono::Duration::hours(24);
+                Self::query_heartbeats_by_time(conn, user_id, start_time)?
+            }
+            TimeRange::Week => {
+                let start_time = now - chrono::Duration::days(7);
+                Self::query_heartbeats_by_time(conn, user_id, start_time)?
+            }
+            TimeRange::Month => {
+                let start_time = now - chrono::Duration::days(30);
+                Self::query_heartbeats_by_time(conn, user_id, start_time)?
+            }
             TimeRange::All => diesel::sql_query(
                 "SELECT metric_type, name, total_seconds, total_time \
              FROM calculate_dashboard_stats($1, $2, $3) \
@@ -1011,32 +1002,47 @@ impl Heartbeat {
         })
     }
 
-    /// Query continuous aggregates for a given view with time filtering
-    fn query_continuous_aggregates(
+    /// Query heartbeats with a time filter
+    fn query_heartbeats_by_time(
         conn: &mut PgConnection,
         user_id: i32,
-        view_name: &str,
-        time_column: &str,
-        bucket_size: &str,
+        start_time: DateTime<Utc>,
     ) -> QueryResult<Vec<DashboardMetricRow>> {
-        let query_str = format!(
+        diesel::sql_query(
             "WITH 
             total_time_calc AS (
-                SELECT CAST(COALESCE(SUM(total_duration), 0) AS BIGINT) as total
-                FROM {}
-                WHERE user_id = $1 
-                  AND {} >= NOW() - INTERVAL '{}'
+                SELECT CAST(COALESCE(SUM(diff), 0) AS BIGINT) as total
+                FROM (
+                    SELECT CASE
+                        WHEN LAG(time) OVER (ORDER BY time) IS NULL THEN 0
+                        ELSE LEAST(EXTRACT(EPOCH FROM (time - LAG(time) OVER (ORDER BY time))), $3)
+                    END as diff
+                    FROM heartbeats
+                    WHERE user_id = $1
+                      AND time >= $2
+                      AND time IS NOT NULL
+                    ORDER BY time ASC
+                ) capped_diffs
             ),
             projects AS (
                 SELECT 
                     'project' as metric_type,
                     project as name,
-                    CAST(SUM(total_duration) AS BIGINT) as total_seconds,
+                    CAST(COALESCE(SUM(diff), 0) AS BIGINT) as total_seconds,
                     (SELECT total FROM total_time_calc) as total_time
-                FROM {}
-                WHERE user_id = $1 
-                  AND project IS NOT NULL
-                  AND {} >= NOW() - INTERVAL '{}'
+                FROM (
+                    SELECT
+                        project,
+                        CASE
+                            WHEN LAG(time) OVER (PARTITION BY project ORDER BY time) IS NULL THEN 0
+                            ELSE LEAST(EXTRACT(EPOCH FROM (time - LAG(time) OVER (PARTITION BY project ORDER BY time))), $3)
+                        END as diff
+                    FROM heartbeats
+                    WHERE project IS NOT NULL
+                      AND user_id = $1
+                      AND time >= $2
+                      AND time IS NOT NULL
+                ) capped_diffs
                 GROUP BY project
                 ORDER BY total_seconds DESC
                 LIMIT 10
@@ -1045,12 +1051,21 @@ impl Heartbeat {
                 SELECT 
                     'editor' as metric_type,
                     editor as name,
-                    CAST(SUM(total_duration) AS BIGINT) as total_seconds,
+                    CAST(COALESCE(SUM(diff), 0) AS BIGINT) as total_seconds,
                     (SELECT total FROM total_time_calc) as total_time
-                FROM {}
-                WHERE user_id = $1 
-                  AND editor IS NOT NULL
-                  AND {} >= NOW() - INTERVAL '{}'
+                FROM (
+                    SELECT
+                        editor,
+                        CASE
+                            WHEN LAG(time) OVER (PARTITION BY editor ORDER BY time) IS NULL THEN 0
+                            ELSE LEAST(EXTRACT(EPOCH FROM (time - LAG(time) OVER (PARTITION BY editor ORDER BY time))), $3)
+                        END as diff
+                    FROM heartbeats
+                    WHERE editor IS NOT NULL
+                      AND user_id = $1
+                      AND time >= $2
+                      AND time IS NOT NULL
+                ) capped_diffs
                 GROUP BY editor
                 ORDER BY total_seconds DESC
                 LIMIT 10
@@ -1059,12 +1074,21 @@ impl Heartbeat {
                 SELECT 
                     'operating_system' as metric_type,
                     operating_system as name,
-                    CAST(SUM(total_duration) AS BIGINT) as total_seconds,
+                    CAST(COALESCE(SUM(diff), 0) AS BIGINT) as total_seconds,
                     (SELECT total FROM total_time_calc) as total_time
-                FROM {}
-                WHERE user_id = $1 
-                  AND operating_system IS NOT NULL
-                  AND {} >= NOW() - INTERVAL '{}'
+                FROM (
+                    SELECT
+                        operating_system,
+                        CASE
+                            WHEN LAG(time) OVER (PARTITION BY operating_system ORDER BY time) IS NULL THEN 0
+                            ELSE LEAST(EXTRACT(EPOCH FROM (time - LAG(time) OVER (PARTITION BY operating_system ORDER BY time))), $3)
+                        END as diff
+                    FROM heartbeats
+                    WHERE operating_system IS NOT NULL
+                      AND user_id = $1
+                      AND time >= $2
+                      AND time IS NOT NULL
+                ) capped_diffs
                 GROUP BY operating_system
                 ORDER BY total_seconds DESC
                 LIMIT 10
@@ -1073,12 +1097,21 @@ impl Heartbeat {
                 SELECT 
                     'language' as metric_type,
                     language as name,
-                    CAST(SUM(total_duration) AS BIGINT) as total_seconds,
+                    CAST(COALESCE(SUM(diff), 0) AS BIGINT) as total_seconds,
                     (SELECT total FROM total_time_calc) as total_time
-                FROM {}
-                WHERE user_id = $1 
-                  AND language IS NOT NULL
-                  AND {} >= NOW() - INTERVAL '{}'
+                FROM (
+                    SELECT
+                        language,
+                        CASE
+                            WHEN LAG(time) OVER (PARTITION BY language ORDER BY time) IS NULL THEN 0
+                            ELSE LEAST(EXTRACT(EPOCH FROM (time - LAG(time) OVER (PARTITION BY language ORDER BY time))), $3)
+                        END as diff
+                    FROM heartbeats
+                    WHERE language IS NOT NULL
+                      AND user_id = $1
+                      AND time >= $2
+                      AND time IS NOT NULL
+                ) capped_diffs
                 GROUP BY language
                 ORDER BY total_seconds DESC
                 LIMIT 10
@@ -1095,26 +1128,11 @@ impl Heartbeat {
             UNION ALL SELECT * FROM oses
             UNION ALL SELECT * FROM languages
             UNION ALL SELECT * FROM total_time_row",
-            view_name,
-            time_column,
-            bucket_size,
-            view_name,
-            time_column,
-            bucket_size,
-            view_name,
-            time_column,
-            bucket_size,
-            view_name,
-            time_column,
-            bucket_size,
-            view_name,
-            time_column,
-            bucket_size
-        );
-
-        diesel::sql_query(&query_str)
-            .bind::<Int4, _>(user_id)
-            .load(conn)
+        )
+        .bind::<Int4, _>(user_id)
+        .bind::<Timestamptz, _>(start_time)
+        .bind::<Int4, _>(TIMEOUT_SECONDS)
+        .load(conn)
     }
 }
 
