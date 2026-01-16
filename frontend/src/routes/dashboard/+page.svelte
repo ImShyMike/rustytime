@@ -170,7 +170,7 @@
 		<!-- Time Range Filter -->
 		<Container className="mb-4">
 			<div class="flex flex-col gap-3">
-				<div class="flex flex-wrap items-center justify-between gap-3">
+				<div class="flex flex-wrap items-stretch justify-between gap-3">
 					<button
 						class={`cursor-pointer flex-1 px-3 py-1 rounded text-sm font-medium transition-colors ${
 							selectedRange === 'day'
