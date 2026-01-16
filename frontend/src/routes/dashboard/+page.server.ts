@@ -9,7 +9,7 @@ export const load: PageServerLoad = async ({ fetch, depends, request, url }) => 
 	try {
 		const cookieHeader = request.headers.get('cookie') || undefined;
 		const api = createApi(fetch, cookieHeader);
-		const range = url.searchParams.get('range') || 'month';
+		const range = url.searchParams.get('range') || 'day';
 		return await api.get<DashboardResponse>(`/page/dashboard?range=${range}`);
 	} catch (e) {
 		console.error('Error loading dashboard page data:', e);
