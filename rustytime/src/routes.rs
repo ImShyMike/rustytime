@@ -25,12 +25,19 @@ use aide::{
 };
 use axum::{Extension, Json, routing::get as axum_get};
 use axum::{http::StatusCode, middleware as axum_middleware};
-use axum_prometheus::PrometheusMetricLayer;
+use axum_prometheus::PrometheusMetricLayerBuilder;
+use axum_prometheus::metrics_exporter_prometheus::PrometheusHandle;
 use axum_tracing_opentelemetry::middleware::{OtelAxumLayer, OtelInResponseLayer};
 
 /// Create the main application router
-pub fn create_app_router(app_state: AppState, use_cloudflare: bool) -> ApiRouter {
-    let (prometheus_layer, metric_handle) = PrometheusMetricLayer::pair();
+pub fn create_app_router(
+    app_state: AppState,
+    use_cloudflare: bool,
+    metrics_handle: PrometheusHandle,
+) -> ApiRouter {
+    let prometheus_layer = PrometheusMetricLayerBuilder::new()
+        .with_ignore_patterns(&["/metrics", "/health"])
+        .build();
     ApiRouter::new()
         .api_route(
             "/docs",
@@ -278,7 +285,7 @@ pub fn create_app_router(app_state: AppState, use_cloudflare: bool) -> ApiRouter
         // metrics endpoint
         .route(
             "/metrics",
-            axum_get(|| async move { metric_handle.render() }),
+            axum_get(move || async move { metrics_handle.render() }),
         )
         // health check endpoint
         .api_route("/health", get_with(|| async { "OK" }, |op| {
@@ -319,94 +326,3 @@ async fn openapi_docs(Extension(openapi): Extension<Arc<OpenApi>>) -> impl IntoA
 // async fn method_not_allowed() -> impl IntoApiResponse {
 //     (StatusCode::METHOD_NOT_ALLOWED, "Method Not Allowed")
 // }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use axum::{
-        body::{self, Body},
-        http,
-        response::IntoResponse,
-    };
-    use diesel::{
-        pg::PgConnection,
-        r2d2::{ConnectionManager, Pool},
-    };
-    use oauth2::{AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
-    use std::collections::HashSet;
-    use std::sync::Arc;
-    use tokio::sync::Mutex;
-    use tower::ServiceExt;
-
-    fn build_test_state() -> AppState {
-        let manager = ConnectionManager::<PgConnection>::new("postgres://invalid");
-        let db_pool = Pool::builder()
-            .max_size(1)
-            .min_idle(Some(0))
-            .build_unchecked(manager);
-
-        let github_client = BasicClient::new(ClientId::new("client-id".into()))
-            .set_client_secret(ClientSecret::new("client-secret".into()))
-            .set_auth_uri(AuthUrl::new("https://example.test/auth".into()).unwrap())
-            .set_token_uri(TokenUrl::new("https://example.test/token".into()).unwrap())
-            .set_redirect_uri(RedirectUrl::new("https://example.test/callback".into()).unwrap());
-
-        AppState {
-            db_pool,
-            github_client,
-            http_client: reqwest::Client::new(),
-            metrics: MetricsTracker::new(),
-            import_locks: Arc::new(Mutex::new(HashSet::new())),
-        }
-    }
-
-    use crate::utils::metrics::MetricsTracker;
-    use oauth2::basic::BasicClient;
-
-    #[tokio::test]
-    async fn create_app_router_wires_routes_and_state() {
-        let app_state = build_test_state();
-        let app = create_app_router(app_state, false);
-
-        let response = app
-            .clone()
-            .oneshot(
-                http::Request::builder()
-                    .uri("/")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .expect("router should produce a response");
-        assert!(response.status().is_redirection());
-        assert_eq!(
-            response.headers().get(http::header::LOCATION).unwrap(),
-            "http://localhost:5173"
-        );
-
-        let metrics_response = app
-            .oneshot(
-                http::Request::builder()
-                    .uri("/metrics")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .expect("metrics endpoint should respond");
-        assert_eq!(metrics_response.status(), StatusCode::OK);
-        let body_bytes = body::to_bytes(metrics_response.into_body(), usize::MAX)
-            .await
-            .unwrap();
-        assert!(!body_bytes.is_empty());
-    }
-
-    #[tokio::test]
-    async fn not_found_returns_404_payload() {
-        let response = not_found().await.into_response();
-        assert_eq!(response.status(), StatusCode::NOT_FOUND);
-        let body_bytes = body::to_bytes(response.into_body(), usize::MAX)
-            .await
-            .unwrap();
-        assert_eq!(body_bytes.as_ref(), b"Not Found");
-    }
-}

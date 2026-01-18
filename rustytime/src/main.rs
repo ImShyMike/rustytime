@@ -3,6 +3,7 @@
 mod db;
 mod docs;
 mod handlers;
+mod jobs;
 mod models;
 mod routes;
 mod schema;
@@ -128,10 +129,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // create application state
     let app_state = AppState::new(pool.clone(), github_client);
 
-    // start leaderboard generator
-    let leaderboard_generator = db::leaderboard::LeaderboardGenerator::new(pool);
-    leaderboard_generator.start().await;
-    info!("✅ Leaderboard generator started");
+    // get database URL for sqlx pool
+    let database_url = env::var("DATABASE_URL").unwrap_or_else(|_| {
+        let user = env::var("POSTGRES_USER").unwrap_or_else(|_| "username".into());
+        let password = env::var("POSTGRES_PASSWORD").unwrap_or_else(|_| "password".into());
+        let host = env::var("POSTGRES_HOST").unwrap_or_else(|_| "localhost".into());
+        let db = env::var("POSTGRES_DB").unwrap_or_else(|_| "rustytime".into());
+        format!("postgres://{user}:{password}@{host}/{db}")
+    });
+
+    // set up metrics recorder for apalis jobs (must be done before setup_jobs)
+    let jobs_metrics_handle = jobs::install_metrics_recorder();
+
+    // set up jobs system with apalis
+    let sqlx_pool = sqlx::PgPool::connect(&database_url)
+        .await
+        .expect("Failed to connect to database for jobs");
+    let jobs_worker = jobs::setup_jobs(sqlx_pool, pool.clone()).await;
+    tokio::spawn(jobs_worker);
+    info!("✅ Jobs system started");
 
     let rate_period = if is_production {
         DEFAULT_RATE_LIMIT_REPLENISH_DURATION
@@ -168,7 +184,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     });
 
     // create the main application router
-    let api_router = create_app_router(app_state, use_cloudflare);
+    let api_router = create_app_router(app_state, use_cloudflare, jobs_metrics_handle);
     let mut openapi = docs::get_openapi_docs();
     let mut app: axum::Router = api_router.finish_api(&mut openapi);
     let openapi = Arc::new(openapi);

@@ -111,15 +111,14 @@ pub fn get_or_create_project_id(
             cache.last_cleanup = now;
         }
 
-        if let Some(cached) = cache.map.get(&cache_key) {
-            if cached
+        if let Some(cached) = cache.map.get(&cache_key)
+            && cached
                 .cached_at
                 .elapsed()
                 .map(|e| e.as_secs() < TTL_SECONDS)
                 .unwrap_or(false)
-            {
-                return Ok(cached.id);
-            }
+        {
+            return Ok(cached.id);
         }
     }
 

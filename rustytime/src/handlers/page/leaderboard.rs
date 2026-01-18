@@ -1,4 +1,4 @@
-use crate::db::leaderboard::get_week_start;
+use crate::jobs::get_week_start;
 use crate::models::leaderboard::{Leaderboard, LeaderboardEntry};
 use crate::models::user::User;
 use crate::schema::users;
