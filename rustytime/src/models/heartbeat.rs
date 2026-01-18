@@ -71,6 +71,23 @@ diesel::define_sql_function! {
     >;
 }
 
+diesel::define_sql_function! {
+    /// Calculate dashboard statistics with time range filter
+    fn calculate_dashboard_stats_by_range(
+        user_id: Int4,
+        start_time: Timestamptz,
+        timeout_seconds: Int4,
+        limit_count: Int4
+    ) -> diesel::sql_types::Array<
+        diesel::sql_types::Record<(
+            Text,
+            SqlNullable<Text>,
+            BigInt,
+            BigInt,
+        )>
+    >;
+}
+
 pub const TIMEOUT_SECONDS: i32 = 120; // 2 minutes in seconds
 
 // Character limits
@@ -452,7 +469,7 @@ pub struct HeartbeatBulkApiResponse {
 #[derive(Serialize, Debug, JsonSchema)]
 pub struct BulkResponseItem(pub HeartbeatResponse, pub u16);
 
-#[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
+#[derive(Queryable, QueryableByName, Selectable, Serialize, Deserialize, Debug, Clone)]
 #[diesel(table_name = heartbeats)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct Heartbeat {
@@ -879,58 +896,6 @@ impl Heartbeat {
             .collect()
     }
 
-    // Get top 10 projects, editors, OSes, and languages by total seconds
-    // pub fn get_dashboard_stats(
-    //     conn: &mut PgConnection,
-    //     user_id: i32,
-    // ) -> QueryResult<DashboardStats> {
-    //     let rows: Vec<DashboardMetricRow> = diesel::sql_query(
-    //         "SELECT metric_type, name, total_seconds, total_time \
-    //          FROM calculate_dashboard_stats($1, $2, $3)",
-    //     )
-    //     .bind::<Int4, _>(user_id)
-    //     .bind::<Int4, _>(TIMEOUT_SECONDS)
-    //     .bind::<Int4, _>(10)
-    //     .load(conn)?;
-
-    //     let mut total_time: i64 = 0;
-    //     let mut project_rows = Vec::new();
-    //     let mut editor_rows = Vec::new();
-    //     let mut os_rows = Vec::new();
-    //     let mut language_rows = Vec::new();
-
-    //     for row in rows {
-    //         match row.metric_type.as_str() {
-    //             "total_time" => total_time = row.total_time,
-    //             "project" => project_rows.push(NullableNameDurationRow {
-    //                 name: row.name,
-    //                 total_seconds: row.total_seconds,
-    //             }),
-    //             "editor" => editor_rows.push(NullableNameDurationRow {
-    //                 name: row.name,
-    //                 total_seconds: row.total_seconds,
-    //             }),
-    //             "operating_system" => os_rows.push(NullableNameDurationRow {
-    //                 name: row.name,
-    //                 total_seconds: row.total_seconds,
-    //             }),
-    //             "language" => language_rows.push(NullableNameDurationRow {
-    //                 name: row.name,
-    //                 total_seconds: row.total_seconds,
-    //             }),
-    //             _ => {}
-    //         }
-    //     }
-
-    //     Ok(DashboardStats {
-    //         total_time,
-    //         top_projects: Self::map_usage_stats(project_rows, total_time),
-    //         top_languages: Self::map_usage_stats(language_rows, total_time),
-    //         top_oses: Self::map_usage_stats(os_rows, total_time),
-    //         top_editors: Self::map_usage_stats(editor_rows, total_time),
-    //     })
-    // }
-
     /// Get dashboard stats filtered by time range (day, week, month, all)
     pub fn get_dashboard_stats_by_range(
         conn: &mut PgConnection,
@@ -939,24 +904,47 @@ impl Heartbeat {
     ) -> QueryResult<DashboardStats> {
         let now = Utc::now();
 
-        // Filter results based on time range
-        let filtered_rows = match range {
+        let filtered_rows: Vec<DashboardMetricRow> = match range {
             TimeRange::Day => {
                 let start_time = now - chrono::Duration::hours(24);
-                Self::query_heartbeats_by_time(conn, user_id, start_time)?
+                diesel::sql_query(
+                    "SELECT metric_type, name, total_seconds, total_time \
+                     FROM calculate_dashboard_stats_by_range($1, $2, $3, $4)",
+                )
+                .bind::<Int4, _>(user_id)
+                .bind::<Timestamptz, _>(start_time)
+                .bind::<Int4, _>(TIMEOUT_SECONDS)
+                .bind::<Int4, _>(10)
+                .load(conn)?
             }
             TimeRange::Week => {
                 let start_time = now - chrono::Duration::days(7);
-                Self::query_heartbeats_by_time(conn, user_id, start_time)?
+                diesel::sql_query(
+                    "SELECT metric_type, name, total_seconds, total_time \
+                     FROM calculate_dashboard_stats_by_range($1, $2, $3, $4)",
+                )
+                .bind::<Int4, _>(user_id)
+                .bind::<Timestamptz, _>(start_time)
+                .bind::<Int4, _>(TIMEOUT_SECONDS)
+                .bind::<Int4, _>(10)
+                .load(conn)?
             }
             TimeRange::Month => {
                 let start_time = now - chrono::Duration::days(30);
-                Self::query_heartbeats_by_time(conn, user_id, start_time)?
+                diesel::sql_query(
+                    "SELECT metric_type, name, total_seconds, total_time \
+                     FROM calculate_dashboard_stats_by_range($1, $2, $3, $4)",
+                )
+                .bind::<Int4, _>(user_id)
+                .bind::<Timestamptz, _>(start_time)
+                .bind::<Int4, _>(TIMEOUT_SECONDS)
+                .bind::<Int4, _>(10)
+                .load(conn)?
             }
             TimeRange::All => diesel::sql_query(
                 "SELECT metric_type, name, total_seconds, total_time \
-             FROM calculate_dashboard_stats($1, $2, $3) \
-             WHERE total_seconds > 0 OR metric_type = 'total_time'",
+                 FROM calculate_dashboard_stats($1, $2, $3) \
+                 WHERE total_seconds > 0 OR metric_type = 'total_time'",
             )
             .bind::<Int4, _>(user_id)
             .bind::<Int4, _>(TIMEOUT_SECONDS)
@@ -1000,139 +988,6 @@ impl Heartbeat {
             top_oses: Self::map_usage_stats(os_rows, total_time),
             top_editors: Self::map_usage_stats(editor_rows, total_time),
         })
-    }
-
-    /// Query heartbeats with a time filter
-    fn query_heartbeats_by_time(
-        conn: &mut PgConnection,
-        user_id: i32,
-        start_time: DateTime<Utc>,
-    ) -> QueryResult<Vec<DashboardMetricRow>> {
-        diesel::sql_query(
-            "WITH 
-            total_time_calc AS (
-                SELECT CAST(COALESCE(SUM(diff), 0) AS BIGINT) as total
-                FROM (
-                    SELECT CASE
-                        WHEN LAG(time) OVER (ORDER BY time) IS NULL THEN 0
-                        ELSE LEAST(EXTRACT(EPOCH FROM (time - LAG(time) OVER (ORDER BY time))), $3)
-                    END as diff
-                    FROM heartbeats
-                    WHERE user_id = $1
-                      AND time >= $2
-                      AND time IS NOT NULL
-                    ORDER BY time ASC
-                ) capped_diffs
-            ),
-            projects AS (
-                SELECT 
-                    'project' as metric_type,
-                    project as name,
-                    CAST(COALESCE(SUM(diff), 0) AS BIGINT) as total_seconds,
-                    (SELECT total FROM total_time_calc) as total_time
-                FROM (
-                    SELECT
-                        project,
-                        CASE
-                            WHEN LAG(time) OVER (PARTITION BY project ORDER BY time) IS NULL THEN 0
-                            ELSE LEAST(EXTRACT(EPOCH FROM (time - LAG(time) OVER (PARTITION BY project ORDER BY time))), $3)
-                        END as diff
-                    FROM heartbeats
-                    WHERE project IS NOT NULL
-                      AND user_id = $1
-                      AND time >= $2
-                      AND time IS NOT NULL
-                ) capped_diffs
-                GROUP BY project
-                ORDER BY total_seconds DESC
-                LIMIT 10
-            ),
-            editors AS (
-                SELECT 
-                    'editor' as metric_type,
-                    editor as name,
-                    CAST(COALESCE(SUM(diff), 0) AS BIGINT) as total_seconds,
-                    (SELECT total FROM total_time_calc) as total_time
-                FROM (
-                    SELECT
-                        editor,
-                        CASE
-                            WHEN LAG(time) OVER (PARTITION BY editor ORDER BY time) IS NULL THEN 0
-                            ELSE LEAST(EXTRACT(EPOCH FROM (time - LAG(time) OVER (PARTITION BY editor ORDER BY time))), $3)
-                        END as diff
-                    FROM heartbeats
-                    WHERE editor IS NOT NULL
-                      AND user_id = $1
-                      AND time >= $2
-                      AND time IS NOT NULL
-                ) capped_diffs
-                GROUP BY editor
-                ORDER BY total_seconds DESC
-                LIMIT 10
-            ),
-            oses AS (
-                SELECT 
-                    'operating_system' as metric_type,
-                    operating_system as name,
-                    CAST(COALESCE(SUM(diff), 0) AS BIGINT) as total_seconds,
-                    (SELECT total FROM total_time_calc) as total_time
-                FROM (
-                    SELECT
-                        operating_system,
-                        CASE
-                            WHEN LAG(time) OVER (PARTITION BY operating_system ORDER BY time) IS NULL THEN 0
-                            ELSE LEAST(EXTRACT(EPOCH FROM (time - LAG(time) OVER (PARTITION BY operating_system ORDER BY time))), $3)
-                        END as diff
-                    FROM heartbeats
-                    WHERE operating_system IS NOT NULL
-                      AND user_id = $1
-                      AND time >= $2
-                      AND time IS NOT NULL
-                ) capped_diffs
-                GROUP BY operating_system
-                ORDER BY total_seconds DESC
-                LIMIT 10
-            ),
-            languages AS (
-                SELECT 
-                    'language' as metric_type,
-                    language as name,
-                    CAST(COALESCE(SUM(diff), 0) AS BIGINT) as total_seconds,
-                    (SELECT total FROM total_time_calc) as total_time
-                FROM (
-                    SELECT
-                        language,
-                        CASE
-                            WHEN LAG(time) OVER (PARTITION BY language ORDER BY time) IS NULL THEN 0
-                            ELSE LEAST(EXTRACT(EPOCH FROM (time - LAG(time) OVER (PARTITION BY language ORDER BY time))), $3)
-                        END as diff
-                    FROM heartbeats
-                    WHERE language IS NOT NULL
-                      AND user_id = $1
-                      AND time >= $2
-                      AND time IS NOT NULL
-                ) capped_diffs
-                GROUP BY language
-                ORDER BY total_seconds DESC
-                LIMIT 10
-            ),
-            total_time_row AS (
-                SELECT 
-                    'total_time' as metric_type,
-                    NULL as name,
-                    0::bigint as total_seconds,
-                    (SELECT total FROM total_time_calc) as total_time
-            )
-            SELECT * FROM projects
-            UNION ALL SELECT * FROM editors
-            UNION ALL SELECT * FROM oses
-            UNION ALL SELECT * FROM languages
-            UNION ALL SELECT * FROM total_time_row",
-        )
-        .bind::<Int4, _>(user_id)
-        .bind::<Timestamptz, _>(start_time)
-        .bind::<Int4, _>(TIMEOUT_SECONDS)
-        .load(conn)
     }
 }
 

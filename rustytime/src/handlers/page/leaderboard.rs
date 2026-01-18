@@ -51,9 +51,25 @@ pub async fn leaderboard_page(
         "Database error getting all-time leaderboard"
     );
 
-    let daily = join_with_users(&mut conn, &daily_data);
-    let weekly = join_with_users(&mut conn, &weekly_data);
-    let all_time = join_with_users(&mut conn, &all_time_data);
+    let mut all_user_ids: Vec<i32> =
+        Vec::with_capacity(daily_data.len() + weekly_data.len() + all_time_data.len());
+    all_user_ids.extend(daily_data.iter().map(|l| l.user_id));
+    all_user_ids.extend(weekly_data.iter().map(|l| l.user_id));
+    all_user_ids.extend(all_time_data.iter().map(|l| l.user_id));
+    all_user_ids.sort_unstable();
+    all_user_ids.dedup();
+
+    let all_users: Vec<User> = users::table
+        .filter(users::id.eq_any(&all_user_ids))
+        .load::<User>(&mut conn)
+        .unwrap_or_default();
+
+    let user_map: std::collections::HashMap<i32, &User> =
+        all_users.iter().map(|u| (u.id, u)).collect();
+
+    let daily = map_leaderboard_entries(&daily_data, &user_map);
+    let weekly = map_leaderboard_entries(&weekly_data, &user_map);
+    let all_time = map_leaderboard_entries(&all_time_data, &user_map);
 
     Ok(Json(LeaderboardResponse {
         daily: LeaderboardData {
@@ -80,19 +96,10 @@ pub async fn leaderboard_page(
     }))
 }
 
-fn join_with_users(
-    conn: &mut PgConnection,
+fn map_leaderboard_entries(
     leaderboard_data: &[Leaderboard],
+    user_map: &std::collections::HashMap<i32, &User>,
 ) -> Vec<LeaderboardEntry> {
-    let user_ids: Vec<i32> = leaderboard_data.iter().map(|l| l.user_id).collect();
-
-    let users: Vec<User> = users::table
-        .filter(users::id.eq_any(&user_ids))
-        .load::<User>(conn)
-        .unwrap_or_default();
-
-    let user_map: std::collections::HashMap<i32, &User> = users.iter().map(|u| (u.id, u)).collect();
-
     leaderboard_data
         .iter()
         .filter_map(|l| {

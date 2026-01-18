@@ -33,10 +33,20 @@ struct CachedProjectId {
     cached_at: SystemTime,
 }
 
-const TTL_SECONDS: u64 = 600; // 10 minutes
+struct ProjectCache {
+    map: HashMap<(i32, String), CachedProjectId>,
+    last_cleanup: SystemTime,
+}
 
-static PROJECT_CACHE: Lazy<Mutex<HashMap<(i32, String), CachedProjectId>>> =
-    Lazy::new(|| Mutex::new(HashMap::new()));
+const TTL_SECONDS: u64 = 600; // 10 minutes
+const CLEANUP_INTERVAL_SECS: u64 = 60; // Only clean every 60 seconds
+
+static PROJECT_CACHE: Lazy<Mutex<ProjectCache>> = Lazy::new(|| {
+    Mutex::new(ProjectCache {
+        map: HashMap::new(),
+        last_cleanup: SystemTime::now(),
+    })
+});
 
 #[derive(Insertable)]
 #[diesel(table_name = projects)]
@@ -81,22 +91,35 @@ pub fn get_or_create_project_id(
     repo_url_param: Option<&str>,
 ) -> QueryResult<i32> {
     let now = SystemTime::now();
+    let cache_key = (user_id_param, project_name.to_string());
+
     {
         let mut cache = PROJECT_CACHE.lock().unwrap();
-        cache.retain(|_, v| {
-            v.cached_at
-                .elapsed()
-                .map(|e| e.as_secs() < TTL_SECONDS)
-                .unwrap_or(false)
-        });
-        if let Some(cached) = cache.get(&(user_id_param, project_name.to_string()))
-            && cached
+
+        if cache
+            .last_cleanup
+            .elapsed()
+            .map(|e| e.as_secs() >= CLEANUP_INTERVAL_SECS)
+            .unwrap_or(true)
+        {
+            cache.map.retain(|_, v| {
+                v.cached_at
+                    .elapsed()
+                    .map(|e| e.as_secs() < TTL_SECONDS)
+                    .unwrap_or(false)
+            });
+            cache.last_cleanup = now;
+        }
+
+        if let Some(cached) = cache.map.get(&cache_key) {
+            if cached
                 .cached_at
                 .elapsed()
                 .map(|e| e.as_secs() < TTL_SECONDS)
                 .unwrap_or(false)
-        {
-            return Ok(cached.id);
+            {
+                return Ok(cached.id);
+            }
         }
     }
 
@@ -123,8 +146,8 @@ pub fn get_or_create_project_id(
                 .first(conn)
         })?;
 
-    PROJECT_CACHE.lock().unwrap().insert(
-        (user_id_param, project_name.to_string()),
+    PROJECT_CACHE.lock().unwrap().map.insert(
+        cache_key,
         CachedProjectId {
             id: inserted_id,
             cached_at: now,

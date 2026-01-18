@@ -270,15 +270,25 @@ async fn store_heartbeats_in_db_internal(
 
             let responses = if include_responses {
                 let unique_keys: Vec<_> = seen.keys().copied().collect();
-                let mut heartbeat_cache: HashMap<(i32, chrono::DateTime<Utc>), Heartbeat> =
-                    HashMap::new();
-                for (uid, t) in unique_keys {
-                    let hb = heartbeats::table
-                        .filter(heartbeats::user_id.eq(uid))
-                        .filter(heartbeats::time.eq(t))
-                        .first::<Heartbeat>(conn)?;
-                    heartbeat_cache.insert((uid, t), hb);
-                }
+
+                let user_ids: Vec<i32> = unique_keys.iter().map(|(uid, _)| *uid).collect();
+                let times: Vec<chrono::DateTime<Utc>> =
+                    unique_keys.iter().map(|(_, t)| *t).collect();
+
+                let fetched_heartbeats: Vec<Heartbeat> = diesel::sql_query(
+                    "SELECT h.* FROM heartbeats h \
+                     JOIN (SELECT * FROM UNNEST($1::int4[], $2::timestamptz[]) AS k(user_id, time)) k \
+                     ON h.user_id = k.user_id AND h.time = k.time",
+                )
+                .bind::<diesel::sql_types::Array<diesel::sql_types::Int4>, _>(&user_ids)
+                .bind::<diesel::sql_types::Array<diesel::sql_types::Timestamptz>, _>(&times)
+                .load(conn)?;
+
+                let heartbeat_cache: HashMap<(i32, chrono::DateTime<Utc>), Heartbeat> =
+                    fetched_heartbeats
+                        .into_iter()
+                        .map(|hb| ((hb.user_id, hb.time), hb))
+                        .collect();
 
                 heartbeat_keys
                     .unwrap()
