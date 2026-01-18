@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod cache;
 pub mod env;
 pub mod http;
 pub mod macros;

@@ -3,6 +3,7 @@ use crate::models::leaderboard::{Leaderboard, LeaderboardEntry};
 use crate::models::user::User;
 use crate::schema::users;
 use crate::state::AppState;
+use crate::utils::cache::{CachedLeaderboard, LeaderboardCacheKey};
 use crate::{db_query, get_db_conn};
 use axum::{
     extract::State,
@@ -30,39 +31,109 @@ struct LeaderboardData {
 pub async fn leaderboard_page(
     State(app_state): State<AppState>,
 ) -> Result<Json<LeaderboardResponse>, Response> {
-    let mut conn = get_db_conn!(app_state);
-
     let today = Utc::now().date_naive();
     let week_start = get_week_start(today);
     let all_time_date = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap();
 
-    let daily_data = db_query!(
-        Leaderboard::get_by_period(&mut conn, "daily", today),
-        "Database error getting daily leaderboard"
-    );
+    let daily_key = LeaderboardCacheKey {
+        period_type: "daily".to_string(),
+        period_date: today,
+    };
+    let weekly_key = LeaderboardCacheKey {
+        period_type: "weekly".to_string(),
+        period_date: week_start,
+    };
+    let all_time_key = LeaderboardCacheKey {
+        period_type: "all_time".to_string(),
+        period_date: all_time_date,
+    };
 
-    let weekly_data = db_query!(
-        Leaderboard::get_by_period(&mut conn, "weekly", week_start),
-        "Database error getting weekly leaderboard"
-    );
+    let (daily_data, weekly_data, all_time_data, all_users) = match (
+        app_state.cache.leaderboard.get(&daily_key),
+        app_state.cache.leaderboard.get(&weekly_key),
+        app_state.cache.leaderboard.get(&all_time_key),
+    ) {
+        (Some(daily), Some(weekly), Some(all_time)) => {
+            let mut users = daily.users.clone();
+            users.extend(weekly.users.iter().cloned());
+            users.extend(all_time.users.iter().cloned());
+            users.sort_by_key(|u| u.id);
+            users.dedup_by_key(|u| u.id);
 
-    let all_time_data = db_query!(
-        Leaderboard::get_by_period(&mut conn, "all_time", all_time_date),
-        "Database error getting all-time leaderboard"
-    );
+            (daily.entries, weekly.entries, all_time.entries, users)
+        }
+        _ => {
+            let mut conn = get_db_conn!(app_state);
 
-    let mut all_user_ids: Vec<i32> =
-        Vec::with_capacity(daily_data.len() + weekly_data.len() + all_time_data.len());
-    all_user_ids.extend(daily_data.iter().map(|l| l.user_id));
-    all_user_ids.extend(weekly_data.iter().map(|l| l.user_id));
-    all_user_ids.extend(all_time_data.iter().map(|l| l.user_id));
-    all_user_ids.sort_unstable();
-    all_user_ids.dedup();
+            let daily_data = db_query!(
+                Leaderboard::get_by_period(&mut conn, "daily", today),
+                "Database error getting daily leaderboard"
+            );
 
-    let all_users: Vec<User> = users::table
-        .filter(users::id.eq_any(&all_user_ids))
-        .load::<User>(&mut conn)
-        .unwrap_or_default();
+            let weekly_data = db_query!(
+                Leaderboard::get_by_period(&mut conn, "weekly", week_start),
+                "Database error getting weekly leaderboard"
+            );
+
+            let all_time_data = db_query!(
+                Leaderboard::get_by_period(&mut conn, "all_time", all_time_date),
+                "Database error getting all-time leaderboard"
+            );
+
+            let mut all_user_ids: Vec<i32> =
+                Vec::with_capacity(daily_data.len() + weekly_data.len() + all_time_data.len());
+            all_user_ids.extend(daily_data.iter().map(|l| l.user_id));
+            all_user_ids.extend(weekly_data.iter().map(|l| l.user_id));
+            all_user_ids.extend(all_time_data.iter().map(|l| l.user_id));
+            all_user_ids.sort_unstable();
+            all_user_ids.dedup();
+
+            let all_users: Vec<User> = users::table
+                .filter(users::id.eq_any(&all_user_ids))
+                .load::<User>(&mut conn)
+                .unwrap_or_default();
+
+            let daily_users: Vec<User> = all_users
+                .iter()
+                .filter(|u| daily_data.iter().any(|l| l.user_id == u.id))
+                .cloned()
+                .collect();
+            let weekly_users: Vec<User> = all_users
+                .iter()
+                .filter(|u| weekly_data.iter().any(|l| l.user_id == u.id))
+                .cloned()
+                .collect();
+            let all_time_users: Vec<User> = all_users
+                .iter()
+                .filter(|u| all_time_data.iter().any(|l| l.user_id == u.id))
+                .cloned()
+                .collect();
+
+            app_state.cache.leaderboard.insert(
+                daily_key,
+                CachedLeaderboard {
+                    entries: daily_data.clone(),
+                    users: daily_users,
+                },
+            );
+            app_state.cache.leaderboard.insert(
+                weekly_key,
+                CachedLeaderboard {
+                    entries: weekly_data.clone(),
+                    users: weekly_users,
+                },
+            );
+            app_state.cache.leaderboard.insert(
+                all_time_key,
+                CachedLeaderboard {
+                    entries: all_time_data.clone(),
+                    users: all_time_users,
+                },
+            );
+
+            (daily_data, weekly_data, all_time_data, all_users)
+        }
+    };
 
     let user_map: std::collections::HashMap<i32, &User> =
         all_users.iter().map(|u| (u.id, u)).collect();

@@ -104,7 +104,7 @@ const MAX_USER_AGENT_LENGTH: usize = 255;
 const MAX_DEPENDENCIES: usize = 50;
 const MAX_DEPENDENCY_LENGTH: usize = 254;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum TimeRange {
     Day,
@@ -209,7 +209,7 @@ pub struct UsageStat {
     pub percent: f32,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct DashboardStats {
     pub total_time: i64,
     pub top_projects: Vec<UsageStat>,

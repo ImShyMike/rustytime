@@ -67,6 +67,7 @@ async fn process_heartbeat_request(
         match store_heartbeats_in_db(&app_state.db_pool, vec![new_heartbeat]).await {
             Ok(mut stored_results) => {
                 if let Some(heartbeat) = stored_results.pop() {
+                    app_state.cache.invalidate_user_dashboard(user_id);
                     let response = HeartbeatApiResponse { data: heartbeat };
                     let response_data = Json(HeartbeatApiResponseVariant::Single(response));
                     Ok((StatusCode::ACCEPTED, response_data).into_response())
@@ -94,6 +95,7 @@ async fn process_heartbeat_request(
                     ));
                     Ok((StatusCode::CREATED, response_data).into_response())
                 } else {
+                    app_state.cache.invalidate_user_dashboard(user_id);
                     let response_data = Json(HeartbeatApiResponseVariant::Multiple(
                         HeartbeatBulkApiResponse {
                             responses: stored_results

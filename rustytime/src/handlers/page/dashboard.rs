@@ -1,6 +1,7 @@
 use crate::models::heartbeat::{TimeRange, UsageStat};
 use crate::models::user::User;
 use crate::state::AppState;
+use crate::utils::cache::{CachedDashboardStats, DashboardCacheKey};
 use crate::utils::session::SessionManager;
 use crate::utils::time::{TimeFormat, human_readable_duration};
 use crate::{db_query, get_db_conn, models::heartbeat::Heartbeat};
@@ -73,19 +74,41 @@ pub async fn dashboard(
             .into_response());
     };
 
-    let mut conn = get_db_conn!(app_state);
+    let cache_key = DashboardCacheKey {
+        user_id: session_data.user_id,
+        range: query.range,
+    };
 
-    // get heartbeat count based on time range
-    let total_heartbeats = db_query!(
-        Heartbeat::get_user_heartbeat_count_by_range(&mut conn, session_data.user_id, query.range),
-        "Database error getting heartbeat count"
-    );
+    let cached = app_state.cache.dashboard.get(&cache_key);
+    let (total_heartbeats, dashboard_stats) = if let Some(cached) = cached {
+        (cached.heartbeat_count, cached.stats)
+    } else {
+        let mut conn = get_db_conn!(app_state);
 
-    // get dashboard stats based on time range
-    let dashboard_stats = db_query!(
-        Heartbeat::get_dashboard_stats_by_range(&mut conn, session_data.user_id, query.range),
-        "Database error getting dashboard stats"
-    );
+        let total_heartbeats = db_query!(
+            Heartbeat::get_user_heartbeat_count_by_range(
+                &mut conn,
+                session_data.user_id,
+                query.range
+            ),
+            "Database error getting heartbeat count"
+        );
+
+        let dashboard_stats = db_query!(
+            Heartbeat::get_dashboard_stats_by_range(&mut conn, session_data.user_id, query.range),
+            "Database error getting dashboard stats"
+        );
+
+        app_state.cache.dashboard.insert(
+            cache_key,
+            CachedDashboardStats {
+                stats: dashboard_stats.clone(),
+                heartbeat_count: total_heartbeats,
+            },
+        );
+
+        (total_heartbeats, dashboard_stats)
+    };
 
     Ok(Json(DashboardResponse {
         avatar_url: user.avatar_url,
