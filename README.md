@@ -2,7 +2,9 @@
   <a href="https://rustytime.shymike.dev">
     <img src="https://raw.githubusercontent.com/ImShyMike/rustytime/refs/heads/main/frontend/static/pwa/favicon-196.png" alt="rustytime" width="180">
   </a>
-  <h1>rustytime</h1>
+  <summary>
+    <h1>rustytime</h1>
+  </summary>
   <p><strong>🕒 Blazingly fast time tracking for developers</strong></p>
 
   <a href="https://crates.io/crates/rustytime-server"><img alt="Crates.io Downloads" src="https://img.shields.io/crates/d/rustytime-server?style=flat-square&color=blue"></a>
