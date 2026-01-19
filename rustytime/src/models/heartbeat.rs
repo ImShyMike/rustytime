@@ -12,12 +12,6 @@ use crate::schema::heartbeats::{self};
 use crate::utils::http::parse_user_agent;
 use crate::utils::time::{TimeFormat, human_readable_duration};
 
-#[derive(QueryableByName)]
-struct ApproximateRowCount {
-    #[diesel(sql_type = BigInt)]
-    count: i64,
-}
-
 diesel::define_sql_function! {
     /// Calculate user duration with filters
     #[allow(clippy::too_many_arguments)]
@@ -762,10 +756,8 @@ impl From<Heartbeat> for BulkResponseItem {
 }
 
 impl Heartbeat {
-    pub fn count_total_heartbeats_estimate(conn: &mut PgConnection) -> QueryResult<i64> {
-        diesel::sql_query("SELECT approximate_row_count('heartbeats') AS count")
-            .get_result::<ApproximateRowCount>(conn)
-            .map(|r| r.count)
+    pub fn count_total_heartbeats(conn: &mut PgConnection) -> QueryResult<i64> {
+        heartbeats::table.count().get_result(conn)
     }
 
     pub fn count_heartbeats_last_24h(conn: &mut PgConnection) -> QueryResult<i64> {

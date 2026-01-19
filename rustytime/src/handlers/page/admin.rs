@@ -71,48 +71,34 @@ pub async fn admin_dashboard(
     let offset = query.offset.max(0);
 
     let cached = app_state.cache.admin.get(&());
-    let (total_users, total_heartbeats, heartbeats_last_hour, heartbeats_last_24h, daily_activity) =
-        if let Some(cached) = cached {
-            (
-                cached.total_users,
-                cached.total_heartbeats,
-                cached.heartbeats_last_hour,
-                cached.heartbeats_last_24h,
-                cached.daily_activity,
-            )
-        } else {
-            let mut conn = get_db_conn!(app_state);
+    let (total_heartbeats, daily_activity) = if let Some(cached) = cached {
+        (cached.total_heartbeats, cached.daily_activity)
+    } else {
+        let mut conn = get_db_conn!(app_state);
 
-            let raw_daily_activity = db_query!(
-                Heartbeat::get_daily_activity_last_week(&mut conn),
-                "Failed to fetch daily activity"
-            );
-            let total_users = db_query!(User::count_total_users(&mut conn, false));
-            let total_heartbeats = db_query!(Heartbeat::count_total_heartbeats_estimate(&mut conn));
-            let heartbeats_last_hour = db_query!(Heartbeat::count_heartbeats_last_hour(&mut conn));
-            let heartbeats_last_24h = db_query!(Heartbeat::count_heartbeats_last_24h(&mut conn));
+        let raw_daily_activity = db_query!(
+            Heartbeat::get_daily_activity_last_week(&mut conn),
+            "Failed to fetch daily activity"
+        );
+        let total_heartbeats = db_query!(Heartbeat::count_total_heartbeats(&mut conn));
 
-            app_state.cache.admin.insert(
-                (),
-                CachedAdminStats {
-                    total_users,
-                    total_heartbeats,
-                    heartbeats_last_hour,
-                    heartbeats_last_24h,
-                    daily_activity: raw_daily_activity.clone(),
-                },
-            );
-
-            (
-                total_users,
+        app_state.cache.admin.insert(
+            (),
+            CachedAdminStats {
                 total_heartbeats,
-                heartbeats_last_hour,
-                heartbeats_last_24h,
-                raw_daily_activity,
-            )
-        };
+                daily_activity: raw_daily_activity.clone(),
+            },
+        );
+
+        (total_heartbeats, raw_daily_activity)
+    };
 
     let mut conn = get_db_conn!(app_state);
+
+    let total_users = db_query!(User::count_total_users(&mut conn, false));
+    let heartbeats_last_hour = db_query!(Heartbeat::count_heartbeats_last_hour(&mut conn));
+    let heartbeats_last_24h = db_query!(Heartbeat::count_heartbeats_last_24h(&mut conn));
+
     let paginated_users = db_query!(
         User::list_users_paginated(&mut conn, limit, offset),
         "Failed to fetch users"

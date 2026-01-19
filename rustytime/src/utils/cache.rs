@@ -33,10 +33,7 @@ pub struct CachedLeaderboard {
 
 #[derive(Clone)]
 pub struct CachedAdminStats {
-    pub total_users: i64,
     pub total_heartbeats: i64,
-    pub heartbeats_last_hour: i64,
-    pub heartbeats_last_24h: i64,
     pub daily_activity: Vec<DailyActivity>,
 }
 
@@ -65,7 +62,7 @@ impl AppCache {
             admin: Arc::new(
                 Cache::builder()
                     .max_capacity(1)
-                    .time_to_live(Duration::from_secs(30)) // 30 second TTL
+                    .time_to_live(Duration::from_secs(300)) // 5 minute TTL
                     .build(),
             ),
         }
