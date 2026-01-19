@@ -200,7 +200,9 @@
 						{#snippet icon()}<LucideWrench class="w-6 h-6" />{/snippet}
 						Admin
 					</NavLink>
+				{/if}
 
+				{#if $auth.user?.admin_level && $auth.user.admin_level >= 2}
 					<NavLink
 						href="/imports"
 						active={page.url.pathname === '/imports'}

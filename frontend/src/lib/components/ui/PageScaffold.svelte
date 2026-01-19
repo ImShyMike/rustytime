@@ -33,7 +33,7 @@
 				class="text-center text-ctp-subtext0/70 hover:text-ctp-subtext1 text-sm"
 				title={lastUpdatedAt.toLocaleString()}
 			>
-				Last updated <RelativeTime datetime={lastUpdatedAt} />
+				<span>Data updated <RelativeTime datetime={lastUpdatedAt} /></span>
 			</div>
 		{/if}
 	{/if}
