@@ -2,10 +2,12 @@
   <a href="https://rustytime.shymike.dev">
     <img src="https://raw.githubusercontent.com/ImShyMike/rustytime/refs/heads/main/frontend/static/pwa/favicon-196.png" alt="rustytime" width="180">
   </a>
-  <summary>
-    <h1>rustytime</h1>
-  </summary>
-  <p><strong>🕒 Blazingly fast time tracking for developers</strong></p>
+  <ul align="center" style="list-style: none;">
+    <summary >
+      <h1>rustytime</h1>
+    </summary>
+  </ul>
+  <p><strong>🕒 blazingly fast time tracking for developers</strong></p>
 
   <a href="https://crates.io/crates/rustytime-server"><img alt="Crates.io Downloads" src="https://img.shields.io/crates/d/rustytime-server?style=flat-square&color=blue"></a>
   <a href="https://github.com/ImShyMike/rustytime/actions/workflows/ci.yml"><img alt="CI Status" src="https://img.shields.io/github/actions/workflow/status/ImShyMike/rustytime/ci.yml?style=flat-square&color=green"></a>
