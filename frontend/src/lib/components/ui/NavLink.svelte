@@ -6,7 +6,7 @@
 	type RequiredPermission = 'default' | 'admin' | 'owner';
 
 	interface Props {
-		href: Pathname;
+		href: string | Pathname;
 		active?: boolean;
 		collapsed?: boolean;
 		permission?: RequiredPermission;
@@ -27,6 +27,8 @@
 		icon
 	}: Props = $props();
 
+	const resolvedHref = $derived(typeof href === 'string' ? href : resolve(...href));
+
 	const permissionClasses: Record<RequiredPermission, string> = {
 		default: '',
 		admin:
@@ -41,8 +43,9 @@
 	const inactiveClasses = 'hover:bg-ctp-surface1/50';
 </script>
 
+<!-- eslint-disable svelte/no-navigation-without-resolve -->
 <a
-	href={resolve(href)}
+	href={resolvedHref}
 	{onclick}
 	data-sveltekit-preload-data="hover"
 	class="{baseClasses} {active ? activeClasses : inactiveClasses} {permissionClasses[

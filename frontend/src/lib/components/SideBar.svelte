@@ -19,6 +19,7 @@
 	import LucideX from '~icons/lucide/x';
 	import LucideTrophy from '~icons/lucide/trophy';
 	import LucideImport from '~icons/lucide/import';
+	import LucideBook from '~icons/lucide/book';
 	import { onMount } from 'svelte';
 	import { NavLink, NavButton, IconButton } from '$lib';
 	import UserTag from '$lib/components/ui/UserTag.svelte';
@@ -226,6 +227,11 @@
 						Settings
 					</NavLink>
 				{/if}
+
+				<NavLink href="/docs" active={false} {collapsed}>
+					{#snippet icon()}<LucideBook class="w-6 h-6" />{/snippet}
+					Docs
+				</NavLink>
 
 				{#if $auth.isAuthenticated && $auth.user}
 					<NavButton
