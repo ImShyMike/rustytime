@@ -1,9 +1,9 @@
-use crate::jobs::get_week_start;
 use crate::models::leaderboard::{Leaderboard, LeaderboardEntry};
 use crate::models::user::User;
 use crate::schema::users;
 use crate::state::AppState;
 use crate::utils::cache::{CachedLeaderboard, LeaderboardCacheKey};
+use crate::utils::time::get_week_start;
 use crate::{db_query, get_db_conn};
 use axum::{
     extract::State,

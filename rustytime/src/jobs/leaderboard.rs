@@ -1,16 +1,12 @@
-use std::time::Duration;
+use std::str::FromStr;
 
 use apalis::{
     layers::WorkerBuilderExt,
-    prelude::{
-        BackoffConfig, BoxDynError, Codec, Data, IntervalStrategy, StrategyBuilder, WorkerBuilder,
-    },
+    prelude::{Data, WorkerBuilder},
 };
-use apalis_postgres::PostgresStorage;
-use chrono::{DateTime, NaiveDate, Utc};
-use futures::{FutureExt, TryFutureExt};
-use serde::{Deserialize, Serialize, de::DeserializeOwned};
-use sqlx::PgPool;
+use apalis_cron::{CronStream, Tick};
+use chrono::{NaiveDate, Utc};
+use cron::Schedule;
 use tokio::signal::ctrl_c;
 
 use axum_prometheus::metrics;
@@ -19,217 +15,139 @@ use diesel::Connection;
 use crate::db::connection::DbPool;
 use crate::models::heartbeat::Heartbeat;
 use crate::models::leaderboard::{Leaderboard, NewLeaderboard};
-use crate::utils::time::{
-    advance_schedule, get_week_start, next_five_minute_boundary, next_midnight, next_top_of_hour,
-};
+use crate::utils::time::get_week_start;
 
-#[derive(Clone)]
-struct JsonCodec;
-
-impl<T: Serialize + DeserializeOwned> Codec<T> for JsonCodec {
-    type Compact = Vec<u8>;
-    type Error = serde_json::Error;
-
-    fn encode(input: &T) -> Result<Vec<u8>, Self::Error> {
-        serde_json::to_vec(input)
-    }
-
-    fn decode(compact: &Vec<u8>) -> Result<T, Self::Error> {
-        serde_json::from_slice(compact)
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct LeaderboardJob {
-    pub period_type: String,
-    pub period_date: NaiveDate,
-    pub start_time: DateTime<Utc>,
-    pub end_time: DateTime<Utc>,
-}
-
-impl LeaderboardJob {
-    pub fn daily(date: NaiveDate) -> Self {
-        let start_time = date.and_hms_opt(0, 0, 0).unwrap().and_utc();
-        let end_time = (date + chrono::Duration::days(1))
-            .and_hms_opt(0, 0, 0)
-            .unwrap()
-            .and_utc();
-        Self {
-            period_type: "daily".to_string(),
-            period_date: date,
-            start_time,
-            end_time,
-        }
-    }
-
-    pub fn weekly(date: NaiveDate) -> Self {
-        let week_start = get_week_start(date);
-        let start_time = week_start.and_hms_opt(0, 0, 0).unwrap().and_utc();
-        let end_time = (week_start + chrono::Duration::days(7))
-            .and_hms_opt(0, 0, 0)
-            .unwrap()
-            .and_utc();
-        Self {
-            period_type: "weekly".to_string(),
-            period_date: week_start,
-            start_time,
-            end_time,
-        }
-    }
-
-    pub fn all_time() -> Self {
-        let all_time_date = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap();
-        let start_time = all_time_date.and_hms_opt(0, 0, 0).unwrap().and_utc();
-        let end_time = Utc::now();
-        Self {
-            period_type: "all_time".to_string(),
-            period_date: all_time_date,
-            start_time,
-            end_time,
-        }
-    }
-}
-
-async fn regenerate_leaderboard(
-    job: LeaderboardJob,
-    pool: Data<DbPool>,
-) -> Result<String, BoxDynError> {
+async fn regenerate_daily_leaderboard(_tick: Tick, pool: Data<DbPool>) {
     let started = std::time::Instant::now();
-    let period_type = job.period_type.clone();
+    let today = Utc::now().date_naive();
 
-    tracing::info!(
-        period = %period_type,
-        date = %job.period_date,
-        "Starting leaderboard regeneration"
-    );
+    tracing::info!(period = "daily", date = %today, "Starting leaderboard regeneration");
 
-    let result = (|| {
-        let mut conn = pool.get()?;
-
-        conn.build_transaction().run(|conn| {
-            let results = Heartbeat::get_all_user_durations(conn, job.start_time, job.end_time)?;
-
-            let leaderboard_entries: Vec<NewLeaderboard> = results
-                .iter()
-                .enumerate()
-                .map(|(idx, row)| NewLeaderboard {
-                    user_id: row.user_id,
-                    period_type: job.period_type.clone(),
-                    period_date: job.period_date,
-                    total_seconds: row.total_seconds,
-                    rank: (idx + 1) as i32,
-                })
-                .collect();
-
-            Leaderboard::upsert_batch(conn, leaderboard_entries)?;
-
-            Ok::<_, diesel::result::Error>(results.len())
-        })?;
-
-        Ok::<_, BoxDynError>(())
-    })();
+    let result = regenerate_leaderboard_period(&pool, "daily", today);
 
     let elapsed = started.elapsed();
     let status = if result.is_ok() { "ok" } else { "error" };
 
-    metrics::counter!("leaderboard_jobs_total", "period" => period_type.clone(), "status" => status).increment(1);
-    metrics::histogram!("leaderboard_job_duration_seconds", "period" => period_type.clone())
+    metrics::counter!("leaderboard_jobs_total", "period" => "daily", "status" => status)
+        .increment(1);
+    metrics::histogram!("leaderboard_job_duration_seconds", "period" => "daily")
         .record(elapsed.as_secs_f64());
 
     tracing::info!(
-        period = %period_type,
+        period = "daily",
         elapsed_ms = elapsed.as_millis() as u64,
         status = status,
         "Leaderboard regeneration completed"
     );
-
-    result?;
-
-    Ok(format!(
-        "Leaderboard {} regenerated in {:?}",
-        period_type, elapsed
-    ))
 }
 
-async fn schedule_leaderboard_jobs(
-    mut storage: PostgresStorage<LeaderboardJob, Vec<u8>, JsonCodec, apalis_postgres::PgNotify>,
-    pool: DbPool,
-) {
-    use apalis::prelude::TaskSink;
-
+async fn regenerate_weekly_leaderboard(_tick: Tick, pool: Data<DbPool>) {
+    let started = std::time::Instant::now();
     let today = Utc::now().date_naive();
+    let week_start = get_week_start(today);
 
-    let initial_jobs = vec![
-        LeaderboardJob::daily(today),
-        LeaderboardJob::weekly(today),
-        LeaderboardJob::all_time(),
-    ];
+    tracing::info!(period = "weekly", date = %week_start, "Starting leaderboard regeneration");
 
-    for job in initial_jobs {
-        match storage.push(job.clone()).await {
-            Ok(_) => tracing::info!(period = %job.period_type, "Queued initial leaderboard job"),
-            Err(e) => {
-                tracing::error!(period = %job.period_type, error = ?e, "Failed to queue initial job")
-            }
+    let result = regenerate_leaderboard_period(&pool, "weekly", week_start);
+
+    let elapsed = started.elapsed();
+    let status = if result.is_ok() { "ok" } else { "error" };
+
+    metrics::counter!("leaderboard_jobs_total", "period" => "weekly", "status" => status)
+        .increment(1);
+    metrics::histogram!("leaderboard_job_duration_seconds", "period" => "weekly")
+        .record(elapsed.as_secs_f64());
+
+    tracing::info!(
+        period = "weekly",
+        elapsed_ms = elapsed.as_millis() as u64,
+        status = status,
+        "Leaderboard regeneration completed"
+    );
+}
+
+async fn regenerate_all_time_leaderboard(_tick: Tick, pool: Data<DbPool>) {
+    let started = std::time::Instant::now();
+    let all_time_date = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap();
+
+    tracing::info!(period = "all_time", "Starting leaderboard regeneration");
+
+    let result = regenerate_leaderboard_period(&pool, "all_time", all_time_date);
+
+    let elapsed = started.elapsed();
+    let status = if result.is_ok() { "ok" } else { "error" };
+
+    metrics::counter!("leaderboard_jobs_total", "period" => "all_time", "status" => status)
+        .increment(1);
+    metrics::histogram!("leaderboard_job_duration_seconds", "period" => "all_time")
+        .record(elapsed.as_secs_f64());
+
+    tracing::info!(
+        period = "all_time",
+        elapsed_ms = elapsed.as_millis() as u64,
+        status = status,
+        "Leaderboard regeneration completed"
+    );
+}
+
+fn regenerate_leaderboard_period(
+    pool: &DbPool,
+    period_type: &str,
+    period_date: NaiveDate,
+) -> Result<(), diesel::result::Error> {
+    let (start_time, end_time) = match period_type {
+        "daily" => {
+            let start = period_date.and_hms_opt(0, 0, 0).unwrap().and_utc();
+            let end = (period_date + chrono::Duration::days(1))
+                .and_hms_opt(0, 0, 0)
+                .unwrap()
+                .and_utc();
+            (start, end)
         }
-    }
-
-    let now = Utc::now();
-    let mut next_daily = next_five_minute_boundary(now);
-    let mut next_weekly = next_top_of_hour(now);
-    let mut next_all_time = next_midnight(now);
-    let mut next_cleanup = next_midnight(now);
-
-    loop {
-        let now = Utc::now();
-
-        let sleep_until = [next_daily, next_weekly, next_all_time, next_cleanup]
-            .into_iter()
-            .min()
-            .unwrap();
-
-        if sleep_until > now {
-            let sleep_duration = (sleep_until - now)
-                .to_std()
-                .unwrap_or(Duration::from_secs(1));
-            tokio::time::sleep(sleep_duration).await;
+        "weekly" => {
+            let week_start = get_week_start(period_date);
+            let start = week_start.and_hms_opt(0, 0, 0).unwrap().and_utc();
+            let end = (week_start + chrono::Duration::days(7))
+                .and_hms_opt(0, 0, 0)
+                .unwrap()
+                .and_utc();
+            (start, end)
         }
-
-        let now = Utc::now();
-
-        if now >= next_daily {
-            let today = now.date_naive();
-            let job = LeaderboardJob::daily(today);
-            if let Err(e) = storage.push(job).await {
-                tracing::error!(error = ?e, "Failed to queue daily leaderboard job");
-            }
-            next_daily = advance_schedule(next_daily, chrono::Duration::minutes(5), now);
+        "all_time" => {
+            let start = period_date.and_hms_opt(0, 0, 0).unwrap().and_utc();
+            let end = Utc::now();
+            (start, end)
         }
+        _ => return Ok(()),
+    };
 
-        if now >= next_weekly {
-            let today = now.date_naive();
-            let job = LeaderboardJob::weekly(today);
-            if let Err(e) = storage.push(job).await {
-                tracing::error!(error = ?e, "Failed to queue weekly leaderboard job");
-            }
-            next_weekly = advance_schedule(next_weekly, chrono::Duration::hours(1), now);
-        }
+    let mut conn = pool.get().map_err(|e| {
+        tracing::error!(error = ?e, "Failed to get connection");
+        diesel::result::Error::DatabaseError(
+            diesel::result::DatabaseErrorKind::Unknown,
+            Box::new(e.to_string()),
+        )
+    })?;
 
-        if now >= next_all_time {
-            let job = LeaderboardJob::all_time();
-            if let Err(e) = storage.push(job).await {
-                tracing::error!(error = ?e, "Failed to queue all-time leaderboard job");
-            }
-            next_all_time = advance_schedule(next_all_time, chrono::Duration::days(1), now);
-        }
+    conn.build_transaction().run(|conn| {
+        let results = Heartbeat::get_all_user_durations(conn, start_time, end_time)?;
 
-        if now >= next_cleanup {
-            if let Err(e) = cleanup_old_entries(&pool) {
-                tracing::error!(error = ?e, "Failed to cleanup old leaderboard entries");
-            }
-            next_cleanup = advance_schedule(next_cleanup, chrono::Duration::days(1), now);
-        }
-    }
+        let leaderboard_entries: Vec<NewLeaderboard> = results
+            .iter()
+            .enumerate()
+            .map(|(idx, row)| NewLeaderboard {
+                user_id: row.user_id,
+                period_type: period_type.to_string(),
+                period_date,
+                total_seconds: row.total_seconds,
+                rank: (idx + 1) as i32,
+            })
+            .collect();
+
+        Leaderboard::upsert_batch(conn, leaderboard_entries)?;
+
+        Ok(())
+    })
 }
 
 fn cleanup_old_entries(pool: &DbPool) -> Result<(), diesel::result::Error> {
@@ -259,37 +177,62 @@ fn cleanup_old_entries(pool: &DbPool) -> Result<(), diesel::result::Error> {
     })
 }
 
-type LeaderboardStore =
-    PostgresStorage<LeaderboardJob, Vec<u8>, JsonCodec, apalis_postgres::PgNotify>;
+async fn run_cleanup(_tick: Tick, pool: Data<DbPool>) {
+    if let Err(e) = cleanup_old_entries(&pool) {
+        tracing::error!(error = ?e, "Failed to cleanup old leaderboard entries");
+    }
+}
 
-pub async fn setup(
-    sqlx_pool: PgPool,
-    diesel_pool: DbPool,
-) -> impl std::future::Future<Output = ()> {
-    let storage_config = apalis_postgres::Config::new("leaderboard_jobs").with_poll_interval(
-        StrategyBuilder::new()
-            .apply(
-                IntervalStrategy::new(Duration::from_secs(5))
-                    .with_backoff(BackoffConfig::default()),
-            )
-            .build(),
-    );
+pub async fn setup(diesel_pool: DbPool) -> impl std::future::Future<Output = ()> {
+    let daily_schedule = Schedule::from_str("0 */5 * * * *").expect("valid cron: every 5 minutes");
+    let weekly_schedule = Schedule::from_str("0 0 * * * *").expect("valid cron: every hour");
+    let all_time_schedule =
+        Schedule::from_str("0 0 0 * * *").expect("valid cron: daily at midnight");
+    let cleanup_schedule =
+        Schedule::from_str("0 10 0 * * *").expect("valid cron: daily at 00:10 AM");
 
-    let leaderboard_store: LeaderboardStore =
-        PostgresStorage::new_with_notify(&sqlx_pool, &storage_config).with_codec::<JsonCodec>();
+    let daily_pool = diesel_pool.clone();
+    let weekly_pool = diesel_pool.clone();
+    let all_time_pool = diesel_pool.clone();
+    let cleanup_pool = diesel_pool;
 
-    let scheduler_storage = leaderboard_store.clone();
-    let scheduler_pool = diesel_pool.clone();
-    tokio::spawn(schedule_leaderboard_jobs(scheduler_storage, scheduler_pool));
-
-    WorkerBuilder::new("leaderboard-worker")
-        .backend(leaderboard_store)
+    let daily_worker = WorkerBuilder::new("leaderboard-daily")
+        .backend(CronStream::new(daily_schedule))
         .enable_tracing()
         .catch_panic()
-        .concurrency(2)
-        .data(diesel_pool)
-        .build(regenerate_leaderboard)
-        .run_until(ctrl_c())
-        .map_err(|e| tracing::error!("Worker error: {}", e))
-        .map(|_| ())
+        .data(daily_pool)
+        .build(regenerate_daily_leaderboard);
+
+    let weekly_worker = WorkerBuilder::new("leaderboard-weekly")
+        .backend(CronStream::new(weekly_schedule))
+        .enable_tracing()
+        .catch_panic()
+        .data(weekly_pool)
+        .build(regenerate_weekly_leaderboard);
+
+    let all_time_worker = WorkerBuilder::new("leaderboard-all-time")
+        .backend(CronStream::new(all_time_schedule))
+        .enable_tracing()
+        .catch_panic()
+        .data(all_time_pool)
+        .build(regenerate_all_time_leaderboard);
+
+    let cleanup_worker = WorkerBuilder::new("leaderboard-cleanup")
+        .backend(CronStream::new(cleanup_schedule))
+        .enable_tracing()
+        .catch_panic()
+        .data(cleanup_pool)
+        .build(run_cleanup);
+
+    async move {
+        tokio::select! {
+            _ = daily_worker.run() => {}
+            _ = weekly_worker.run() => {}
+            _ = all_time_worker.run() => {}
+            _ = cleanup_worker.run() => {}
+            _ = ctrl_c() => {
+                tracing::info!("Shutting down leaderboard workers");
+            }
+        }
+    }
 }

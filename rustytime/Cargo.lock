@@ -133,6 +133,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "apalis-cron"
+version = "1.0.0-rc.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "56f0eeb8ae0f072e3b25777687226963aef99ee23c9eacd6739be938c3457af2"
+dependencies = [
+ "apalis-core",
+ "chrono",
+ "cron",
+ "futures-util",
+ "ulid",
+]
+
+[[package]]
 name = "apalis-postgres"
 version = "1.0.0-rc.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -326,9 +339,9 @@ dependencies = [
 
 [[package]]
 name = "axum-tracing-opentelemetry"
-version = "0.32.3"
+version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "10cffc2e3e7b4741cc0d5d571ae67860badd54b79ac2cc4c326fa1e9a2cf3475"
+checksum = "dea2f3f7670fb07753f3d41fad35f95200141977a9473267bcd6a4ae2284c011"
 dependencies = [
  "axum",
  "futures-core",
@@ -626,6 +639,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9481c1c90cbf2ac953f07c8d4a58aa3945c425b7185c9154d67a65e4230da511"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "cron"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5877d3fbf742507b66bc2a1945106bd30dd8504019d596901ddd012a4dd01740"
+dependencies = [
+ "chrono",
+ "once_cell",
+ "winnow 0.6.26",
 ]
 
 [[package]]
@@ -1549,9 +1573,9 @@ dependencies = [
 
 [[package]]
 name = "init-tracing-opentelemetry"
-version = "0.35.0"
+version = "0.36.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7edab8336260bdd46dc17926fe475a7a3d735fd5708fb937c885cd9caf5b9c51"
+checksum = "65deb51caab84a57b478f5d23ac418288cd04fbc112f94ccedae98c297b4d945"
 dependencies = [
  "opentelemetry",
  "opentelemetry-otlp",
@@ -2922,16 +2946,18 @@ checksum = "b39cdef0fa800fc44525c84ccb54a029961a8215f9619753635a9c0d2538d46d"
 
 [[package]]
 name = "rustytime-server"
-version = "0.15.2"
+version = "0.15.3"
 dependencies = [
  "aide",
  "apalis",
+ "apalis-cron",
  "apalis-postgres",
  "axum",
  "axum-prometheus",
  "axum-tracing-opentelemetry",
  "base64",
  "chrono",
+ "cron",
  "diesel",
  "diesel_migrations",
  "dotenvy",
@@ -3765,7 +3791,7 @@ dependencies = [
  "serde_spanned",
  "toml_datetime",
  "toml_parser",
- "winnow",
+ "winnow 0.7.13",
 ]
 
 [[package]]
@@ -3783,7 +3809,7 @@ version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c0cbe268d35bdb4bb5a56a2de88d0ad0eb70af5384a99d648cd4b3d04039800e"
 dependencies = [
- "winnow",
+ "winnow 0.7.13",
 ]
 
 [[package]]
@@ -4658,6 +4684,15 @@ name = "windows_x86_64_msvc"
 version = "0.53.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d6bbff5f0aada427a1e5a6da5f1f98158182f26556f345ac9e04d36d0ebed650"
+
+[[package]]
+name = "winnow"
+version = "0.6.26"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e90edd2ac1aa278a5c4599b1d89cf03074b610800f866d4026dc199d7929a28"
+dependencies = [
+ "memchr",
+]
 
 [[package]]
 name = "winnow"
