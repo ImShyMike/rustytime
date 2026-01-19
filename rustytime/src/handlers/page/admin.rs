@@ -1,6 +1,6 @@
 use aide::NoApi;
 use axum::Json;
-use axum::extract::Path;
+use axum::extract::{Path, Query};
 use axum::{
     Extension,
     extract::State,
@@ -9,7 +9,7 @@ use axum::{
 };
 
 use schemars::JsonSchema;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tower_cookies::Cookies;
 
 use crate::models::heartbeat::Heartbeat;
@@ -19,6 +19,18 @@ use crate::state::AppState;
 use crate::utils::cache::CachedAdminStats;
 use crate::utils::session::{ImpersonationContext, SessionManager};
 use crate::{db_query, get_db_conn};
+
+#[derive(Deserialize, JsonSchema)]
+pub struct AdminQuery {
+    #[serde(default = "default_limit")]
+    pub limit: i64,
+    #[serde(default)]
+    pub offset: i64,
+}
+
+fn default_limit() -> i64 {
+    50
+}
 
 #[derive(Serialize, JsonSchema)]
 pub struct FormattedDailyActivity {
@@ -35,10 +47,13 @@ pub struct AdminDashboardResponse {
     pub requests_per_second: f64,
     pub daily_activity: Vec<FormattedDailyActivity>,
     pub all_users: Vec<PartialUser>,
+    pub limit: i64,
+    pub offset: i64,
 }
 
 pub async fn admin_dashboard(
     State(app_state): State<AppState>,
+    Query(query): Query<AdminQuery>,
     user: NoApi<Option<Extension<User>>>,
 ) -> Result<Json<AdminDashboardResponse>, Response> {
     // check if user is an admin
@@ -52,60 +67,58 @@ pub async fn admin_dashboard(
     }
 
     let include_api_key = current_user.is_owner();
+    let limit = query.limit.clamp(1, 100);
+    let offset = query.offset.max(0);
 
     let cached = app_state.cache.admin.get(&());
-    let (
-        total_users,
-        total_heartbeats,
-        heartbeats_last_hour,
-        heartbeats_last_24h,
-        daily_activity,
-        all_users,
-    ) = if let Some(cached) = cached {
-        (
-            cached.total_users,
-            cached.total_heartbeats,
-            cached.heartbeats_last_hour,
-            cached.heartbeats_last_24h,
-            cached.daily_activity,
-            cached.all_users,
-        )
-    } else {
-        let mut conn = get_db_conn!(app_state);
+    let (total_users, total_heartbeats, heartbeats_last_hour, heartbeats_last_24h, daily_activity) =
+        if let Some(cached) = cached {
+            (
+                cached.total_users,
+                cached.total_heartbeats,
+                cached.heartbeats_last_hour,
+                cached.heartbeats_last_24h,
+                cached.daily_activity,
+            )
+        } else {
+            let mut conn = get_db_conn!(app_state);
 
-        let raw_daily_activity = db_query!(
-            Heartbeat::get_daily_activity_last_week(&mut conn),
-            "Failed to fetch daily activity"
-        );
-        let all_users = db_query!(User::list_all_users(&mut conn), "Failed to fetch users");
-        let total_users = db_query!(User::count_total_users(&mut conn, false));
-        let total_heartbeats = db_query!(Heartbeat::count_total_heartbeats(&mut conn));
-        let heartbeats_last_hour = db_query!(Heartbeat::count_heartbeats_last_hour(&mut conn));
-        let heartbeats_last_24h = db_query!(Heartbeat::count_heartbeats_last_24h(&mut conn));
+            let raw_daily_activity = db_query!(
+                Heartbeat::get_daily_activity_last_week(&mut conn),
+                "Failed to fetch daily activity"
+            );
+            let total_users = db_query!(User::count_total_users(&mut conn, false));
+            let total_heartbeats = db_query!(Heartbeat::count_total_heartbeats_estimate(&mut conn));
+            let heartbeats_last_hour = db_query!(Heartbeat::count_heartbeats_last_hour(&mut conn));
+            let heartbeats_last_24h = db_query!(Heartbeat::count_heartbeats_last_24h(&mut conn));
 
-        app_state.cache.admin.insert(
-            (),
-            CachedAdminStats {
+            app_state.cache.admin.insert(
+                (),
+                CachedAdminStats {
+                    total_users,
+                    total_heartbeats,
+                    heartbeats_last_hour,
+                    heartbeats_last_24h,
+                    daily_activity: raw_daily_activity.clone(),
+                },
+            );
+
+            (
                 total_users,
                 total_heartbeats,
                 heartbeats_last_hour,
                 heartbeats_last_24h,
-                daily_activity: raw_daily_activity.clone(),
-                all_users: all_users.clone(),
-            },
-        );
+                raw_daily_activity,
+            )
+        };
 
-        (
-            total_users,
-            total_heartbeats,
-            heartbeats_last_hour,
-            heartbeats_last_24h,
-            raw_daily_activity,
-            all_users,
-        )
-    };
+    let mut conn = get_db_conn!(app_state);
+    let paginated_users = db_query!(
+        User::list_users_paginated(&mut conn, limit, offset),
+        "Failed to fetch users"
+    );
 
-    let partial_users = all_users
+    let partial_users = paginated_users
         .iter()
         .map(|user| PartialUser {
             id: user.id,
@@ -137,6 +150,8 @@ pub async fn admin_dashboard(
             / 1000.0,
         daily_activity,
         all_users: partial_users,
+        limit,
+        offset,
     }))
 }
 

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { tick } from 'svelte';
 	import { browser } from '$app/environment';
-	import { invalidate } from '$app/navigation';
+	import { invalidate, goto } from '$app/navigation';
 	import { apexcharts } from '$lib/stores/apexcharts';
 	import { theme } from '$lib/stores/theme';
 	import type { Theme } from '$lib/stores/theme';
@@ -21,7 +21,8 @@
 		UserTag,
 		DataTable,
 		EmptyState,
-		Button
+		Button,
+		Pagination
 	} from '$lib';
 	import { auth } from '$lib/stores/auth';
 	import { impersonateUser, changeAdminLevel } from '$lib/api/admin';
@@ -94,6 +95,15 @@
 		}
 	});
 
+	const currentOffset = $derived(adminData.offset);
+	const limit = $derived(adminData.limit);
+	const total = $derived(adminData.total_users);
+
+	function goToPage(offset: number) {
+		// eslint-disable-next-line svelte/no-navigation-without-resolve
+		goto(`/admin?offset=${offset}&limit=${limit}`);
+	}
+
 	async function initializeCharts(theme: Theme) {
 		if (!browser) {
 			return;
@@ -160,7 +170,7 @@
 			<div class="md:col-span-2 lg:col-span-1">
 				<StatCard
 					title="Total Heartbeats"
-					value={adminData.total_heartbeats.toLocaleString()}
+					value={`~${adminData.total_heartbeats.toLocaleString()}`}
 					valueClass="text-3xl font-bold text-ctp-green-600"
 				/>
 			</div>
@@ -191,11 +201,7 @@
 			<Container>
 				<SectionTitle className="mb-4">Users</SectionTitle>
 				<DataTable {columns} tableClassName="min-w-lg">
-					{#each [...adminData.all_users].sort((a, b) => {
-						const adminDiff = (b.admin_level ?? 0) - (a.admin_level ?? 0);
-						if (adminDiff !== 0) return adminDiff;
-						return a.id - b.id;
-					}) as user (user.id)}
+					{#each adminData.all_users as user (user.id)}
 						<tr class="border-b border-ctp-surface0 last:border-0 hover:bg-ctp-surface0/50">
 							<td class="pl-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1">{user.id}</td>
 							<td class="px-6 py-4 whitespace-nowrap">
@@ -275,6 +281,14 @@
 						</tr>
 					{/each}
 				</DataTable>
+
+				<Pagination
+					offset={currentOffset}
+					{limit}
+					{total}
+					className="mt-4"
+					onchange={(newOffset) => goToPage(newOffset)}
+				/>
 			</Container>
 		{:else}
 			<EmptyState

@@ -38,7 +38,6 @@ pub struct CachedAdminStats {
     pub heartbeats_last_hour: i64,
     pub heartbeats_last_24h: i64,
     pub daily_activity: Vec<DailyActivity>,
-    pub all_users: Vec<User>,
 }
 
 #[derive(Clone)]

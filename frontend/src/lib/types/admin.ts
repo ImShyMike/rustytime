@@ -8,4 +8,6 @@ export interface AdminResponse {
 	requests_per_second: number;
 	daily_activity: Array<{ date: string; count: number }>;
 	all_users: Array<PartialUser>;
+	limit: number;
+	offset: number;
 }

@@ -103,8 +103,17 @@ impl User {
         self.admin_level > 1
     }
 
-    pub fn list_all_users(conn: &mut PgConnection) -> QueryResult<Vec<User>> {
-        users::table.load::<User>(conn)
+    pub fn list_users_paginated(
+        conn: &mut PgConnection,
+        limit: i64,
+        offset: i64,
+    ) -> QueryResult<Vec<User>> {
+        users::table
+            .order(users::admin_level.desc())
+            .then_order_by(users::id.asc())
+            .limit(limit)
+            .offset(offset)
+            .load::<User>(conn)
     }
 
     pub fn get_by_ids(
