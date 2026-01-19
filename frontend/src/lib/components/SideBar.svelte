@@ -20,22 +20,25 @@
 	import LucideTrophy from '~icons/lucide/trophy';
 	import LucideImport from '~icons/lucide/import';
 	import { onMount } from 'svelte';
+	import { NavLink, NavButton, IconButton } from '$lib';
 	import UserTag from '$lib/components/ui/UserTag.svelte';
 	import { impersonateUser } from '$lib/api/admin';
 	import Avatar from './ui/Avatar.svelte';
 	import { createApi } from '$lib/api/api';
 
-	let collapsed: boolean = false;
-	let buttonMode: boolean = false;
-	let showMobileSidebar: boolean = false;
+	let collapsed: boolean = $state(false);
+	let buttonMode: boolean = $state(false);
+	let showMobileSidebar: boolean = $state(false);
 
-	$: sidebarPositionClass = buttonMode
-		? showMobileSidebar
-			? 'fixed inset-y-0 left-0 top-0 z-50 h-[100dvh] max-h-[100dvh] overflow-y-auto shadow-2xl'
-			: 'hidden'
-		: 'block relative h-full';
+	const sidebarPositionClass = $derived(
+		buttonMode
+			? showMobileSidebar
+				? 'fixed inset-y-0 left-0 top-0 z-50 h-[100dvh] max-h-[100dvh] overflow-y-auto shadow-2xl'
+				: 'hidden'
+			: 'block relative h-full'
+	);
 
-	$: sidebarWidth = buttonMode ? 'min(20rem, 100vw)' : collapsed ? '5rem' : '16rem';
+	const sidebarWidth = $derived(buttonMode ? 'min(20rem, 100vw)' : collapsed ? '5rem' : '16rem');
 
 	const api = createApi(fetch);
 
@@ -93,19 +96,21 @@
 </script>
 
 {#if buttonMode && !showMobileSidebar}
-	<button
-		class="cursor-pointer md:hidden fixed top-4 left-4 z-50 flex items-center gap-2 bg-base text-text border border-surface0 rounded-md px-2 py-2 shadow-lg hover:bg-surface0/60 transition-colors"
+	<IconButton
+		variant="default"
+		size="xl"
+		title="Open sidebar"
 		onclick={openMobileSidebar}
-		aria-label="Open sidebar"
+		className="md:hidden fixed top-4 left-4 z-50 bg-ctp-base shadow-lg"
 	>
 		<LucideMenu class="w-7 h-7" />
-	</button>
+	</IconButton>
 {/if}
 
 {#if buttonMode && showMobileSidebar}
 	<button
 		type="button"
-		class="fixed inset-0 bg-surface0/60 backdrop-blur-sm z-40 md:hidden"
+		class="fixed inset-0 bg-ctp-surface0/60 backdrop-blur-sm z-40 md:hidden"
 		onclick={closeMobileSidebar}
 		aria-label="Close sidebar overlay"
 	></button>
@@ -113,10 +118,10 @@
 
 <div
 	class="{sidebarPositionClass} md:static md:top-auto md:left-auto md:z-auto"
-	style={`width: ${sidebarWidth};`}
+	style="width: {sidebarWidth};"
 >
 	<div
-		class="bg-base text-text h-full p-4 border-r border-surface0 transition-all duration-300 relative flex flex-col justify-start"
+		class="bg-ctp-base text-ctp-text h-full p-4 border-r border-ctp-surface0 transition-all duration-300 relative flex flex-col justify-start"
 	>
 		<div
 			class="flex items-center gap-4 transition-all duration-300 {$auth.user
@@ -133,7 +138,7 @@
 					<div class="flex flex-row items-center gap-1 align-middle">
 						<UserTag admin_level={$auth.user.admin_level} />
 					</div>
-					<h2 class="{getNameSizeClass($auth.user.name)} text-subtext1 font-bold">
+					<h2 class="{getNameSizeClass($auth.user.name)} text-ctp-subtext1 font-bold">
 						{$auth.user.name || 'User'}
 					</h2>
 				</div>
@@ -143,167 +148,146 @@
 		<div class="flex flex-col justify-between transition-all duration-300 mt-0">
 			<nav class="space-y-2 flex flex-col transition-all duration-300">
 				{#if !$auth.isAuthenticated || !$auth.user}
-					<a
-						href={resolve('/')}
+					<NavLink
+						href="/"
+						active={page.url.pathname === '/'}
+						{collapsed}
 						onclick={() => setTimeout(closeMobileSidebar, 100)}
-						data-sveltekit-preload-data="hover"
-						class="py-2 rounded-md items-center inline-flex {page.url.pathname === '/'
-							? 'bg-surface0/70 text-lavender'
-							: 'hover:bg-surface1/50'} {collapsed ? 'justify-center' : 'px-3'}"
 					>
-						<LucideHouse class="w-6 h-6 inline" /><span class={collapsed ? 'hidden' : 'ml-2'}
-							>Home</span
-						>
-					</a>
+						{#snippet icon()}<LucideHouse class="w-6 h-6" />{/snippet}
+						Home
+					</NavLink>
 				{/if}
-				<a
-					href={resolve('/dashboard')}
+
+				<NavLink
+					href="/dashboard"
+					active={page.url.pathname === '/dashboard'}
+					{collapsed}
 					onclick={() => setTimeout(closeMobileSidebar, 100)}
-					data-sveltekit-preload-data="hover"
-					class="w-full text-left cursor-pointer py-2 rounded-md items-center inline-flex {page.url
-						.pathname === '/dashboard'
-						? 'bg-surface0/70 text-lavender'
-						: 'hover:bg-surface1/50'} {collapsed ? 'justify-center' : 'px-3'}"
 				>
-					<LucideGauge class="w-6 h-6 inline" /><span class={collapsed ? 'hidden' : 'ml-2'}
-						>Dashboard</span
-					>
-				</a>
-				<a
-					href={resolve('/projects')}
+					{#snippet icon()}<LucideGauge class="w-6 h-6" />{/snippet}
+					Dashboard
+				</NavLink>
+
+				<NavLink
+					href="/projects"
+					active={page.url.pathname === '/projects'}
+					{collapsed}
 					onclick={() => setTimeout(closeMobileSidebar, 100)}
-					data-sveltekit-preload-data="hover"
-					class="w-full text-left cursor-pointer py-2 rounded-md items-center inline-flex {page.url
-						.pathname === '/projects'
-						? 'bg-surface0/70 text-lavender'
-						: 'hover:bg-surface1/50'} {collapsed ? 'justify-center' : 'px-3'}"
 				>
-					<LucideLayoutDashboard class="w-6 h-6 inline" /><span
-						class={collapsed ? 'hidden' : 'ml-2'}>Projects</span
-					>
-				</a>
-				<a
-					href={resolve('/leaderboard')}
+					{#snippet icon()}<LucideLayoutDashboard class="w-6 h-6" />{/snippet}
+					Projects
+				</NavLink>
+
+				<NavLink
+					href="/leaderboard"
+					active={page.url.pathname === '/leaderboard'}
+					{collapsed}
 					onclick={() => setTimeout(closeMobileSidebar, 100)}
-					data-sveltekit-preload-data="hover"
-					class="w-full text-left cursor-pointer py-2 rounded-md items-center inline-flex {page.url
-						.pathname === '/leaderboard'
-						? 'bg-surface0/70 text-lavender'
-						: 'hover:bg-surface1/50'} {collapsed ? 'justify-center' : 'px-3'}"
 				>
-					<LucideTrophy class="w-6 h-6 inline" /><span class={collapsed ? 'hidden' : 'ml-2'}
-						>Leaderboard</span
-					>
-				</a>
+					{#snippet icon()}<LucideTrophy class="w-6 h-6" />{/snippet}
+					Leaderboard
+				</NavLink>
+
 				{#if $auth.user?.admin_level && $auth.user.admin_level >= 1}
-					<a
-						href={resolve('/admin')}
+					<NavLink
+						href="/admin"
+						active={page.url.pathname === '/admin'}
+						{collapsed}
+						permission="admin"
 						onclick={() => setTimeout(closeMobileSidebar, 100)}
-						data-sveltekit-preload-data="hover"
-						class="w-full text-left py-2 cursor-pointer rounded-md items-center outline-dashed bg-yellow/5 outline-1 outline-yellow inline-flex {page
-							.url.pathname === '/admin'
-							? 'bg-surface0/70 text-lavender'
-							: 'hover:bg-surface1/50'} {collapsed ? 'justify-center' : 'px-3'}"
 					>
-						<LucideWrench class="w-6 h-6 inline" /><span class={collapsed ? 'hidden' : 'ml-2'}
-							>Admin</span
-						>
-					</a>
-					<a
-						href={resolve('/imports')}
+						{#snippet icon()}<LucideWrench class="w-6 h-6" />{/snippet}
+						Admin
+					</NavLink>
+
+					<NavLink
+						href="/imports"
+						active={page.url.pathname === '/imports'}
+						{collapsed}
+						permission="owner"
 						onclick={() => setTimeout(closeMobileSidebar, 100)}
-						data-sveltekit-preload-data="hover"
-						class="w-full text-left py-2 cursor-pointer rounded-md items-center outline-dashed bg-yellow/5 outline-1 outline-yellow inline-flex {page
-							.url.pathname === '/imports'
-							? 'bg-surface0/70 text-lavender'
-							: 'hover:bg-surface1/50'} {collapsed ? 'justify-center' : 'px-3'}"
 					>
-						<LucideImport class="w-6 h-6 inline" /><span class={collapsed ? 'hidden' : 'ml-2'}
-							>Imports</span
-						>
-					</a>
+						{#snippet icon()}<LucideImport class="w-6 h-6" />{/snippet}
+						Imports
+					</NavLink>
 				{/if}
+
 				{#if $auth.isAuthenticated && $auth.user}
-					<a
-						href={resolve('/settings')}
+					<NavLink
+						href="/settings"
+						active={page.url.pathname === '/settings'}
+						{collapsed}
 						onclick={() => setTimeout(closeMobileSidebar, 100)}
-						data-sveltekit-preload-data="hover"
-						class="w-full text-left cursor-pointer py-2 rounded-md items-center inline-flex {page
-							.url.pathname === '/settings'
-							? 'bg-surface0/70 text-lavender'
-							: 'hover:bg-surface1/50'} {collapsed ? 'justify-center' : 'px-3'}"
 					>
-						<LucideSettings class="w-6 h-6 inline" /><span class={collapsed ? 'hidden' : 'ml-2'}
-							>Settings</span
-						>
-					</a>
+						{#snippet icon()}<LucideSettings class="w-6 h-6" />{/snippet}
+						Settings
+					</NavLink>
 				{/if}
+
 				{#if $auth.isAuthenticated && $auth.user}
-					<button
+					<NavButton
+						{collapsed}
 						onclick={() => {
 							handleLogout();
 							setTimeout(closeMobileSidebar, 100);
 						}}
-						class="py-2 rounded-md cursor-pointer items-center inline-flex hover:bg-surface1/50 {collapsed
-							? 'justify-center'
-							: 'px-3'}"
 					>
-						<LucideLogOut class="w-6 h-6 inline" /><span class={collapsed ? 'hidden' : 'ml-2'}
-							>Logout</span
-						>
-					</button>
+						{#snippet icon()}<LucideLogOut class="w-6 h-6" />{/snippet}
+						Logout
+					</NavButton>
 				{:else}
-					<button
+					<NavButton
+						variant="primary"
+						{collapsed}
 						onclick={() => {
 							auth.login();
 							setTimeout(closeMobileSidebar, 100);
 						}}
-						class="py-2 rounded-md cursor-pointer items-center bg-ctp-mauve/50 outline outline-mauve inline-flex hover:bg-ctp-mauve/65 {collapsed
-							? 'justify-center'
-							: 'px-3'}"
 					>
-						<LucideLogIn class="w-6 h-6 inline" /><span class={collapsed ? 'hidden' : 'ml-2'}
-							>Login</span
-						>
-					</button>
+						{#snippet icon()}<LucideLogIn class="w-6 h-6" />{/snippet}
+						Login
+					</NavButton>
 				{/if}
 			</nav>
-			<button
-				class="absolute {collapsed
-					? 'bottom-18'
-					: 'bottom-6'} left-6 cursor-pointer rounded-md items-center inline-flex hover:text-blue"
+
+			<IconButton
+				variant="ghost"
+				size="lg"
+				title="Toggle theme"
 				onclick={toggleTheme}
-				aria-label="Toggle theme"
+				className="absolute {collapsed ? 'bottom-18' : 'bottom-5'} left-5"
 			>
 				{#if $theme === 'light'}
-					<LucideMoon class="w-8 h-8 text-subtext0" />
+					<LucideMoon class="w-8 h-8 text-ctp-subtext0" />
 				{:else}
-					<LucideSunMedium class="w-8 h-8 text-subtext0" />
+					<LucideSunMedium class="w-8 h-8 text-ctp-subtext0" />
 				{/if}
-				<span class={collapsed ? 'hidden' : ''}></span>
-			</button>
+			</IconButton>
 
 			{#if buttonMode}
-				<button
-					class="absolute top-5 right-5 cursor-pointer rounded-md items-center inline-flex hover:text-blue"
+				<IconButton
+					variant="ghost"
+					size="lg"
+					title="Close sidebar"
 					onclick={closeMobileSidebar}
-					aria-label="Close sidebar"
+					className="absolute top-5 right-5"
 				>
-					<LucideX class="w-8 h-8 text-subtext0" />
-				</button>
+					<LucideX class="w-8 h-8 text-ctp-subtext0" />
+				</IconButton>
 			{:else}
-				<button
-					class="absolute bottom-6 {collapsed
-						? 'right-6'
-						: 'right-2'} right-6 cursor-pointer rounded-md items-center inline-flex hover:text-blue"
+				<IconButton
+					variant="ghost"
+					size="lg"
+					title="Toggle sidebar collapse"
 					onclick={toggleCollapse}
-					aria-label="Toggle sidebar collapse"
+					className="absolute bottom-5 {collapsed ? 'right-5' : 'right-5'}"
 				>
 					<LucideChevronsRight
-						class="w-8 h-8 text-subtext0 transition-transform duration-400"
+						class="w-8 h-8 text-ctp-subtext0 transition-transform duration-400"
 						style="transform: rotate({collapsed ? '0deg' : '-180deg'})"
 					/>
-				</button>
+				</IconButton>
 			{/if}
 		</div>
 
@@ -319,17 +303,18 @@
 						From: {$auth.impersonation.admin_name || 'Admin'}
 					</p>
 				{/if}
-				<button
-					onclick={() =>
-						setTimeout(closeMobileSidebar, 100) &&
-						impersonateUser(api, $auth.impersonation!.admin_id)}
-					class="cursor-pointer inline-flex w-full items-center justify-center rounded-md bg-ctp-yellow px-3 py-2 text-sm font-semibold text-ctp-base transition hover:bg-ctp-yellow/80 {collapsed
-						? 'px-0'
-						: ''}"
+				<NavButton
+					variant="warning"
+					{collapsed}
+					className="w-full justify-center font-semibold text-sm"
+					onclick={() => {
+						setTimeout(closeMobileSidebar, 100);
+						impersonateUser(api, $auth.impersonation!.admin_id);
+					}}
 				>
-					<LucideUserMinus class="h-5 w-5" />
-					<span class={collapsed ? 'hidden' : 'ml-2'}>Stop impersonating</span>
-				</button>
+					{#snippet icon()}<LucideUserMinus class="h-5 w-5" />{/snippet}
+					Stop impersonating
+				</NavButton>
 			</div>
 		{/if}
 	</div>

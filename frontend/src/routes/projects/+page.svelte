@@ -2,12 +2,20 @@
 	import { invalidate } from '$app/navigation';
 	import { setupVisibilityRefresh } from '$lib/utils/refresh';
 	import type { PageData } from './$types';
-	import { Container, PageScaffold, SectionTitle, Button } from '$lib';
+	import {
+		Container,
+		PageScaffold,
+		SectionTitle,
+		Button,
+		SearchInput,
+		Select,
+		EmptyState,
+		IconButton
+	} from '$lib';
 	import type { Project } from '$lib/types/projects';
 	import LucideGithub from '~icons/lucide/github';
 	import LucideExternalLink from '~icons/lucide/external-link';
 	import LucidePencilLine from '~icons/lucide/pencil-line';
-	import LucideSearch from '~icons/lucide/search';
 	import StatCard from '$lib/components/ui/StatCard.svelte';
 	import { formatRelativeTime, creationDateFormatter } from '$lib/utils/time';
 	import RelativeTime from '$lib/components/ui/RelativeTime.svelte';
@@ -211,41 +219,23 @@
 				<div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 					<label class="flex flex-col gap-1 text-sm text-ctp-subtext0 flex-1">
 						<span class="text-xs uppercase tracking-wide text-ctp-overlay1">Search</span>
-						<div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
-							<label
-								class="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-ctp-surface1 bg-ctp-base/60 px-3 py-2 text-sm text-ctp-text shadow-sm focus-within:border-ctp-blue focus-within:bg-ctp-base focus-within:ring-1 focus-within:ring-ctp-blue/40"
-							>
-								<span class="sr-only">Search projects</span>
-								<LucideSearch class="h-4 w-4 text-ctp-overlay1" aria-hidden="true" />
-								<input
-									type="search"
-									class="w-full bg-transparent text-sm text-ctp-text placeholder:text-ctp-overlay1 focus:outline-none"
-									placeholder="Search by name or repo"
-									value={searchQuery}
-									oninput={(event) => {
-										const target = event.currentTarget as HTMLInputElement;
-										searchQuery = target.value;
-									}}
-								/>
-							</label>
-						</div>
+						<SearchInput
+							bind:value={searchQuery}
+							placeholder="Search by name or repo"
+							oninput={(val) => {
+								searchQuery = val;
+							}}
+						/>
 					</label>
 
-					<label class="flex flex-col gap-1 text-sm text-ctp-subtext0">
-						<span class="text-xs uppercase tracking-wide text-ctp-overlay1">Sort by</span>
-						<select
-							class="rounded-lg border border-ctp-surface1 bg-ctp-base px-3 py-2 text-sm text-ctp-text focus:border-ctp-blue focus:outline-none"
-							value={sortOption}
-							onchange={(event) => {
-								const target = event.currentTarget as HTMLSelectElement;
-								sortOption = target.value as SortOption;
-							}}
-						>
-							{#each sortOptions as option (option.value)}
-								<option value={option.value}>{option.label}</option>
-							{/each}
-						</select>
-					</label>
+					<Select
+						bind:value={sortOption}
+						options={sortOptions}
+						label="Sort by"
+						onchange={(val) => {
+							sortOption = val;
+						}}
+					/>
 				</div>
 			</Container>
 
@@ -261,13 +251,16 @@
 									>
 								</div>
 
-								<LucidePencilLine
-									class="h-5 w-5 text-ctp-subtext1/70 hover:text-ctp-subtext0 cursor-pointer"
+								<IconButton
+									variant="ghost"
+									size="sm"
 									title="Edit Project"
 									onclick={() => {
 										editingProject = project;
 									}}
-								/>
+								>
+									<LucidePencilLine class="h-4 w-4" />
+								</IconButton>
 							</div>
 
 							<div class="flex flex-col justify-between h-full gap-3 text-sm text-ctp-subtext1">
@@ -312,23 +305,21 @@
 					{/each}
 				</div>
 			{:else}
-				<Container
-					className="flex flex-col items-center gap-2 border border-dashed border-ctp-surface0/80 py-6 text-center"
+				<EmptyState
+					title="No projects match your filters"
+					description="Try adjusting your search or reset the filters below."
+					className="py-6"
 				>
-					<p class="text-lg font-semibold text-ctp-text">No projects match your filters</p>
-					<p class="text-ctp-subtext0">Try adjusting your search or reset the filters below.</p>
 					{#if hasActiveFilters}
-						<Button onClick={resetFilters} className="mt-4">Reset filters</Button>
+						<Button onClick={resetFilters}>Reset filters</Button>
 					{/if}
-				</Container>
+				</EmptyState>
 			{/if}
 		{:else}
-			<Container
-				className="flex flex-col items-center gap-4 border border-dashed border-ctp-surface0/80 py-12 text-center"
-			>
-				<p class="text-lg font-semibold text-ctp-text">No projects tracked yet</p>
-				<p class="text-ctp-subtext0">Start tracking your time to see your projects here!</p>
-			</Container>
+			<EmptyState
+				title="No projects tracked yet"
+				description="Start tracking your time to see your projects here!"
+			/>
 		{/if}
 	</PageScaffold>
 {/if}

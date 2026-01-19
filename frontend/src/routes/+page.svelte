@@ -3,7 +3,7 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { browser } from '$app/environment';
-	import { Logo, UserTag } from '$lib';
+	import { Logo, UserTag, Button } from '$lib';
 
 	import LucideGithub from '~icons/lucide/github';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
@@ -96,24 +96,22 @@
 						{/if}
 					</div>
 
-					<button
-						onclick={auth.logout}
-						class="cursor-pointer text-ctp-text/70 hover:text-ctp-text/50 underline"
+					<Button
+						variant="ghost"
+						onClick={auth.logout}
+						className="text-ctp-text/70 hover:text-ctp-text/50 underline"
 					>
 						Logout
-					</button>
+					</Button>
 				</div>
 			</div>
 		{:else}
 			<!-- Not Authenticated -->
 			<div class="text-center">
-				<button
-					onclick={auth.login}
-					class="cursor-pointer bg-ctp-surface0 text-ctp-text hover:bg-ctp-surface1 font-semibold py-4 px-8 rounded-lg flex items-center gap-3 mx-auto"
-				>
+				<Button variant="secondary" size="lg" onClick={auth.login} className="py-4 px-8 mx-auto">
 					<LucideGithub class="min-w-6 min-h-6" />
 					Sign in with GitHub
-				</button>
+				</Button>
 			</div>
 		{/if}
 	</div>

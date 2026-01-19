@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { invalidate } from '$app/navigation';
-	import { Container, PageScaffold, RelativeTime } from '$lib';
+	import { Container, PageScaffold, RelativeTime, Tabs, DataTable } from '$lib';
 	import type { PageData } from './$types';
 	import type { Leaderboard } from '$lib/types/leaderboard';
 	import { setupVisibilityRefresh } from '$lib/utils/refresh';
@@ -42,6 +42,12 @@
 	];
 
 	let currentData = $derived<Leaderboard>(leaderboardData[selectedTab] || []);
+
+	const columns = [
+		{ key: 'rank', label: 'Rank', className: 'w-24' },
+		{ key: 'user', label: 'User', className: 'w-56' },
+		{ key: 'time', label: 'Time Coded', align: 'right' as const }
+	];
 </script>
 
 <svelte:head>
@@ -51,18 +57,7 @@
 <PageScaffold title="Leaderboard" {lastUpdatedAt}>
 	<Container>
 		<div class="flex justify-between items-end">
-			<div class="mb-4 flex gap-2 border-b border-base">
-				{#each tabs as tab (tab.id)}
-					<button
-						class="cursor-pointer px-4 py-2 font-medium transition-colors {selectedTab === tab.id
-							? 'border-b-2 border-blue text-blue'
-							: 'text-subtext0 hover:text-text'}"
-						onclick={() => (selectedTab = tab.id)}
-					>
-						{tab.label}
-					</button>
-				{/each}
-			</div>
+			<Tabs {tabs} bind:selected={selectedTab} className="mb-4" />
 
 			<p
 				class="text-xs text-ctp-overlay1 pb-4"
@@ -74,75 +69,59 @@
 			</p>
 		</div>
 
-		<div class="rounded-lg border border-surface0 bg-mantle">
-			<div class="overflow-x-auto">
-				{#if currentData.entries.length === 0}
-					<div class="p-8 text-center text-subtext0">No data available for this period</div>
-				{:else}
-					<table class="min-w-lg w-full table-fixed">
-						<thead class="border-b border-surface0 bg-surface0">
-							<tr>
-								<th class="w-24 pl-6 py-3 text-left text-xs font-medium uppercase text-subtext0"
-									>Rank</th
+		<DataTable {columns} tableClassName="table-fixed">
+			{#if currentData.entries.length === 0}
+				<tr>
+					<td colspan="3" class="p-8 text-center text-ctp-subtext0"
+						>No data available for this period</td
+					>
+				</tr>
+			{:else}
+				{#each currentData.entries as entry (entry.rank)}
+					<tr class="border-b last:border-0 border-ctp-surface0 hover:bg-ctp-surface0/20">
+						<td class="w-12 pl-6 pr-0 py-4">
+							<div
+								class="flex h-8 w-8 items-center justify-center rounded-full font-bold {entry.rank ===
+								1
+									? 'bg-ctp-yellow text-ctp-base'
+									: entry.rank === 2
+										? 'bg-ctp-overlay0 text-ctp-text'
+										: entry.rank === 3
+											? 'bg-ctp-peach text-ctp-base'
+											: 'text-ctp-subtext0'}"
+							>
+								{entry.rank}
+							</div>
+						</td>
+						<td class="w-56 py-4">
+							<div class="flex items-center gap-3">
+								<img
+									src={entry.avatar_url}
+									alt={entry.user_name}
+									class="h-8 w-8 rounded-full border border-ctp-surface0"
+								/>
+								<a
+									class="font-medium overflow-hidden text-ellipsis whitespace-nowrap {entry.user_id ===
+									$auth.user?.id
+										? 'text-ctp-blue'
+										: 'text-ctp-text'}"
+									href={entry.user_name ? `https://github.com/${entry.user_name}` : undefined}
+									target="_blank"
+									data-umami-event="github-profile-link"
+									data-umami-event-name={entry.user_name}
+									rel="noopener noreferrer external">{entry.user_name || 'Unknown'}</a
 								>
-								<th
-									class="w-56 pl-0 pr-6 py-3 text-left text-xs font-medium uppercase text-subtext0"
-									>User</th
-								>
-								<th class="px-6 py-3 text-right text-xs font-medium uppercase text-subtext0"
-									>Time Coded</th
-								>
-							</tr>
-						</thead>
-						<tbody>
-							{#each currentData.entries as entry (entry.rank)}
-								<tr class="border-b last:border-0 border-surface0 hover:bg-surface0/20">
-									<td class="w-12 pl-6 pr-0 py-4">
-										<div
-											class="flex h-8 w-8 items-center justify-center rounded-full font-bold {entry.rank ===
-											1
-												? 'bg-yellow text-base'
-												: entry.rank === 2
-													? 'bg-overlay0 text-text'
-													: entry.rank === 3
-														? 'bg-peach text-base'
-														: 'text-subtext0'}"
-										>
-											{entry.rank}
-										</div>
-									</td>
-									<td class="w-56 py-4">
-										<div class="flex items-center gap-3">
-											<img
-												src={entry.avatar_url}
-												alt={entry.user_name}
-												class="h-8 w-8 rounded-full border border-surface0"
-											/>
-											<a
-												class="font-medium overflow-hidden text-ellipsis whitespace-nowrap {entry.user_id ===
-												$auth.user?.id
-													? 'text-blue'
-													: 'text-text'}"
-												href={entry.user_name ? `https://github.com/${entry.user_name}` : undefined}
-												target="_blank"
-												data-umami-event="github-profile-link"
-												data-umami-event-name={entry.user_name}
-												rel="noopener noreferrer external">{entry.user_name || 'Unknown'}</a
-											>
-										</div>
-									</td>
-									<td
-										class="px-6 py-4 text-right font-mono text-lg text-text"
-										title={formatDuration(entry.total_seconds)}
-									>
-										{formatDuration(entry.total_seconds, false)}
-									</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				{/if}
-			</div>
-		</div>
+							</div>
+						</td>
+						<td
+							class="px-6 py-4 text-right font-mono text-lg text-ctp-text"
+							title={formatDuration(entry.total_seconds)}
+						>
+							{formatDuration(entry.total_seconds, false)}
+						</td>
+					</tr>
+				{/each}
+			{/if}
+		</DataTable>
 	</Container>
 </PageScaffold>

@@ -14,7 +14,15 @@
 		isApexChartsConstructor
 	} from '$lib/charts/apexClient';
 	import { setupVisibilityRefresh } from '$lib/utils/refresh';
-	import { Container, PageScaffold, SectionTitle, StatCard, UserTag } from '$lib';
+	import {
+		Container,
+		PageScaffold,
+		SectionTitle,
+		StatCard,
+		UserTag,
+		ToggleGroup,
+		EmptyState
+	} from '$lib';
 	import RelativeTime from '$lib/components/ui/RelativeTime.svelte';
 	import { safeGraphData, safeText } from '$lib/utils/text';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
@@ -27,6 +35,13 @@
 	let dashboardData = $derived(data);
 	let lastUpdatedAt = $state(new Date());
 	let selectedRange = $derived(data?.range || 'month');
+
+	const rangeOptions = [
+		{ value: 'day', label: 'Last 24 Hours' },
+		{ value: 'week', label: 'Last 7 Days' },
+		{ value: 'month', label: 'Last 30 Days' },
+		{ value: 'all', label: 'All Time' }
+	];
 
 	let projectsChart: ApexCharts | null = null;
 	let languagesChart: ApexCharts | null = null;
@@ -169,50 +184,7 @@
 
 		<!-- Time Range Filter -->
 		<Container className="mb-4">
-			<div class="flex flex-col gap-3">
-				<div class="flex flex-wrap items-stretch justify-between gap-3">
-					<button
-						class={`cursor-pointer flex-1 px-3 py-1 rounded text-sm font-medium transition-colors ${
-							selectedRange === 'day'
-								? 'bg-ctp-lavender/90 text-ctp-crust'
-								: 'bg-ctp-surface0/70 border border-ctp-surface1 text-text hover:bg-ctp-surface0'
-						}`}
-						onclick={() => handleRangeChange('day')}
-					>
-						Last 24 Hours
-					</button>
-					<button
-						class={`cursor-pointer flex-1 px-3 py-1 rounded text-sm font-medium transition-colors ${
-							selectedRange === 'week'
-								? 'bg-ctp-lavender/90 text-ctp-crust'
-								: 'bg-ctp-surface0/70 border border-ctp-surface1 text-text hover:bg-ctp-surface0'
-						}`}
-						onclick={() => handleRangeChange('week')}
-					>
-						Last 7 Days
-					</button>
-					<button
-						class={`cursor-pointer flex-1 px-3 py-1 rounded text-sm font-medium transition-colors ${
-							selectedRange === 'month'
-								? 'bg-ctp-lavender/90 text-ctp-crust'
-								: 'bg-ctp-surface0/70 border border-ctp-surface1 text-text hover:bg-ctp-surface0'
-						}`}
-						onclick={() => handleRangeChange('month')}
-					>
-						Last 30 Days
-					</button>
-					<button
-						class={`cursor-pointer flex-1 px-3 py-1 rounded text-sm font-medium transition-colors ${
-							selectedRange === 'all'
-								? 'bg-ctp-lavender/90 text-ctp-crust'
-								: 'bg-ctp-surface0/70 border border-ctp-surface1 text-text hover:bg-ctp-surface0'
-						}`}
-						onclick={() => handleRangeChange('all')}
-					>
-						All Time
-					</button>
-				</div>
-			</div>
+			<ToggleGroup options={rangeOptions} selected={selectedRange} onchange={handleRangeChange} />
 		</Container>
 
 		<!-- Top Stats -->
@@ -287,12 +259,11 @@
 				</div>
 			</Container>
 		{:else}
-			<Container
-				className="flex flex-col items-center gap-4 border border-dashed border-ctp-surface0/80 py-12 text-center mb-4"
-			>
-				<p class="text-lg font-semibold text-ctp-text">No data to display :(</p>
-				<p class="text-ctp-subtext0">Complete the setup bellow to start tracking your time!</p>
-			</Container>
+			<EmptyState
+				title="No data to display :("
+				description="Complete the setup bellow to start tracking your time!"
+				className="mb-4"
+			/>
 		{/if}
 	</PageScaffold>
 {/if}

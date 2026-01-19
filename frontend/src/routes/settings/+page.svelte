@@ -1,8 +1,18 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import { Container, PageScaffold, SectionTitle, Button } from '$lib';
-	import LucideCopy from '~icons/lucide/copy';
-	import LucideCopyCheck from '~icons/lucide/copy-check';
+	import {
+		Container,
+		PageScaffold,
+		SectionTitle,
+		Button,
+		TabsPanel,
+		SegmentedControl,
+		CodeBlock,
+		CopyButton,
+		Select,
+		TextInput,
+		IconButton
+	} from '$lib';
 	import LucideTrash2 from '~icons/lucide/trash-2';
 	import LucidePlus from '~icons/lucide/plus';
 	import LucideLoader2 from '~icons/lucide/loader-2';
@@ -33,12 +43,16 @@
 	let aliases = $state<Awaited<ReturnType<typeof getProjectAliases>> | null>(null);
 	let projects = $state<Awaited<ReturnType<typeof getProjects>> | null>(null);
 
-	let selectedMainProject = $state<number | null>(null);
-	let selectedAliasProject = $state<number | null>(null);
+	let selectedMainProject = $state<number | undefined>(undefined);
+	let selectedAliasProject = $state<number | undefined>(undefined);
 	let isAddingAlias = $state(false);
 
 	let setupVariant = $state<'unix' | 'windows' | 'custom'>('custom');
-	let setupCopied = $state(false);
+	const setupVariantOptions = [
+		{ value: 'unix' as const, label: 'macOS/Linux' },
+		{ value: 'windows' as const, label: 'Windows' },
+		{ value: 'custom' as const, label: 'Custom' }
+	];
 
 	const usedAsAliasIds = $derived(
 		aliases
@@ -54,6 +68,10 @@
 		projects ? projects.projects.filter((p) => !usedAsAliasIds.has(p.id)) : []
 	);
 
+	const projectOptions = $derived(
+		availableProjects.map((p) => ({ value: p.id, label: safeText(p.name) }))
+	);
+
 	async function loadData() {
 		aliases = await getProjectAliases(api);
 		projects = await getProjects(api);
@@ -65,8 +83,8 @@
 		try {
 			await addProjectAlias(api, selectedMainProject, selectedAliasProject);
 			await loadData();
-			selectedMainProject = null;
-			selectedAliasProject = null;
+			selectedMainProject = undefined;
+			selectedAliasProject = undefined;
 		} catch (error) {
 			console.error('Failed to add alias:', error);
 		} finally {
@@ -101,8 +119,12 @@
 	];
 
 	let config: string = $state('');
-	let commandCopied: boolean = $state(false);
-	let os: string = $state('windows');
+	let os = $state<'linux' | 'macos' | 'windows'>('windows');
+	const osOptions = [
+		{ value: 'linux' as const, label: 'Linux' },
+		{ value: 'macos' as const, label: 'macOS' },
+		{ value: 'windows' as const, label: 'Windows' }
+	];
 	let hackatimeApiKey: string = $state('');
 	let isStartingImport = $state(false);
 	let importError: string | null = $state(null);
@@ -195,36 +217,11 @@
 		}
 	}
 
-	function copySetupContent() {
-		let textToCopy = '';
-		if (setupVariant === 'custom') {
-			textToCopy = config;
-		} else if (setupVariant === 'unix') {
-			textToCopy = unixCommand();
-		} else if (setupVariant === 'windows') {
-			textToCopy = windowsCommand();
-		}
-		if (!textToCopy) return;
-		navigator.clipboard.writeText(textToCopy).then(() => {
-			setupCopied = true;
-			setTimeout(() => (setupCopied = false), 2000);
-		});
-	}
-
 	const installCommands: Record<string, string> = {
 		linux: `curl -fsSL https://raw.githubusercontent.com/ImShyMike/timesplit/refs/heads/main/install.sh | sudo bash -s -- update && timesplit setup`,
 		windows: `iwr -useb https://raw.githubusercontent.com/ImShyMike/timesplit/refs/heads/main/install.ps1 -OutFile install.ps1; powershell -ExecutionPolicy Bypass -Command ".\\install.ps1 update"; if ($?) { timesplit setup }`,
 		macos: `curl -fsSL https://raw.githubusercontent.com/ImShyMike/timesplit/refs/heads/main/install_macos.sh | sudo bash -s -- update && timesplit setup`
 	};
-
-	function copyCommand() {
-		const cmd = installCommands[os];
-		if (!cmd) return;
-		navigator.clipboard.writeText(cmd).then(() => {
-			commandCopied = true;
-			setTimeout(() => (commandCopied = false), 2000);
-		});
-	}
 
 	$effect(() => {
 		if (settingsData) {
@@ -235,11 +232,6 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 			config = '';
 		}
 	});
-
-	$effect(() => {
-		void setupVariant;
-		setupCopied = false;
-	});
 </script>
 
 <svelte:head>
@@ -249,19 +241,7 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 {#if settingsData}
 	<PageScaffold title="Settings">
 		<!-- Top selector -->
-		<div class="flex gap-1 border-b bg-surface0/50 rounded-xl p-1 border border-surface1 mb-4">
-			{#each tabs as tab (tab.id)}
-				<button
-					class="grow cursor-pointer px-4 py-2 rounded-md font-medium transition-colors {selectedTab ===
-					tab.id
-						? 'bg-blue/75 text-crust'
-						: 'text-subtext0 hover:text-text'}"
-					onclick={() => (selectedTab = tab.id)}
-				>
-					{tab.label}
-				</button>
-			{/each}
-		</div>
+		<TabsPanel {tabs} bind:selected={selectedTab} className="mb-4" />
 
 		{#if selectedTab === 'setup'}
 			<!-- Setup stuff -->
@@ -279,80 +259,31 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 									Copy this into your <code class="bg-ctp-surface1 p-1">~/.wakatime.cfg</code> file:
 								{/if}
 							</label>
-							<div class="inline-flex rounded-md bg-ctp-surface0/40 p-1 border border-surface1">
-								<button
-									onclick={() => (setupVariant = 'unix')}
-									class={`cursor-pointer px-3 py-1 text-sm rounded ${
-										setupVariant === 'unix'
-											? 'bg-ctp-blue/80 text-ctp-base'
-											: 'text-ctp-text hover:bg-ctp-surface0/60'
-									}`}
-								>
-									macOS/Linux
-								</button>
-								<button
-									onclick={() => (setupVariant = 'windows')}
-									class={`cursor-pointer px-3 py-1 text-sm rounded ${
-										setupVariant === 'windows'
-											? 'bg-ctp-blue/80 text-ctp-base'
-											: 'text-ctp-text hover:bg-ctp-surface0/60'
-									}`}
-								>
-									Windows
-								</button>
-								<button
-									onclick={() => (setupVariant = 'custom')}
-									class={`cursor-pointer px-3 py-1 text-sm rounded ${
-										setupVariant === 'custom'
-											? 'bg-ctp-blue/80 text-ctp-base'
-											: 'text-ctp-text hover:bg-ctp-surface0/60'
-									}`}
-								>
-									Custom
-								</button>
-							</div>
+							<SegmentedControl options={setupVariantOptions} bind:selected={setupVariant} />
 						</div>
-						<div class="relative w-full">
-							{#if setupVariant === 'custom'}
+						{#if setupVariant === 'custom'}
+							<div class="relative w-full">
 								<div
 									id="setup-content"
-									class="resize-none text-text block w-full pr-14 px-2 py-2 border border-ctp-surface1 rounded-md bg-ctp-surface0/40 text-sm font-mono"
+									class="resize-none text-ctp-text block w-full pr-14 px-2 py-2 border border-ctp-surface1 rounded-md bg-ctp-surface0/40 text-sm font-mono"
 								>
-									<p class="text-mauve">[<span class="text-text">settings</span>]</p>
-									<p class="text-blue">
-										api_url <span class="text-text">=</span>
-										<span class="text-green">"{PUBLIC_BACKEND_API_URL}/api/v1"</span>
+									<p class="text-ctp-mauve">[<span class="text-ctp-text">settings</span>]</p>
+									<p class="text-ctp-blue">
+										api_url <span class="text-ctp-text">=</span>
+										<span class="text-ctp-green">"{PUBLIC_BACKEND_API_URL}/api/v1"</span>
 									</p>
-									<p class="text-blue">
-										api_key <span class="text-text">=</span>
-										<span class="text-{settingsData.api_key ? 'yellow' : 'red'}"
+									<p class="text-ctp-blue">
+										api_key <span class="text-ctp-text">=</span>
+										<span class="text-ctp-{settingsData.api_key ? 'yellow' : 'red'}"
 											>{settingsData.api_key ?? 'REDACTED'}</span
 										>
 									</p>
 								</div>
-							{:else}
-								<pre
-									id="setup-content"
-									class="text-text resize-none block w-full pr-14 px-3 py-3 border border-ctp-surface1 rounded-md bg-ctp-surface0/40 text-sm font-mono whitespace-pre-wrap wrap-break-word">{setupVariant ===
-									'unix'
-										? unixCommand()
-										: windowsCommand()}</pre>
-							{/if}
-							<button
-								onclick={() => copySetupContent()}
-								aria-label="Copy setup to clipboard"
-								class={`absolute top-2 right-2 cursor-pointer h-8 px-2 text-ctp-base text-sm rounded transition-transform duration-200 transform flex items-center gap-2 hover:scale-105 active:scale-100 ` +
-									(setupCopied
-										? 'bg-ctp-green-600 hover:bg-ctp-green-700'
-										: 'bg-ctp-blue/70 hover:bg-ctp-blue')}
-							>
-								{#if setupCopied}
-									<LucideCopyCheck class="w-4 h-4 inline" />
-								{:else}
-									<LucideCopy class="w-4 h-4 inline" />
-								{/if}
-							</button>
-						</div>
+								<CopyButton text={config} className="absolute top-2 right-2" />
+							</div>
+						{:else}
+							<CodeBlock code={setupVariant === 'unix' ? unixCommand() : windowsCommand()} />
+						{/if}
 					</div>
 				</div>
 			</Container>
@@ -380,51 +311,10 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 							<label for="timesplit-command" class="text-sm font-medium text-ctp-text">
 								Quick install command for your OS:
 							</label>
-							<div class="inline-flex rounded-md bg-ctp-surface0/40 p-1 border border-surface1">
-								<button
-									onclick={() => (os = 'linux')}
-									class={`cursor-pointer px-3 py-1 text-sm rounded ${os === 'linux' ? 'bg-ctp-blue/80 text-ctp-base' : 'text-ctp-text hover:bg-ctp-surface0/60'}`}
-								>
-									Linux
-								</button>
-								<button
-									onclick={() => (os = 'macos')}
-									class={`cursor-pointer px-3 py-1 text-sm rounded ${os === 'macos' ? 'bg-ctp-blue/80 text-ctp-base' : 'text-ctp-text hover:bg-ctp-surface0/60'}`}
-								>
-									macOS
-								</button>
-								<button
-									onclick={() => (os = 'windows')}
-									class={`cursor-pointer px-3 py-1 text-sm rounded ${os === 'windows' ? 'bg-ctp-blue/80 text-ctp-base' : 'text-ctp-text hover:bg-ctp-surface0/60'}`}
-								>
-									Windows
-								</button>
-							</div>
+							<SegmentedControl options={osOptions} bind:selected={os} />
 						</div>
 
-						{#key os}
-							<div class="relative w-full">
-								<pre
-									id="timesplit-command"
-									class="text-text resize-none block w-full pr-14 px-3 py-3 border border-ctp-surface1 rounded-md bg-ctp-surface0/40 text-sm font-mono whitespace-pre-wrap wrap-break-word">{installCommands[
-										os
-									]}</pre>
-								<button
-									onclick={() => copyCommand()}
-									aria-label="Copy install command"
-									class={`absolute top-2 right-2 cursor-pointer h-8 px-2 text-ctp-base text-sm rounded transition-transform duration-200 transform flex items-center gap-2 hover:scale-105 active:scale-100 ` +
-										(commandCopied
-											? 'bg-ctp-green-600 hover:bg-ctp-green-700'
-											: 'bg-ctp-blue/70 hover:bg-ctp-blue')}
-								>
-									{#if commandCopied}
-										<LucideCopyCheck class="w-4 h-4 inline" />
-									{:else}
-										<LucideCopy class="w-4 h-4 inline" />
-									{/if}
-								</button>
-							</div>
-						{/key}
+						<CodeBlock code={installCommands[os]} />
 
 						{#if os === 'windows'}
 							<p class="mt-2 text-xs text-ctp-text/80">
@@ -445,36 +335,28 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 
 				{#if aliases && projects}
 					<!-- Add new alias form -->
-					<div class="bg-ctp-surface0/40 border border-surface1 rounded-lg p-4 mb-4">
-						<h3 class="text-sm font-semibold text-text mb-3">Add New Alias</h3>
+					<div class="bg-ctp-surface0/40 border border-ctp-surface1 rounded-lg p-4 mb-4">
+						<h3 class="text-sm font-semibold text-ctp-text mb-3">Add New Alias</h3>
 						<div class="flex flex-col sm:flex-row gap-3">
 							<div class="flex-1">
-								<label for="main-project" class="block text-xs text-subtext0 mb-1"
-									>Main Project</label
-								>
-								<select
+								<Select
 									id="main-project"
+									label="Main Project"
+									options={projectOptions}
 									bind:value={selectedMainProject}
-									class="w-full px-3 py-2 bg-surface1/40 border border-surface2 rounded-md text-text text-sm focus:outline-none focus:ring-2 focus:ring-blue"
-								>
-									<option value={null}>Select main project...</option>
-									{#each availableProjects as project (project.id)}
-										<option value={project.id}>{safeText(project.name)}</option>
-									{/each}
-								</select>
+									placeholder="Select main project..."
+									className="w-full"
+								/>
 							</div>
 							<div class="flex-1">
-								<label for="alias-project" class="block text-xs text-subtext0 mb-1">Alias</label>
-								<select
+								<Select
 									id="alias-project"
+									label="Alias"
+									options={projectOptions}
 									bind:value={selectedAliasProject}
-									class="w-full px-3 py-2 bg-ctp-surface1/40 border border-surface2 rounded-md text-text text-sm focus:outline-none focus:ring-2 focus:ring-blue"
-								>
-									<option value={null}>Select alias project...</option>
-									{#each availableProjects as project (project.id)}
-										<option value={project.id}>{safeText(project.name)}</option>
-									{/each}
-								</select>
+									placeholder="Select alias project..."
+									className="w-full"
+								/>
 							</div>
 							<div class="flex items-end">
 								<Button
@@ -520,13 +402,14 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 															class="flex items-center justify-between bg-surface1/40 border border-surface1 rounded px-3 py-2"
 														>
 															<span class="text-sm text-text">{safeText(aliasProject.name)}</span>
-															<button
+															<IconButton
+																variant="danger"
+																size="sm"
+																title="Remove alias"
 																onclick={() => handleDeleteAlias(aliasRecord.id)}
-																class="cursor-pointer text-red hover:text-red/80 transition-colors"
-																aria-label="Remove alias"
 															>
 																<LucideTrash2 class="w-4 h-4" />
-															</button>
+															</IconButton>
 														</div>
 													{/if}
 												{/each}
@@ -551,16 +434,16 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 						Import your existing Hackatime heartbeats directly into rustytime. Provide a Hackatime
 						API key to begin importing. Your key is only used for this session and is not stored.
 					</p>
-					<div class="bg-ctp-surface0/40 border border-surface1 rounded-lg p-4 space-y-3">
-						<h3 class="text-sm font-semibold text-text mb-3">Hackatime API Key</h3>
+					<div class="bg-ctp-surface0/40 border border-ctp-surface1 rounded-lg p-4 space-y-3">
+						<h3 class="text-sm font-semibold text-ctp-text mb-3">Hackatime API Key</h3>
 						<div class="flex flex-col sm:flex-row gap-3 items-center">
-							<input
+							<TextInput
 								id="hackatime-api-key"
 								type="password"
 								placeholder="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
 								bind:value={hackatimeApiKey}
 								disabled={isImportActive}
-								class="w-full px-3 py-2 rounded-md border border-surface2 bg-ctp-surface1/40 text-text text-sm focus:outline-none focus:ring-2 focus:ring-blue disabled:opacity-50"
+								className="w-full"
 							/>
 							<Button
 								onClick={handleHackatimeImport}
@@ -576,7 +459,7 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 							</Button>
 						</div>
 						{#if importError}
-							<p class="text-sm text-red">{importError}</p>
+							<p class="text-sm text-ctp-red">{importError}</p>
 						{/if}
 					</div>
 

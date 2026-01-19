@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { auth } from '../../stores/auth.js';
 	import type { AuthError } from '../../stores/auth.js';
+	import { Button, IconButton } from '$lib';
 
 	import LucideTriangleAlert from '~icons/lucide/triangle-alert';
 	import LucideCircleAlert from '~icons/lucide/circle-alert';
@@ -98,14 +99,7 @@
 					</p>
 					<div class="flex items-center justify-between">
 						{#if $auth.error.type === 'unauthorized'}
-							<button
-								type="button"
-								class="cursor-pointer bg-mantle border border-overlay0 inline-flex h-8 items-center justify-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground ring-offset-background hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-								onclick={auth.login}
-								disabled={$auth.isLoading}
-							>
-								Log in
-							</button>
+							<Button size="sm" onClick={auth.login} disabled={$auth.isLoading}>Log in</Button>
 						{:else}
 							{#if $auth.error}
 								<p class="text-xs opacity-70">
@@ -113,26 +107,22 @@
 								</p>
 							{/if}
 							{#if showRetryButton}
-								<button
-									type="button"
-									class="cursor-pointer inline-flex h-8 items-center justify-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground ring-offset-background hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-									onclick={() => auth.verify()}
-									disabled={$auth.isLoading}
-								>
+								<Button size="sm" onClick={() => auth.verify()} disabled={$auth.isLoading}>
 									{$auth.isLoading ? 'Retrying...' : 'Retry'}
-								</button>
+								</Button>
 							{/if}
 						{/if}
 					</div>
 				</div>
-				<button
-					type="button"
-					class="cursor-pointer absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-70 ring-offset-background hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+				<IconButton
+					variant="ghost"
+					size="sm"
 					onclick={auth.clearError}
-					aria-label="Dismiss notification"
+					title="Dismiss notification"
+					className="absolute right-2 top-2"
 				>
 					<LucideX class="h-4 w-4" />
-				</button>
+				</IconButton>
 			</div>
 		</div>
 	</div>

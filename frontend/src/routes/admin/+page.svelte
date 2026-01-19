@@ -13,7 +13,16 @@
 		isApexChartsConstructor
 	} from '$lib/charts/apexClient';
 	import { setupVisibilityRefresh } from '$lib/utils/refresh';
-	import { Container, PageScaffold, SectionTitle, StatCard, UserTag } from '$lib';
+	import {
+		Container,
+		PageScaffold,
+		SectionTitle,
+		StatCard,
+		UserTag,
+		DataTable,
+		EmptyState,
+		Button
+	} from '$lib';
 	import { auth } from '$lib/stores/auth';
 	import { impersonateUser, changeAdminLevel } from '$lib/api/admin';
 	import { createApi } from '$lib/api/api';
@@ -165,144 +174,116 @@
 				<div id="activity-chart" class="w-full h-64"></div>
 			</Container>
 		{:else}
-			<Container
-				className="flex flex-col items-center gap-4 border border-dashed border-ctp-surface0/80 py-12 text-center mb-4"
-			>
-				<p class="text-lg font-semibold text-ctp-text">No recent activity data available</p>
-			</Container>
+			<EmptyState title="No recent activity data available" className="mb-4" />
 		{/if}
 
 		<!-- User List -->
 		{#if adminData.all_users.length > 0}
+			{@const showApiKey = !!adminData.all_users[0].api_key}
+			{@const columns = [
+				{ key: 'id', label: 'Id' },
+				{ key: 'user', label: 'User' },
+				{ key: 'type', label: 'Type' },
+				{ key: 'created', label: 'Created (UTC)' },
+				...(showApiKey ? [{ key: 'api_key', label: 'API Key' }] : []),
+				{ key: 'actions', label: 'Actions' }
+			]}
 			<Container>
 				<SectionTitle className="mb-4">Users</SectionTitle>
-				<div class="rounded-lg border border-surface0 bg-mantle">
-					<div class="overflow-x-auto">
-						<table class="min-w-lg w-full">
-							<thead class="border-b border-surface0 bg-surface0">
-								<tr>
-									<th class="pl-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
-										>Id</th
-									>
-									<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
-										>User</th
-									>
-									<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
-										>Type</th
-									>
-									<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
-										>Created (UTC)</th
-									>
-									{#if adminData.all_users[0].api_key}
-										<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
-											>API Key</th
-										>
+				<DataTable {columns} tableClassName="min-w-lg">
+					{#each [...adminData.all_users].sort((a, b) => {
+						const adminDiff = (b.admin_level ?? 0) - (a.admin_level ?? 0);
+						if (adminDiff !== 0) return adminDiff;
+						return a.id - b.id;
+					}) as user (user.id)}
+						<tr class="border-b border-ctp-surface0 last:border-0 hover:bg-ctp-surface0/50">
+							<td class="pl-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1">{user.id}</td>
+							<td class="px-6 py-4 whitespace-nowrap">
+								<div class="flex items-center">
+									{#if user.avatar_url}
+										<img src={user.avatar_url} alt="Avatar" class="h-8 w-8 rounded-full mr-3" />
 									{/if}
-									<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
-										>Actions</th
+									<a
+										class="text-sm font-medium {user.id === $auth.user?.id
+											? 'text-blue'
+											: 'text-text'}"
+										href={user.name ? `https://github.com/${user.name}` : undefined}
+										target="_blank"
+										data-umami-event="github-profile-link"
+										data-umami-event-name={user.name}
+										rel="noopener noreferrer external">{user.name || 'Unknown'}</a
 									>
-								</tr>
-							</thead>
-							<tbody>
-								{#each [...adminData.all_users].sort((a, b) => {
-									const adminDiff = (b.admin_level ?? 0) - (a.admin_level ?? 0);
-									if (adminDiff !== 0) return adminDiff;
-									return a.id - b.id;
-								}) as user (user.id)}
-									<tr class="border-b border-surface0 last:border-0 hover:bg-surface0/50">
-										<td class="pl-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1">{user.id}</td>
-										<td class="px-6 py-4 whitespace-nowrap">
-											<div class="flex items-center">
-												{#if user.avatar_url}
-													<img
-														src={user.avatar_url}
-														alt="Avatar"
-														class="h-8 w-8 rounded-full mr-3"
-													/>
-												{/if}
-												<a
-													class="text-sm font-medium {user.id === $auth.user?.id
-														? 'text-blue'
-														: 'text-text'}"
-													href={user.name ? `https://github.com/${user.name}` : undefined}
-													target="_blank"
-													data-umami-event="github-profile-link"
-													data-umami-event-name={user.name}
-													rel="noopener noreferrer external">{user.name || 'Unknown'}</a
-												>
-											</div>
-										</td>
-										<td class="px-6 py-4 whitespace-nowrap">
-											<UserTag admin_level={user.admin_level} />
-										</td>
-										<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1"
-											>{new Date(user.created_at).toLocaleString('en-US', { timeZone: 'UTC' })}</td
+								</div>
+							</td>
+							<td class="px-6 py-4 whitespace-nowrap">
+								<UserTag admin_level={user.admin_level} />
+							</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1"
+								>{new Date(user.created_at).toLocaleString('en-US', { timeZone: 'UTC' })}</td
+							>
+							{#if showApiKey}
+								<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1 font-mono">
+									{#if user.api_key}
+										<Button
+											variant="ghost"
+											size="sm"
+											onClick={() => navigator.clipboard.writeText(user.api_key!)}
+											className="font-mono px-2 py-1"
 										>
-										{#if user.api_key}
-											<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1 font-mono">
-												<button
-													onclick={() => navigator.clipboard.writeText(user.api_key!)}
-													class="cursor-pointer hover:bg-ctp-base px-2 py-1 rounded"
-													title="Click to copy full API key"
-												>
-													{user.api_key.substring(0, 16)}...
-												</button>
-											</td>
-										{/if}
-										<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1">
-											{#if $auth.user?.admin_level !== undefined && user.admin_level >= $auth.user.admin_level && (!$auth.impersonation || user.id !== $auth.impersonation.admin_id)}
-												<span class="text-xs uppercase tracking-wide text-ctp-subtext1/80"
-													>Nothing</span
-												>
+											{user.api_key.substring(0, 16)}...
+										</Button>
+									{/if}
+								</td>
+							{/if}
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1">
+								{#if $auth.user?.admin_level !== undefined && user.admin_level >= $auth.user.admin_level && (!$auth.impersonation || user.id !== $auth.impersonation.admin_id)}
+									<span class="text-xs uppercase tracking-wide text-ctp-subtext1/80">Nothing</span>
+								{:else}
+									<div class="flex items-center gap-2">
+										<Button
+											size="sm"
+											onClick={() => impersonateUser(api, user.id)}
+										>
+											{#if $auth.impersonation && user.id === $auth.impersonation.admin_id}
+												Go back
 											{:else}
-												<div class="flex items-center gap-2">
-													<button
-														onclick={() => impersonateUser(api, user.id)}
-														class="cursor-pointer inline-flex items-center justify-center rounded bg-ctp-lavender px-3 py-1 text-xs font-semibold text-ctp-base transition hover:bg-ctp-blue"
-													>
-														{#if $auth.impersonation && user.id === $auth.impersonation.admin_id}
-															Go back
-														{:else}
-															Impersonate
-														{/if}
-													</button>
-
-													{#if $auth.user?.admin_level === undefined || ($auth.user.admin_level ?? 0) > (user.admin_level ?? 0) + 1}
-														<button
-															class="cursor-pointer inline-flex items-center justify-center rounded bg-ctp-green px-3 py-1 text-xs font-semibold text-ctp-base transition hover:bg-ctp-teal"
-															onclick={() => {
-																void promoteUser(user.id, user.admin_level);
-															}}
-														>
-															Promote
-														</button>
-													{:else if (user.admin_level ?? 0) > 0 && ($auth.user?.admin_level === undefined || ($auth.user.admin_level ?? 0) > (user.admin_level ?? 0))}
-														<button
-															class="cursor-pointer inline-flex items-center justify-center rounded bg-ctp-red px-3 py-1 text-xs font-semibold text-ctp-base transition hover:bg-ctp-maroon"
-															onclick={() => {
-																void demoteUser(user.id, user.admin_level);
-															}}
-														>
-															Demote
-														</button>
-													{/if}
-												</div>
+												Impersonate
 											{/if}
-										</td>
-									</tr>
-								{/each}
-							</tbody>
-						</table>
-					</div>
-				</div>
+										</Button>
+
+										{#if $auth.user?.admin_level === undefined || ($auth.user.admin_level ?? 0) > (user.admin_level ?? 0) + 1}
+											<Button
+												size="sm"
+												onClick={() => {
+													void promoteUser(user.id, user.admin_level);
+												}}
+											>
+												Promote
+											</Button>
+										{:else if (user.admin_level ?? 0) > 0 && ($auth.user?.admin_level === undefined || ($auth.user.admin_level ?? 0) > (user.admin_level ?? 0))}
+											<Button
+												variant="danger"
+												size="sm"
+												onClick={() => {
+													void demoteUser(user.id, user.admin_level);
+												}}
+											>
+												Demote
+											</Button>
+										{/if}
+									</div>
+								{/if}
+							</td>
+						</tr>
+					{/each}
+				</DataTable>
 			</Container>
 		{:else}
-			<Container
-				className="flex flex-col items-center gap-4 border border-dashed border-ctp-surface0/80 py-12 text-center mb-4"
-			>
-				<p class="text-lg font-semibold text-ctp-text">No users found</p>
-				<p class="text-ctp-subtext0">How are you even seeing this</p>
-			</Container>
+			<EmptyState
+				title="No users found"
+				description="How are you even seeing this"
+				className="mb-4"
+			/>
 		{/if}
 	</PageScaffold>
 {/if}

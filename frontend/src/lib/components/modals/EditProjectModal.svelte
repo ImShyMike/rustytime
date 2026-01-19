@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Modal } from '$lib';
+	import { Modal, Button, TextInput } from '$lib';
 	import type { Project } from '$lib/types/projects';
 	import { auth } from '$lib/stores/auth';
 	import { createApi, ApiError } from '$lib/api/api';
@@ -57,22 +57,14 @@
 
 <Modal bind:isOpen onclose={closeModal} title="Edit Project">
 	<div class="space-y-6">
-		<div>
-			<label
-				for="project-repo"
-				class="mb-1 block text-sm font-medium text-ctp-subtext0 dark:text-ctp-subtext1"
-			>
-				Project Repository URL
-			</label>
-			<input
-				id="project-repo"
-				type="text"
-				class="w-full rounded-md border border-ctp-subtext1 bg-ctp-surface0 px-3 py-2 text-sm text-ctp-text focus:outline-none focus:ring-2 focus:ring-ctp-lavender disabled:opacity-50 disabled:cursor-not-allowed"
-				bind:value={projectRepo}
-				placeholder={`https://github.com/${username}/...`}
-				disabled={isSaving}
-			/>
-		</div>
+		<TextInput
+			id="project-repo"
+			type="text"
+			label="Project Repository URL"
+			bind:value={projectRepo}
+			placeholder={`https://github.com/${username}/...`}
+			disabled={isSaving}
+		/>
 
 		{#if errorMessage}
 			<div class="rounded-md bg-ctp-red/10 border border-ctp-red/30 px-4 py-3">
@@ -83,13 +75,9 @@
 
 	{#snippet footer()}
 		<div class="flex justify-end space-x-2">
-			<button
-				onclick={saveChanges}
-				disabled={isSaving}
-				class="cursor-pointer inline-block rounded-lg bg-ctp-green-400 px-3 py-1 font-semibold text-ctp-base hover:bg-ctp-green-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-ctp-green-400"
-			>
+			<Button variant="primary" size="sm" onClick={saveChanges} disabled={isSaving}>
 				{isSaving ? 'Saving...' : 'Save'}
-			</button>
+			</Button>
 		</div>
 	{/snippet}
 </Modal>
