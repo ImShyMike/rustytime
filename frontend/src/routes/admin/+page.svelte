@@ -240,10 +240,7 @@
 									<span class="text-xs uppercase tracking-wide text-ctp-subtext1/80">Nothing</span>
 								{:else}
 									<div class="flex items-center gap-2">
-										<Button
-											size="sm"
-											onClick={() => impersonateUser(api, user.id)}
-										>
+										<Button size="sm" onClick={() => impersonateUser(api, user.id)}>
 											{#if $auth.impersonation && user.id === $auth.impersonation.admin_id}
 												Go back
 											{:else}

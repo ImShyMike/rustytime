@@ -43,7 +43,9 @@
 	href={resolve(href)}
 	{onclick}
 	data-sveltekit-preload-data="hover"
-	class="{baseClasses} {active ? activeClasses : inactiveClasses} {permissionClasses[permission]} {collapsed ? 'justify-center' : 'px-3'} {className}"
+	class="{baseClasses} {active ? activeClasses : inactiveClasses} {permissionClasses[
+		permission
+	]} {collapsed ? 'justify-center' : 'px-3'} {className}"
 >
 	{#if icon}
 		<span class="w-6 h-6 inline-flex items-center justify-center">

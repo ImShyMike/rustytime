@@ -14,7 +14,9 @@ export default defineConfig(() => {
 			})
 		],
 		define: {
-			'import.meta.env.VITE_GIT_COMMIT_HASH': JSON.stringify(process.env.CF_PAGES_COMMIT_SHA || 'dev')
+			'import.meta.env.VITE_GIT_COMMIT_HASH': JSON.stringify(
+				process.env.CF_PAGES_COMMIT_SHA || 'dev'
+			)
 		}
 	};
 });
