@@ -18,6 +18,7 @@
 	import LucideMenu from '~icons/lucide/menu';
 	import LucideX from '~icons/lucide/x';
 	import LucideTrophy from '~icons/lucide/trophy';
+	import LucideImport from '~icons/lucide/import';
 	import { onMount } from 'svelte';
 	import UserTag from '$lib/components/ui/UserTag.svelte';
 	import { impersonateUser } from '$lib/api/admin';
@@ -206,6 +207,19 @@
 					>
 						<LucideWrench class="w-6 h-6 inline" /><span class={collapsed ? 'hidden' : 'ml-2'}
 							>Admin</span
+						>
+					</a>
+					<a
+						href={resolve('/imports')}
+						onclick={() => setTimeout(closeMobileSidebar, 100)}
+						data-sveltekit-preload-data="hover"
+						class="w-full text-left py-2 cursor-pointer rounded-md items-center outline-dashed bg-yellow/5 outline-1 outline-yellow inline-flex {page
+							.url.pathname === '/imports'
+							? 'bg-surface0/70 text-lavender'
+							: 'hover:bg-surface1/50'} {collapsed ? 'justify-center' : 'px-3'}"
+					>
+						<LucideImport class="w-6 h-6 inline" /><span class={collapsed ? 'hidden' : 'ml-2'}
+							>Imports</span
 						>
 					</a>
 				{/if}

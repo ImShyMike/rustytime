@@ -14,8 +14,9 @@
 		addProjectAlias,
 		deleteProjectAlias
 	} from '$lib/api/project';
-	import { importFromHackatime } from '$lib/api/import';
-	import type { ImportResponse } from '$lib/types/settings';
+	import { startImport, getImportStatus } from '$lib/api/import';
+	import type { ImportStatusResponse } from '$lib/types/settings';
+	import { onDestroy } from 'svelte';
 	import { safeText } from '$lib/utils/text';
 	import { formatDuration } from '$lib/utils/time';
 	import { PUBLIC_BACKEND_API_URL, PUBLIC_SITE_URL } from '$env/static/public';
@@ -92,8 +93,38 @@
 		return `$env:RT_API_KEY="${apiKey}"; $env:RT_API_URL="${PUBLIC_BACKEND_API_URL}/api/v1"; irm ${PUBLIC_SITE_URL}/install.ps1 | iex`;
 	};
 
+	let selectedTab = $state<'setup' | 'projects' | 'migration'>('setup');
+	const tabs = [
+		{ id: 'setup' as const, label: 'Setup' },
+		{ id: 'projects' as const, label: 'Projects' },
+		{ id: 'migration' as const, label: 'Migration' }
+	];
+
+	let config: string = $state('');
+	let commandCopied: boolean = $state(false);
+	let os: string = $state('windows');
+	let hackatimeApiKey: string = $state('');
+	let isStartingImport = $state(false);
+	let importError: string | null = $state(null);
+	let importStatus: ImportStatusResponse | null = $state(null);
+	let pollInterval: ReturnType<typeof setInterval> | null = null;
+	const uuidV4Regex =
+		/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/;
+	const isValidHackatimeApiKey = $derived(uuidV4Regex.test(hackatimeApiKey.trim()));
+
+	function checkIsImportActive(status: ImportStatusResponse | null): boolean {
+		return status?.status === 'pending' || status?.status === 'running';
+	}
+
+	const isImportActive = $derived(checkIsImportActive(importStatus));
+
 	onMount(() => {
 		loadData();
+		loadImportStatus().then(() => {
+			if (checkIsImportActive(importStatus)) {
+				startPolling();
+			}
+		});
 		const platform = navigator.userAgent.toLowerCase();
 
 		if (platform.includes('win')) {
@@ -108,28 +139,40 @@
 		}
 	});
 
-	let selectedTab = $state<'setup' | 'projects' | 'migration'>('setup');
-	const tabs = [
-		{ id: 'setup' as const, label: 'Setup' },
-		{ id: 'projects' as const, label: 'Projects' },
-		{ id: 'migration' as const, label: 'Migration' }
-	];
-
-	let config: string = $state('');
-	let commandCopied: boolean = $state(false);
-	let os: string = $state('windows');
-	let hackatimeApiKey: string = $state('');
-	let isImportingFromHackatime = $state(false);
-	let importError: string | null = $state(null);
-	let importStats: ImportResponse | null = $state(null);
-	const uuidV4Regex =
-		/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/;
-	const isValidHackatimeApiKey = $derived(uuidV4Regex.test(hackatimeApiKey.trim()));
-
-	function formatStartDate(value: string) {
+	function formatDate(value: string | null) {
+		if (!value) return 'N/A';
 		const date = new Date(value);
 		return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
 	}
+
+	async function loadImportStatus() {
+		try {
+			importStatus = await getImportStatus(api);
+		} catch {
+			// No import job exists yet
+		}
+	}
+
+	function startPolling() {
+		stopPolling();
+		pollInterval = setInterval(async () => {
+			await loadImportStatus();
+			if (importStatus && !isImportActive) {
+				stopPolling();
+			}
+		}, 5000);
+	}
+
+	function stopPolling() {
+		if (pollInterval) {
+			clearInterval(pollInterval);
+			pollInterval = null;
+		}
+	}
+
+	onDestroy(() => {
+		stopPolling();
+	});
 
 	async function handleHackatimeImport() {
 		const trimmedKey = hackatimeApiKey.trim();
@@ -137,19 +180,18 @@
 			importError = 'Enter a valid Hackatime API key to start the import.';
 			return;
 		}
-		isImportingFromHackatime = true;
+		isStartingImport = true;
 		importError = null;
 		try {
-			const result = await importFromHackatime(api, trimmedKey);
-			importStats = result;
+			await startImport(api, trimmedKey);
+			await loadImportStatus();
+			startPolling();
 		} catch (error) {
-			console.error('Failed to import from Hackatime:', error);
+			console.error('Failed to start import:', error);
 			importError =
-				error instanceof Error
-					? error.message
-					: 'Something went wrong while importing from Hackatime.';
+				error instanceof Error ? error.message : 'Something went wrong while starting the import.';
 		} finally {
-			isImportingFromHackatime = false;
+			isStartingImport = false;
 		}
 	}
 
@@ -517,16 +559,17 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 								type="password"
 								placeholder="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
 								bind:value={hackatimeApiKey}
-								class="w-full px-3 py-2 rounded-md border border-surface2 bg-ctp-surface1/40 text-text text-sm focus:outline-none focus:ring-2 focus:ring-blue"
+								disabled={isImportActive}
+								class="w-full px-3 py-2 rounded-md border border-surface2 bg-ctp-surface1/40 text-text text-sm focus:outline-none focus:ring-2 focus:ring-blue disabled:opacity-50"
 							/>
 							<Button
 								onClick={handleHackatimeImport}
-								disabled={isImportingFromHackatime || !isValidHackatimeApiKey}
+								disabled={isStartingImport || isImportActive || !isValidHackatimeApiKey}
 								className="inline-flex items-center gap-2 whitespace-nowrap"
 							>
-								{#if isImportingFromHackatime}
+								{#if isStartingImport}
 									<LucideLoader2 class="w-4 h-4 animate-spin" />
-									<span>Importing…</span>
+									<span>Starting…</span>
 								{:else}
 									<span>Start Import</span>
 								{/if}
@@ -537,47 +580,64 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 						{/if}
 					</div>
 
-					{#if isImportingFromHackatime}
-						<div class="flex items-center gap-2 text-subtext0 text-sm">
-							<LucideLoader2 class="w-4 h-4 animate-spin text-blue" />
-							<span>This may take a minute, please don't leave the page.</span>
+					{#if isImportActive}
+						<div class="bg-ctp-surface0/40 border border-blue/50 rounded-lg p-4 space-y-3">
+							<div class="flex items-center gap-2">
+								<LucideLoader2 class="w-5 h-5 animate-spin text-blue" />
+								<h3 class="text-sm font-semibold text-text">
+									Import {importStatus?.status === 'pending' ? 'Pending' : 'In Progress'}...
+								</h3>
+							</div>
+							<p class="text-sm text-subtext0">
+								Your import is running... You can leave this page and come back later to check the
+								status.
+							</p>
 						</div>
 					{/if}
 
-					{#if importStats}
-						<div class="bg-ctp-surface0/40 border border-surface1 rounded-lg p-4 space-y-4">
+					{#if importStatus && importStatus.status === 'completed'}
+						<div class="bg-ctp-surface0/40 border border-green/50 rounded-lg p-4 space-y-4">
 							<div class="flex items-center justify-between">
-								<h3 class="text-sm font-semibold text-text">Import Completed!</h3>
+								<h3 class="text-sm font-semibold text-green">Import Completed!</h3>
 								<p class="text-xs text-subtext0">
-									Started {formatStartDate(importStats.start_date)}
+									Started at {formatDate(importStatus.created_at)}
 								</p>
 							</div>
 							<div class="grid gap-3 sm:grid-cols-2">
 								<div class="rounded-md border border-surface1 bg-ctp-surface1/30 p-3">
 									<p class="text-xs text-subtext0 uppercase tracking-wide">Imported Heartbeats</p>
 									<p class="text-2xl font-semibold text-green">
-										{importStats.imported.toLocaleString()}
+										{(importStatus.imported_count ?? 0).toLocaleString()}
 									</p>
 								</div>
 								<div class="rounded-md border border-surface1 bg-ctp-surface1/30 p-3">
 									<p class="text-xs text-subtext0 uppercase tracking-wide">Processed Heartbeats</p>
 									<p class="text-2xl font-semibold text-text">
-										{importStats.processed.toLocaleString()}
+										{(importStatus.processed_count ?? 0).toLocaleString()}
 									</p>
 								</div>
 								<div class="rounded-md border border-surface1 bg-ctp-surface1/30 p-3">
 									<p class="text-xs text-subtext0 uppercase tracking-wide">API Requests</p>
 									<p class="text-2xl font-semibold text-text">
-										{importStats.requests.toLocaleString()}
+										{(importStatus.request_count ?? 0).toLocaleString()}
 									</p>
 								</div>
 								<div class="rounded-md border border-surface1 bg-ctp-surface1/30 p-3">
 									<p class="text-xs text-subtext0 uppercase tracking-wide">Duration</p>
 									<p class="text-2xl font-semibold text-text">
-										{formatDuration(importStats.time_taken)}
+										{formatDuration(importStatus.time_taken ?? 0)}
 									</p>
 								</div>
 							</div>
+						</div>
+					{/if}
+
+					{#if importStatus && importStatus.status === 'failed'}
+						<div class="bg-ctp-surface0/40 border border-red/50 rounded-lg p-4 space-y-3">
+							<h3 class="text-sm font-semibold text-red">Import Failed</h3>
+							<p class="text-sm text-subtext0">
+								{importStatus.error_message || 'An unknown error occurred during the import.'}
+							</p>
 						</div>
 					{/if}
 				</div>

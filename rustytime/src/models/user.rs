@@ -107,6 +107,22 @@ impl User {
         users::table.load::<User>(conn)
     }
 
+    pub fn get_by_ids(
+        pool: &crate::db::connection::DbPool,
+        user_ids: &[i32],
+    ) -> QueryResult<Vec<User>> {
+        let mut conn = pool.get().map_err(|e| {
+            diesel::result::Error::DatabaseError(
+                diesel::result::DatabaseErrorKind::Unknown,
+                Box::new(e.to_string()),
+            )
+        })?;
+
+        users::table
+            .filter(users::id.eq_any(user_ids))
+            .load::<User>(&mut conn)
+    }
+
     #[allow(dead_code)]
     pub fn list_admins(conn: &mut PgConnection) -> QueryResult<Vec<User>> {
         users::table

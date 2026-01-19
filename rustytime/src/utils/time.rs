@@ -1,3 +1,5 @@
+use chrono::{DateTime, Datelike, Duration, NaiveDate, SecondsFormat, Timelike, Utc};
+
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct Time {
@@ -83,6 +85,108 @@ pub fn human_readable_duration(seconds: i64, format: TimeFormat) -> Time {
             _ => days,
         },
     )
+}
+
+#[inline(always)]
+pub fn format_rfc3339(time: DateTime<Utc>) -> String {
+    time.to_rfc3339_opts(SecondsFormat::Millis, true)
+}
+
+pub fn split_range_midpoint(start: DateTime<Utc>, end: DateTime<Utc>) -> Option<DateTime<Utc>> {
+    if end <= start {
+        return None;
+    }
+
+    let duration = end - start;
+    let half = duration / 2;
+    if half <= Duration::zero() {
+        return None;
+    }
+
+    let midpoint = start.checked_add_signed(half)?;
+    if midpoint <= start || midpoint >= end {
+        None
+    } else {
+        Some(midpoint)
+    }
+}
+
+pub fn determine_range(
+    period_end: DateTime<Utc>,
+    cutoff: DateTime<Utc>,
+) -> (DateTime<Utc>, DateTime<Utc>) {
+    let adjusted_end = period_end - Duration::nanoseconds(1);
+    let month_start = adjusted_end
+        .date_naive()
+        .with_day(1)
+        .expect("every month has a first day")
+        .and_hms_opt(0, 0, 0)
+        .expect("valid start of month")
+        .and_utc();
+
+    let range_start = if month_start > cutoff {
+        month_start
+    } else {
+        cutoff
+    };
+    (range_start, month_start)
+}
+
+#[inline(always)]
+pub fn get_week_start(date: NaiveDate) -> NaiveDate {
+    let weekday = date.weekday().num_days_from_monday();
+    date - chrono::Duration::days(weekday as i64)
+}
+
+pub fn next_five_minute_boundary(now: DateTime<Utc>) -> DateTime<Utc> {
+    const STEP_SECS: i64 = 300;
+    const DAY_SECS: i64 = 86_400;
+
+    let secs = now.time().num_seconds_from_midnight() as i64;
+    let next_secs = ((secs / STEP_SECS) + 1) * STEP_SECS;
+    let (target_day, secs_in_day) = if next_secs >= DAY_SECS {
+        (
+            now.date_naive() + chrono::Duration::days(1),
+            next_secs - DAY_SECS,
+        )
+    } else {
+        (now.date_naive(), next_secs)
+    };
+
+    let midnight = target_day
+        .and_hms_opt(0, 0, 0)
+        .expect("valid midnight")
+        .and_utc();
+    midnight + chrono::Duration::seconds(secs_in_day)
+}
+
+#[inline(always)]
+pub fn next_top_of_hour(now: DateTime<Utc>) -> DateTime<Utc> {
+    (now + chrono::Duration::hours(1))
+        .with_minute(0)
+        .and_then(|dt| dt.with_second(0))
+        .and_then(|dt| dt.with_nanosecond(0))
+        .expect("valid next hour")
+}
+
+#[inline(always)]
+pub fn next_midnight(now: DateTime<Utc>) -> DateTime<Utc> {
+    (now.date_naive() + chrono::Duration::days(1))
+        .and_hms_opt(0, 0, 0)
+        .expect("valid midnight")
+        .and_utc()
+}
+
+pub fn advance_schedule(
+    scheduled_time: DateTime<Utc>,
+    step: chrono::Duration,
+    reference: DateTime<Utc>,
+) -> DateTime<Utc> {
+    let mut next = scheduled_time + step;
+    while next <= reference {
+        next += step;
+    }
+    next
 }
 
 #[cfg(test)]

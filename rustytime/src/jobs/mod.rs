@@ -1,3 +1,4 @@
+pub mod import;
 mod leaderboard;
 
 use apalis_postgres::PostgresStorage;
@@ -16,10 +17,18 @@ pub fn install_metrics_recorder() -> PrometheusHandle {
 pub async fn setup_jobs(
     sqlx_pool: PgPool,
     diesel_pool: DbPool,
-) -> impl std::future::Future<Output = ()> {
+) -> (
+    impl std::future::Future<Output = ()>,
+    impl std::future::Future<Output = ()>,
+    import::ImportStore,
+) {
     PostgresStorage::setup(&sqlx_pool).await.unwrap();
 
-    leaderboard::setup(sqlx_pool, diesel_pool).await
+    let import_store = import::create_storage(&sqlx_pool).await;
+    let leaderboard_worker = leaderboard::setup(sqlx_pool.clone(), diesel_pool.clone()).await;
+    let import_worker = import::setup(sqlx_pool, diesel_pool).await;
+
+    (leaderboard_worker, import_worker, import_store)
 }
 
 #[inline(always)]

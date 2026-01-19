@@ -17,7 +17,6 @@
 	import { auth } from '$lib/stores/auth';
 	import { impersonateUser, changeAdminLevel } from '$lib/api/admin';
 	import { createApi } from '$lib/api/api';
-
 	interface Props {
 		data: PageData;
 	}
@@ -182,7 +181,7 @@
 						<table class="min-w-lg w-full">
 							<thead class="border-b border-surface0 bg-surface0">
 								<tr>
-									<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
+									<th class="pl-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
 										>Id</th
 									>
 									<th class="px-6 py-3 text-left text-xs font-medium text-ctp-subtext0 uppercase"
@@ -211,7 +210,7 @@
 									return a.id - b.id;
 								}) as user (user.id)}
 									<tr class="border-b border-surface0 last:border-0 hover:bg-surface0/50">
-										<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1">{user.id}</td>
+										<td class="pl-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1">{user.id}</td>
 										<td class="px-6 py-4 whitespace-nowrap">
 											<div class="flex items-center">
 												{#if user.avatar_url}

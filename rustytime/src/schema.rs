@@ -1,6 +1,23 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
+    import_jobs (id) {
+        id -> Int8,
+        user_id -> Int4,
+        #[max_length = 20]
+        status -> Varchar,
+        imported_count -> Nullable<Int8>,
+        processed_count -> Nullable<Int8>,
+        request_count -> Nullable<Int4>,
+        start_date -> Nullable<Text>,
+        time_taken -> Nullable<Float8>,
+        error_message -> Nullable<Text>,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     heartbeats (user_id, time) {
         id -> Int8,
         time -> Timestamptz,
@@ -96,12 +113,14 @@ diesel::table! {
 }
 
 diesel::joinable!(heartbeats -> users (user_id));
+diesel::joinable!(import_jobs -> users (user_id));
 diesel::joinable!(leaderboards -> users (user_id));
 diesel::joinable!(project_aliases -> users (user_id));
 diesel::joinable!(projects -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     heartbeats,
+    import_jobs,
     leaderboards,
     project_aliases,
     projects,

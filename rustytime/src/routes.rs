@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::handlers::admin::change_user_admin_level;
 use crate::handlers::api::user::{create_heartbeats, get_statusbar_today};
-use crate::handlers::data::import::import_heartbeats;
+use crate::handlers::data::import::{import_heartbeats, import_status};
 use crate::handlers::data::project_aliases::{
     add_project_alias, delete_project_alias, project_aliases,
 };
@@ -12,6 +12,7 @@ use crate::handlers::homepage::home_page;
 use crate::handlers::page::admin::admin_dashboard;
 use crate::handlers::page::admin::impersonate_user;
 use crate::handlers::page::dashboard::dashboard;
+use crate::handlers::page::imports::admin_imports;
 use crate::handlers::page::leaderboard::leaderboard_page;
 use crate::handlers::page::projects::projects_dashboard;
 use crate::handlers::page::settings::settings_page;
@@ -172,9 +173,20 @@ pub fn create_app_router(
                             "/import",
                             post_with(import_heartbeats, |op| {
                                 op.id("import_heartbeats")
-                                    .summary("Import Heartbeats")
+                                    .summary("Start Import Job")
                                     .description(
-                                        "Imports heartbeats from Hackatime using the provided api key.",
+                                        "Starts a background job to import heartbeats from Hackatime using the provided api key.",
+                                    )
+                                    .tag("Data")
+                            }),
+                        )
+                        .api_route(
+                            "/import/status",
+                            get_with(import_status, |op| {
+                                op.id("import_status")
+                                    .summary("Get Import Job Status")
+                                    .description(
+                                        "Gets the status of the latest import job for the user.",
                                     )
                                     .tag("Data")
                             }),
@@ -192,6 +204,13 @@ pub fn create_app_router(
                     op.id("admin_dashboard")
                         .summary("Admin Dashboard Page")
                         .description("Data for the admin page.")
+                        .tag("Pages")
+                        .security_requirement("Authenticated")
+                }))
+                .api_route("/page/imports", get_with(admin_imports, |op| {
+                    op.id("admin_imports")
+                        .summary("Admin Imports Page")
+                        .description("Data for the admin imports page.")
                         .tag("Pages")
                         .security_requirement("Authenticated")
                 }))

@@ -7,7 +7,7 @@ use apalis::{
     },
 };
 use apalis_postgres::PostgresStorage;
-use chrono::{DateTime, Datelike, NaiveDate, Timelike, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use futures::{FutureExt, TryFutureExt};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use sqlx::PgPool;
@@ -19,6 +19,9 @@ use diesel::Connection;
 use crate::db::connection::DbPool;
 use crate::models::heartbeat::Heartbeat;
 use crate::models::leaderboard::{Leaderboard, NewLeaderboard};
+use crate::utils::time::{
+    advance_schedule, get_week_start, next_five_minute_boundary, next_midnight, next_top_of_hour,
+};
 
 #[derive(Clone)]
 struct JsonCodec;
@@ -229,55 +232,6 @@ async fn schedule_leaderboard_jobs(
     }
 }
 
-fn next_five_minute_boundary(now: DateTime<Utc>) -> DateTime<Utc> {
-    const STEP_SECS: i64 = 300;
-    const DAY_SECS: i64 = 86_400;
-
-    let secs = now.time().num_seconds_from_midnight() as i64;
-    let next_secs = ((secs / STEP_SECS) + 1) * STEP_SECS;
-    let (target_day, secs_in_day) = if next_secs >= DAY_SECS {
-        (
-            now.date_naive() + chrono::Duration::days(1),
-            next_secs - DAY_SECS,
-        )
-    } else {
-        (now.date_naive(), next_secs)
-    };
-
-    let midnight = target_day
-        .and_hms_opt(0, 0, 0)
-        .expect("valid midnight")
-        .and_utc();
-    midnight + chrono::Duration::seconds(secs_in_day)
-}
-
-fn next_top_of_hour(now: DateTime<Utc>) -> DateTime<Utc> {
-    (now + chrono::Duration::hours(1))
-        .with_minute(0)
-        .and_then(|dt| dt.with_second(0))
-        .and_then(|dt| dt.with_nanosecond(0))
-        .expect("valid next hour")
-}
-
-fn next_midnight(now: DateTime<Utc>) -> DateTime<Utc> {
-    (now.date_naive() + chrono::Duration::days(1))
-        .and_hms_opt(0, 0, 0)
-        .expect("valid midnight")
-        .and_utc()
-}
-
-fn advance_schedule(
-    scheduled_time: DateTime<Utc>,
-    step: chrono::Duration,
-    reference: DateTime<Utc>,
-) -> DateTime<Utc> {
-    let mut next = scheduled_time + step;
-    while next <= reference {
-        next += step;
-    }
-    next
-}
-
 fn cleanup_old_entries(pool: &DbPool) -> Result<(), diesel::result::Error> {
     let mut conn = pool.get().map_err(|e| {
         tracing::error!(error = ?e, "Failed to get connection for cleanup");
@@ -338,10 +292,4 @@ pub async fn setup(
         .run_until(ctrl_c())
         .map_err(|e| tracing::error!("Worker error: {}", e))
         .map(|_| ())
-}
-
-#[inline(always)]
-pub fn get_week_start(date: NaiveDate) -> NaiveDate {
-    let weekday = date.weekday().num_days_from_monday();
-    date - chrono::Duration::days(weekday as i64)
 }
