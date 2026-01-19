@@ -63,7 +63,7 @@ woothee = { version = "0.13.0", default-features = false }
 rand = { version = "0.9.2", features = ["std", "thread_rng"], default-features = false, optional = true }
 axum-prometheus = { version = "0.10.0", features = ["prometheus"], default-features = false }
 tower_governor = { version = "0.8.0", features = ["axum", "tracing"], default-features = false }
-aide = { version = "0.16.0-alpha.1", features = ["axum", "axum-json", "axum-query", "axum-tokio", "scalar"] }
+aide = { version = "0.16.0-alpha.2", features = ["axum", "axum-json", "axum-query", "axum-tokio", "scalar"] }
 schemars = { version = "1.2.0", features = ["chrono04", "derive"] }
 axum-tracing-opentelemetry = { version = "0.32.3", features = ["tracing_level_info"], default-features = false }
 init-tracing-opentelemetry = { version = "0.35.0", features = ["metrics", "opentelemetry-otlp", "tracing_subscriber_ext"], default-features = false }
