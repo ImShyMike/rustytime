@@ -5,7 +5,9 @@
 			"label": "Run rustytime backend",
 			"type": "shell",
 			"command": "cargo",
-			"args": ["run", "--release"],
+			"args": [
+				"run"
+			],
 			"options": {
 				"cwd": "${workspaceFolder}/rustytime"
 			},
@@ -16,8 +18,10 @@
 		{
 			"label": "Run frontend",
 			"type": "shell",
-			"command": "npm",
-			"args": ["run", "dev"],
+			"command": "bun",
+			"args": [
+				"dev"
+			],
 			"options": {
 				"cwd": "${workspaceFolder}/frontend"
 			},
@@ -31,7 +35,8 @@
 			"dependsOn": [
 				"Run rustytime backend",
 				"Run frontend"
-			]
+			],
+			"problemMatcher": []
 		}
 	]
 }
