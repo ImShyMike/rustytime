@@ -46,9 +46,9 @@ dependencies = [
 
 [[package]]
 name = "aide"
-version = "0.16.0-alpha.1"
+version = "0.16.0-alpha.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc156b16d6d8e9bb84a7cba8b93fc399c0654bfbb927832ea7ab326d5d6895e2"
+checksum = "29e03dae8ee60626675f62a8d0c503fdc2721b01ae7feb2fd1e233b6bb16223a"
 dependencies = [
  "axum",
  "bytes",
@@ -2939,7 +2939,6 @@ dependencies = [
  "indexmap",
  "init-tracing-opentelemetry",
  "ipnetwork",
- "log",
  "moka",
  "oauth2",
  "once_cell",
