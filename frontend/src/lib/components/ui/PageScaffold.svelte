@@ -1,6 +1,6 @@
 <script lang="ts">
 	import PageHeading from './PageHeading.svelte';
-	import RelativeTime from './RelativeTime.svelte';
+	import Footer from '../Footer.svelte';
 
 	export let title: string;
 	export let lastUpdatedAt: Date | null = null;
@@ -12,7 +12,7 @@
 	const hasFooterSlot = Boolean($$slots.footer);
 </script>
 
-<div class={`bg-ctp-mantle min-h-[99vh] flex flex-col ${wrapperClass}`.trim()}>
+<div class={`bg-ctp-mantle h-full flex flex-col ${wrapperClass}`.trim()}>
 	<div class="grow">
 		<div class={`max-w-6xl mx-auto py-4 2xl:py-12 px-3 ${contentClass}`.trim()}>
 			{#if hasHeadingSlot}
@@ -28,13 +28,8 @@
 	{#if showLastUpdated}
 		{#if hasFooterSlot}
 			<slot name="footer" {lastUpdatedAt} />
-		{:else if lastUpdatedAt}
-			<div
-				class="text-center text-ctp-subtext0/70 hover:text-ctp-subtext1 text-sm"
-				title={lastUpdatedAt.toLocaleString()}
-			>
-				<span>Data updated <RelativeTime datetime={lastUpdatedAt} /></span>
-			</div>
+		{:else}
+			<Footer {lastUpdatedAt} />
 		{/if}
 	{/if}
 </div>

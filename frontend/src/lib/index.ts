@@ -1,5 +1,6 @@
 export { default as AuthErrorWarning } from './components/notification/AuthErrorWarning.svelte';
 export { default as Container } from './components/ui/Container.svelte';
+export { default as Footer } from './components/Footer.svelte';
 export { default as KeyValueList } from './components/ui/KeyValueList.svelte';
 export { default as Logo } from './components/images/Logo.svelte';
 export { default as Meta } from './components/Meta.svelte';

@@ -42,7 +42,9 @@
 		<SideBar />
 	</div>
 
-	<main class="page-content flex-1 overflow-auto h-full">
-		{@render children()}
+	<main class="page-content flex-1 overflow-auto h-full flex flex-col">
+		<div class="flex-1">
+			{@render children()}
+		</div>
 	</main>
 </div>
