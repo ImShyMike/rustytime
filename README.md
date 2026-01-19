@@ -1,109 +1,140 @@
 <div align="center">
-    <a href="https://rustytime.shymike.dev">
-        <img src="frontend/static/pwa/favicon-196.png" alt="rustytime" width="200">
-    </a>
-</div>
-<div id="user-content-toc" align="center">
-  <ul align="center" style="list-style: none;">
-    <summary >
-      <h1><a href="https://rustytime.shymike.dev">rustytime</a></h1>
-    </summary>
-  </ul>
-</div>
-<p align="center">🕒 blazingly fast time tracking for developers</p>
+  <a href="https://rustytime.shymike.dev">
+    <img src="https://raw.githubusercontent.com/ImShyMike/rustytime/refs/heads/main/frontend/static/pwa/favicon-196.png" alt="rustytime" width="180">
+  </a>
+  <h1>rustytime</h1>
+  <p><strong>🕒 Blazingly fast time tracking for developers</strong></p>
 
-<div align="center">
-    <a href="https://crates.io/crates/rustytime-server"><img alt="Crates.io Total Downloads" src="https://img.shields.io/crates/d/rustytime-server?style=flat-square&color=blue"></a>
-    <a href="https://github.com/ImShyMike/rustytime/actions/workflows/ci.yml"><img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/ImShyMike/rustytime/ci.yml?style=flat-square&color=green"></a>
-    <a href="https://crates.io/crates/rustytime-server"><img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/ImShyMike/rustytime?style=flat-square&color=yellowgreen"></a>
-    <a href="https://crates.io/crates/rustytime-server"><img alt="Crates.io Version" src="https://img.shields.io/crates/v/rustytime-server?style=flat-square&color=yellow"></a>
-    <a href="https://crates.io/crates/rustytime-server"><img alt="Crates.io License" src="https://img.shields.io/crates/l/rustytime-server?style=flat-square&color=orange"></a>
-    <a href="https://crates.io/crates/rustytime-server"><img alt="Crates.io Size" src="https://img.shields.io/crates/size/rustytime-server?style=flat-square&color=red"></a>
+  <a href="https://crates.io/crates/rustytime-server"><img alt="Crates.io Downloads" src="https://img.shields.io/crates/d/rustytime-server?style=flat-square&color=blue"></a>
+  <a href="https://github.com/ImShyMike/rustytime/actions/workflows/ci.yml"><img alt="CI Status" src="https://img.shields.io/github/actions/workflow/status/ImShyMike/rustytime/ci.yml?style=flat-square&color=green"></a>
+  <a href="https://crates.io/crates/rustytime-server"><img alt="Version" src="https://img.shields.io/crates/v/rustytime-server?style=flat-square&color=yellow"></a>
+  <a href="https://github.com/ImShyMike/rustytime/blob/HEAD/LICENSE"><img alt="License" src="https://img.shields.io/crates/l/rustytime-server?style=flat-square&color=orange"></a>
 </div>
 
 ---
 
-## Features
+## What is rustytime?
 
-- ✅ Time tracking
-- ✅ Stat visualization
-- ✅ WakaTime compatible
-- ✅ Fast and memory efficient
+`rustytime` is a self-hosted, [WakaTime](https://wakatime.com)-compatible backend for tracking your coding time that works with any* existing WakaTime [plugin](https://wakatime.com/plugins)!
 
-## What is this?
+*every plugin that allows setting custom API URLs
 
-`rustytime` is a [WakaTime](https://wakatime.com) compatible backend that can be used to track time in most apps/IDEs with any of the existing [plugins](https://wakatime.com/plugins)! (or you could even [make your own](https://wakatime.com/help/creating-plugin) plugin)
+### Features
 
-## Local Development
+- **WakaTime Compatible** — Drop-in replacement for the WakaTime API
+- **Fast and Memory Efficient** — Built for high performance and low resource usage
+- **GitHub OAuth** — Simple login with your GitHub account
+- **Data Import** — Import your existing data from [Hackatime](https://hackatime.hackclub.com)
+- **Observability** — Built-in OpenTelemetry + Pyroscope support
+- **Self-Hosted** — Full control over your data
 
-```sh
-# Clone the repo
-$ git clone https://github.com/ImShyMike/rustytime && cd rustytime
+## Quick Start
 
-# Copy the env file
-$ cp .env.example .env
-```
+### Prerequisites
 
-Edit your `.env` file to include the following:
+- [Docker](https://docs.docker.com/get-docker) (and Docker Compose)
+- [GitHub OAuth App](https://github.com/settings/developers) (for authentication)
 
-```env
-# GitHub OAuth Settings
-GITHUB_CLIENT_ID=client_id_goes_here
-GITHUB_CLIENT_SECRET=client_secret_goes_here
-```
-
-### Build & Run
-
-```sh
-# Run the full app
-$ docker compose up
-
-# OR
-
-# Run the database + backend 
-$ docker compose up timescaledb rustytime
-# Run the frontend
-$ cd frontend && bun run dev
-```
-
-The app should now be available at [http://localhost:5173](http://localhost:5173)
-
-### Seeding the DB
-
-The `seed` feature can be enabled with a build flag to seed the database with a single user and 10000 fake heartbeats.
+### 1. Clone and Configure
 
 ```bash
-cargo run --features seed
+git clone https://github.com/ImShyMike/rustytime && cd rustytime
+cp .env.example .env
 ```
 
-## WakaTime
+Edit the `.env` file with your GitHub OAuth credentials:
 
-When using a WakaTime client, point your requests to `http://localhost:3000/api/v1` (or `https://api-rustytime.shymike.dev/api/v1` if using the deployed version)
+```env
+GITHUB_CLIENT_ID=your_client_id
+GITHUB_CLIENT_SECRET=your_client_secret
+```
 
-### Observability (OTel + LGTM)
+### 2. Run with Docker
 
-If you're running the self-hosted Grafana LGTM (Loki/Grafana/Tempo/Mimir) stack or an OpenTelemetry Collector on the same machine, expose its OTLP receiver (default gRPC on `4317`). Then add the following to your `.env`:
+```bash
+docker compose up
+```
+
+The app should now be now available at **[http://localhost:5173](http://localhost:5173)**
+
+### Alternative: Run Components Separately
+
+```bash
+# Start database + backend only
+docker compose up timescaledb rustytime
+
+# Run frontend (in another terminal)
+cd frontend && npm run dev
+```
+
+## Connect Your Editor
+
+Configure your WakaTime plugin to use rustytime:
+
+| Environment | API URL |
+| ------------- | --------- |
+| **Local** | `http://localhost:3000/api/v1` |
+| **Hosted** | `https://api-rustytime.shymike.dev/api/v1` |
+
+Most plugins support setting a custom API URL in their settings. Use your rustytime API key from the settings page.
+
+## Development
+
+### Backend (Rust)
+
+```bash
+cd rustytime
+cargo run                    # Start server
+cargo run --features seed    # Start with test data (10k heartbeats)
+cargo test                   # Run tests
+cargo build --release        # Production build
+```
+
+### Frontend (SvelteKit)
+
+```bash
+cd frontend
+npm run dev      # Start dev server
+npm run build    # Production build
+npm run check    # Type check
+npm run lint     # Lint code
+```
+
+## Observability
+
+### OpenTelemetry
+
+Enable tracing, metrics, and logs with OpenTelemetry:
 
 ```env
 OTEL_SERVICE_NAME=rustytime-backend
-OTEL_RESOURCE_ATTRIBUTES=deployment.environment=dev,service.version=local-dev
 OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 OTEL_EXPORTER_OTLP_PROTOCOL=grpc
 OTEL_TRACES_EXPORTER=otlp
 OTEL_METRICS_EXPORTER=otlp
 OTEL_LOGS_EXPORTER=otlp
-# Only when your collector requires authentication headers (comma-separated k=v)
-# OTEL_EXPORTER_OTLP_HEADERS=x-otlp-token=changeme
 ```
 
-### Profiling (Pyroscope)
+### Pyroscope Profiling
 
-If you're also running Pyroscope for profiling, it can be enabled with:
+Enable continuous profiling:
 
 ```env
 PYROSCOPE_SERVER_URL=http://localhost:4040
 PYROSCOPE_SAMPLE_RATE=99
 ```
+
+## Is this better than wakapi?
+
+Probably not... this was just a fun side project, if you want something that's actually production ready just use [Wakapi](https://wakapi.dev) 😭
+
+## Architecture
+
+| Component | Details |
+| --------- | ------------ |
+| **Backend** | [Rust](https://rust-lang.org), [Axum](https://github.com/tokio-rs/axum), [Diesel](https://diesel.rs) |
+| **Frontend** | [SvelteKit](https://github.com/sveltejs/kit), [TailwindCSS](https://tailwindcss.com) |
+| **Database** | [TimescaleDB](https://github.com/timescale/timescaledb) ([PostgreSQL](https://www.postgresql.org)) |
 
 ## Star History
 
@@ -117,4 +148,4 @@ PYROSCOPE_SAMPLE_RATE=99
 
 ## License
 
-This project is licensed under the [GNU AGPLv3](https://github.com/ImShyMike/rustytime/blob/HEAD/LICENSE)
+This project is licensed under the [GNU AGPLv3](https://github.com/ImShyMike/rustytime/blob/HEAD/LICENSE).
