@@ -207,13 +207,6 @@ pub fn create_app_router(
                         .tag("Pages")
                         .security_requirement("Authenticated")
                 }))
-                .api_route("/page/imports", get_with(admin_imports, |op| {
-                    op.id("admin_imports")
-                        .summary("Admin Imports Page")
-                        .description("Data for the admin imports page.")
-                        .tag("Pages")
-                        .security_requirement("Authenticated")
-                }))
                 .nest(
                     "/admin",
                     ApiRouter::new()
@@ -246,6 +239,21 @@ pub fn create_app_router(
                 .layer(axum_middleware::from_fn_with_state(
                     app_state.clone(),
                     middleware::require_admin,
+                )),
+        )
+        // owner routes
+        .merge(
+            ApiRouter::new()
+                .api_route("/page/imports", get_with(admin_imports, |op| {
+                    op.id("admin_imports")
+                        .summary("Admin Imports Page")
+                        .description("Data for the admin imports page.")
+                        .tag("Pages")
+                        .security_requirement("Authenticated")
+                }))
+                .layer(axum_middleware::from_fn_with_state(
+                    app_state.clone(),
+                    middleware::require_owner,
                 )),
         )
         // API routes

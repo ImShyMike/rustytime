@@ -86,6 +86,44 @@ pub async fn require_admin(
     }
 }
 
+/// Middleware to require owner privileges
+pub async fn require_owner(
+    State(app_state): State<AppState>,
+    cookies: Cookies,
+    mut request: Request,
+    next: Next,
+) -> Response {
+    match SessionManager::resolve_session(&cookies, &app_state.db_pool).await {
+        Ok(Some(resolved)) => {
+            let is_owner = resolved.user.is_owner()
+                || resolved
+                    .impersonator
+                    .as_ref()
+                    .map(|admin| admin.is_owner())
+                    .unwrap_or(false);
+
+            if !is_owner {
+                return (StatusCode::FORBIDDEN, "Owner access required").into_response();
+            }
+
+            {
+                let extensions = request.extensions_mut();
+                extensions.insert(resolved.user.clone());
+                if let Some(admin) = resolved.impersonator.clone() {
+                    extensions.insert(ImpersonationContext { admin });
+                }
+            }
+
+            next.run(request).await
+        }
+        Ok(None) => {
+            // user is not authenticated
+            (StatusCode::UNAUTHORIZED, "Authentication required").into_response()
+        }
+        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response(),
+    }
+}
+
 /// Middleware to track request metrics
 #[inline(always)]
 pub async fn track_metrics(
