@@ -251,6 +251,7 @@
 										{#if $auth.user?.admin_level === undefined || ($auth.user.admin_level ?? 0) > (user.admin_level ?? 0) + 1}
 											<Button
 												size="sm"
+												variant="confirm"
 												onClick={() => {
 													void promoteUser(user.id, user.admin_level);
 												}}

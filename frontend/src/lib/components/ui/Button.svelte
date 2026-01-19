@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 
-	type Variant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+	type Variant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'confirm' | 'danger';
 	type Size = 'sm' | 'md' | 'lg';
 
 	interface Props {
@@ -26,13 +26,15 @@
 
 	const variantClasses: Record<Variant, string> = {
 		primary:
-			'bg-ctp-blue/10 text-ctp-crust hover:bg-ctp-blue/90 border-transparent focus-visible:ring-ctp-blue/60',
+			'bg-ctp-blue/10 text-ctp-text hover:bg-ctp-surface0 border-ctp-surface0 focus-visible:ring-ctp-blue/60',
 		secondary:
 			'bg-ctp-surface0/10 text-ctp-text hover:bg-ctp-surface1 border-ctp-surface1 focus-visible:ring-ctp-surface1/60',
 		outline:
 			'bg-ctp-blue/10 text-ctp-blue hover:bg-ctp-blue/10 border-ctp-blue focus-visible:ring-ctp-blue/60',
 		ghost:
 			'bg-transparent text-ctp-text hover:bg-ctp-surface0/60 border-transparent focus-visible:ring-ctp-surface1/60',
+		confirm:
+			'bg-ctp-green/10 text-ctp-green hover:bg-ctp-green/10 border-ctp-green focus-visible:ring-ctp-green/60',
 		danger:
 			'bg-ctp-red/10 text-ctp-red hover:bg-ctp-red/10 border-ctp-red focus-visible:ring-ctp-red/60'
 	};

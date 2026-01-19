@@ -29,8 +29,8 @@
 
 	const permissionClasses: Record<RequiredPermission, string> = {
 		default: '',
-		admin: 'outline-dashed bg-ctp-red/5 outline-1 outline-ctp-red',
-		owner: 'outline-dashed bg-ctp-mauve/5 outline-1 outline-ctp-mauve'
+		admin: 'outline-dashed bg-ctp-red/5 outline-1 outline-ctp-red focus-visible:ring-2 focus-visible:ring-ctp-red/60',
+		owner: 'outline-dashed bg-ctp-mauve/5 outline-1 outline-ctp-mauve focus-visible:ring-2 focus-visible:ring-ctp-mauve/60'
 	};
 
 	const baseClasses =
