@@ -28,7 +28,7 @@
 - **WakaTime Compatible** — Drop-in replacement for the WakaTime API
 - **Fast and Memory Efficient** — Built for high performance and low resource usage
 - **GitHub OAuth** — Simple login with your GitHub account
-- **Data Import** — Import your existing data from [Hackatime](https://hackatime.hackclub.com)
+- **Data Importing** — Import your existing data from [Hackatime](https://hackatime.hackclub.com)
 - **Observability** — Built-in OpenTelemetry + Pyroscope support
 - **Self-Hosted** — Full control over your data
 
