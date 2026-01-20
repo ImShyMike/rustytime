@@ -1,18 +1,9 @@
 <script lang="ts">
-	import { tick } from 'svelte';
 	import { browser } from '$app/environment';
 	import { invalidate, goto } from '$app/navigation';
-	import { apexcharts } from '$lib/stores/apexcharts';
 	import { theme } from '$lib/stores/theme';
 	import type { Theme } from '$lib/stores/theme';
-	import type ApexCharts from 'apexcharts';
 	import type { PageData } from './$types';
-	import {
-		destroyChart,
-		ensureBarChart,
-		ensurePieChart,
-		isApexChartsConstructor
-	} from '$lib/charts/apexClient';
 	import { setupVisibilityRefresh } from '$lib/utils/refresh';
 	import {
 		Container,
@@ -26,6 +17,9 @@
 	import RelativeTime from '$lib/components/ui/RelativeTime.svelte';
 	import { safeGraphData, safeText } from '$lib/utils/text';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import BarChart from '$lib/charts/BarChart.svelte';
+	import PieChart from '$lib/charts/PieChart.svelte';
+
 	interface Props {
 		data: PageData;
 	}
@@ -43,11 +37,6 @@
 		{ value: 'all', label: 'All Time' }
 	];
 
-	let projectsChart: ApexCharts | null = null;
-	let languagesChart: ApexCharts | null = null;
-	let editorsChart: ApexCharts | null = null;
-	let osChart: ApexCharts | null = null;
-
 	const refreshDashboardData = async () => {
 		await invalidate('app:dashboard');
 	};
@@ -58,19 +47,11 @@
 		await goto(`/dashboard?range=${newRange}`, { keepFocus: true });
 	};
 
-	function destroyCharts() {
-		projectsChart = destroyChart(projectsChart);
-		languagesChart = destroyChart(languagesChart);
-		editorsChart = destroyChart(editorsChart);
-		osChart = destroyChart(osChart);
-	}
-
 	setupVisibilityRefresh({
 		refresh: refreshDashboardData,
 		onError: (error) => {
 			console.error('Failed to refresh dashboard data:', error);
-		},
-		onDispose: destroyCharts
+		}
 	});
 
 	$effect(() => {
@@ -79,82 +60,13 @@
 		}
 	});
 
-	// Initialize charts when data is available
-	$effect(() => {
-		if (!browser) {
-			return;
-		}
-
-		const activeTheme = $theme as Theme;
-
-		if (!dashboardData) {
-			destroyCharts();
-			return;
-		}
-
-		if ($apexcharts) {
-			void initializeCharts(activeTheme);
-		}
-	});
-
-	async function initializeCharts(theme: Theme) {
-		if (!browser) {
-			return;
-		}
-
-		if (!dashboardData) {
-			destroyCharts();
-			return;
-		}
-
-		await tick();
-
-		try {
-			const apexchartsValue = $apexcharts;
-			if (!isApexChartsConstructor(apexchartsValue)) {
-				return;
-			}
-
-			const ApexCharts = apexchartsValue;
-
-			const topProjects = safeGraphData(dashboardData.projects.slice(0, 8));
-			const topLanguages = safeGraphData(dashboardData.languages.slice(0, 8));
-			const topEditors = safeGraphData(dashboardData.editors.slice(0, 8));
-			const topOperatingSystems = safeGraphData(dashboardData.operating_systems.slice(0, 8));
-
-			projectsChart = await ensureBarChart({
-				ChartCtor: ApexCharts,
-				chart: projectsChart,
-				elementId: 'projects-chart',
-				data: topProjects,
-				theme,
-				horizontal: true
-			});
-			languagesChart = await ensurePieChart({
-				ChartCtor: ApexCharts,
-				chart: languagesChart,
-				elementId: 'languages-chart',
-				data: topLanguages,
-				theme
-			});
-			editorsChart = await ensurePieChart({
-				ChartCtor: ApexCharts,
-				chart: editorsChart,
-				elementId: 'editors-chart',
-				data: topEditors,
-				theme
-			});
-			osChart = await ensurePieChart({
-				ChartCtor: ApexCharts,
-				chart: osChart,
-				elementId: 'os-chart',
-				data: topOperatingSystems,
-				theme
-			});
-		} catch (error) {
-			console.error('Failed to initialize ApexCharts:', error);
-		}
-	}
+	let activeTheme = $derived(browser ? ($theme as Theme) : 'dark');
+	let topProjects = $derived(safeGraphData(dashboardData?.projects?.slice(0, 8) ?? []));
+	let topLanguages = $derived(safeGraphData(dashboardData?.languages?.slice(0, 8) ?? []));
+	let topEditors = $derived(safeGraphData(dashboardData?.editors?.slice(0, 8) ?? []));
+	let topOperatingSystems = $derived(
+		safeGraphData(dashboardData?.operating_systems?.slice(0, 8) ?? [])
+	);
 </script>
 
 <svelte:head>
@@ -220,8 +132,8 @@
 					<!-- Top Projects (Horizontal Bar Chart) -->
 					<div>
 						<SectionTitle>Top Projects</SectionTitle>
-						{#if dashboardData.projects.length > 0}
-							<div id="projects-chart" class="h-87.5"></div>
+						{#if topProjects.length > 0}
+							<BarChart data={topProjects} theme={activeTheme} horizontal class="h-87.5" />
 						{:else}
 							<p class="text-ctp-subtext0">No project data available</p>
 						{/if}
@@ -230,8 +142,8 @@
 					<!-- Top Languages (Pie Chart) -->
 					<div>
 						<SectionTitle size="sm" className="mb-4">Top Languages</SectionTitle>
-						{#if dashboardData.languages.length > 0}
-							<div id="languages-chart" class="h-87.5"></div>
+						{#if topLanguages.length > 0}
+							<PieChart data={topLanguages} theme={activeTheme} class="h-87.5" />
 						{:else}
 							<p class="text-ctp-subtext0">No language data available</p>
 						{/if}
@@ -240,8 +152,8 @@
 					<!-- Top Editors (Pie Chart) -->
 					<div>
 						<SectionTitle size="sm" className="mb-4">Top Editors</SectionTitle>
-						{#if dashboardData.editors.length > 0}
-							<div id="editors-chart" class="h-87.5"></div>
+						{#if topEditors.length > 0}
+							<PieChart data={topEditors} theme={activeTheme} class="h-87.5" />
 						{:else}
 							<p class="text-ctp-subtext0">No editor data available</p>
 						{/if}
@@ -250,8 +162,8 @@
 					<!-- Top Operating Systems (Pie Chart) -->
 					<div>
 						<SectionTitle size="sm" className="mb-4">Top Operating Systems</SectionTitle>
-						{#if dashboardData.operating_systems.length > 0}
-							<div id="os-chart" class="h-87.5"></div>
+						{#if topOperatingSystems.length > 0}
+							<PieChart data={topOperatingSystems} theme={activeTheme} class="h-87.5" />
 						{:else}
 							<p class="text-ctp-subtext0">No operating system data available</p>
 						{/if}

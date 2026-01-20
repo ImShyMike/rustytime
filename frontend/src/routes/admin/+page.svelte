@@ -1,17 +1,9 @@
 <script lang="ts">
-	import { tick } from 'svelte';
 	import { browser } from '$app/environment';
 	import { invalidate, goto } from '$app/navigation';
-	import { apexcharts } from '$lib/stores/apexcharts';
 	import { theme } from '$lib/stores/theme';
 	import type { Theme } from '$lib/stores/theme';
-	import type ApexCharts from 'apexcharts';
 	import type { PageData } from './$types';
-	import {
-		destroyChart,
-		ensureDateBarChart,
-		isApexChartsConstructor
-	} from '$lib/charts/apexClient';
 	import { setupVisibilityRefresh } from '$lib/utils/refresh';
 	import {
 		Container,
@@ -27,6 +19,8 @@
 	import { auth } from '$lib/stores/auth';
 	import { impersonateUser, changeAdminLevel } from '$lib/api/admin';
 	import { createApi } from '$lib/api/api';
+	import DateBarChart from '$lib/charts/DateBarChart.svelte';
+
 	interface Props {
 		data: PageData;
 	}
@@ -37,8 +31,6 @@
 	let lastUpdatedAt = $state(new Date());
 
 	const api = createApi(fetch);
-
-	let activityChart: ApexCharts | null = null;
 
 	const refreshAdminData = async () => {
 		await invalidate('app:admin');
@@ -60,38 +52,16 @@
 		await refreshAdminData();
 	};
 
-	function destroyCharts() {
-		activityChart = destroyChart(activityChart);
-	}
-
 	setupVisibilityRefresh({
 		refresh: refreshAdminData,
 		onError: (error) => {
 			console.error('Failed to refresh admin data:', error);
-		},
-		onDispose: destroyCharts
+		}
 	});
 
 	$effect(() => {
 		if (data) {
 			lastUpdatedAt = new Date();
-		}
-	});
-
-	$effect(() => {
-		if (!browser) {
-			return;
-		}
-
-		const activeTheme = $theme as Theme;
-
-		if (!adminData) {
-			destroyCharts();
-			return;
-		}
-
-		if ($apexcharts) {
-			void initializeCharts(activeTheme);
 		}
 	});
 
@@ -104,39 +74,7 @@
 		goto(`/admin?offset=${offset}&limit=${limit}`);
 	}
 
-	async function initializeCharts(theme: Theme) {
-		if (!browser) {
-			return;
-		}
-
-		if (!adminData) {
-			destroyCharts();
-			return;
-		}
-
-		await tick();
-
-		try {
-			const apexchartsValue = $apexcharts;
-			if (!isApexChartsConstructor(apexchartsValue)) {
-				return;
-			}
-
-			const ApexCharts = apexchartsValue;
-
-			activityChart = await ensureDateBarChart({
-				ChartCtor: ApexCharts,
-				chart: activityChart,
-				elementId: 'activity-chart',
-				data: adminData.daily_activity,
-				theme,
-				seriesName: 'Heartbeats',
-				horizontal: false
-			});
-		} catch (error) {
-			console.error('Failed to initialize ApexCharts:', error);
-		}
-	}
+	let activeTheme = $derived(browser ? ($theme as Theme) : 'dark');
 </script>
 
 <svelte:head>
@@ -181,7 +119,13 @@
 			<Container className="mb-4">
 				<SectionTitle className="mb-4">Daily Activity (Past Week)</SectionTitle>
 
-				<div id="activity-chart" class="w-full h-64"></div>
+				<DateBarChart
+					data={adminData.daily_activity}
+					seriesName="Heartbeats"
+					horizontal={false}
+					theme={activeTheme}
+					class="w-full h-64"
+				/>
 			</Container>
 		{:else}
 			<EmptyState title="No recent activity data available" className="mb-4" />
