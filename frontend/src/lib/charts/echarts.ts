@@ -31,18 +31,28 @@ const FALLBACK_COLORS: Record<'light' | 'dark', string[]> = {
 const resolveColors = (colors: string[], theme: 'light' | 'dark') =>
 	colors.length > 0 ? colors : FALLBACK_COLORS[theme];
 
+const getThemeColors = (theme: 'light' | 'dark') => ({
+	text: theme === 'dark' ? '#cdd6f4' : '#4c4f69',
+	tooltipBg: theme === 'dark' ? '#1e1e2e' : '#eff1f5',
+	gridBorder: theme === 'dark' ? '#313244' : '#ccd0da'
+});
+
 export function createPieChartOptions(
 	data: UsageStat[],
 	colors: string[],
 	theme: 'light' | 'dark' = 'dark'
 ): EChartsOption {
-	const textColor = theme === 'dark' ? '#E6EEF3' : '#111827';
+	const { text: textColor, tooltipBg } = getThemeColors(theme);
 	const resolvedColors = resolveColors(colors, theme);
 
 	return {
 		color: resolvedColors,
 		tooltip: {
 			trigger: 'item',
+			backgroundColor: tooltipBg,
+			textStyle: {
+				color: textColor
+			},
 			formatter: (params) => {
 				const p = params as { name?: string };
 				const item = data.find((d) => d.name === p.name);
@@ -105,8 +115,7 @@ export function createBarChartOptions(
 	horizontal: boolean = true,
 	theme: 'light' | 'dark' = 'dark'
 ): EChartsOption {
-	const textColor = theme === 'dark' ? '#E6EEF3' : '#111827';
-	const gridBorderColor = theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)';
+	const { text: textColor, tooltipBg, gridBorder: gridBorderColor } = getThemeColors(theme);
 	const resolvedColors = resolveColors(colors, theme);
 
 	const categoryAxis = {
@@ -144,6 +153,10 @@ export function createBarChartOptions(
 		color: resolvedColors,
 		tooltip: {
 			trigger: 'axis',
+			backgroundColor: tooltipBg,
+			textStyle: {
+				color: textColor
+			},
 			axisPointer: {
 				type: 'shadow'
 			},
@@ -185,8 +198,7 @@ export function createDateBarChartOptions(
 	horizontal: boolean = true,
 	theme: 'light' | 'dark' = 'dark'
 ): EChartsOption {
-	const textColor = theme === 'dark' ? '#E6EEF3' : '#111827';
-	const gridBorderColor = theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)';
+	const { text: textColor, tooltipBg, gridBorder: gridBorderColor } = getThemeColors(theme);
 	const resolvedColors = resolveColors(colors, theme);
 
 	const categoryAxis = {
@@ -223,6 +235,10 @@ export function createDateBarChartOptions(
 		color: resolvedColors,
 		tooltip: {
 			trigger: 'axis',
+			backgroundColor: tooltipBg,
+			textStyle: {
+				color: textColor
+			},
 			axisPointer: {
 				type: 'shadow'
 			}
