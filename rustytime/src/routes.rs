@@ -15,7 +15,7 @@ use crate::handlers::page::dashboard::dashboard;
 use crate::handlers::page::imports::admin_imports;
 use crate::handlers::page::leaderboard::leaderboard_page;
 use crate::handlers::page::projects::projects_dashboard;
-use crate::handlers::page::settings::settings_page;
+use crate::handlers::page::settings::{settings_page, update_settings};
 use crate::state::AppState;
 use crate::utils::middleware;
 use aide::axum::routing::{delete_with, get_with, post_with, put_with};
@@ -112,6 +112,7 @@ pub fn create_app_router(
                                 .tag("Pages")
                                 .security_requirement("Authenticated")
                         }))
+
                         .api_route("/leaderboard", get_with(leaderboard_page, |op| {
                             op.id("leaderboard_page")
                                 .summary("Leaderboard Page")
@@ -166,6 +167,13 @@ pub fn create_app_router(
                                 .description(
                                     "Sets the repository URL for the specified project.",
                                 )
+                                .tag("Data")
+                                .security_requirement("Authenticated")
+                        }))
+                        .api_route("/settings", put_with(update_settings, |op| {
+                            op.id("update_settings")
+                                .summary("Update User Settings")
+                                .description("Updates the authenticated user's settings.")
                                 .tag("Data")
                                 .security_requirement("Authenticated")
                         }))

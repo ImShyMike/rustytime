@@ -47,6 +47,7 @@ dotenvy = { version = "0.15.7", default-features = false }
 serde = { version = "1.0.228", features = ["derive"], default-features = false }
 uuid = { version = "1.19.0", features = ["serde", "v4"], default-features = false }
 chrono = { version = "0.4.43", default-features = false }
+chrono-tz = { version = "0.10.4", default-features = false }
 serde_json = { version = "1.0.149", default-features = false }
 base64 = { version = "0.22.1", default-features = false }
 ipnetwork = { version = "0.21.1", features = ["serde"], default-features = false }

@@ -11,6 +11,7 @@ use crate::models::user::User;
 pub struct DashboardCacheKey {
     pub user_id: i32,
     pub range: TimeRange,
+    pub timezone: String,
 }
 
 #[derive(Clone)]
@@ -49,7 +50,7 @@ impl AppCache {
         Self {
             dashboard: Arc::new(
                 Cache::builder()
-                    .max_capacity(10_000)
+                    .max_capacity(1_000)
                     .time_to_live(Duration::from_secs(300)) // 5 minute TTL
                     .build(),
             ),
@@ -69,15 +70,9 @@ impl AppCache {
     }
 
     pub fn invalidate_user_dashboard(&self, user_id: i32) {
-        for range in [
-            TimeRange::Day,
-            TimeRange::Week,
-            TimeRange::Month,
-            TimeRange::All,
-        ] {
-            self.dashboard
-                .invalidate(&DashboardCacheKey { user_id, range });
-        }
+        let _ = self
+            .dashboard
+            .invalidate_entries_if(move |key, _| key.user_id == user_id);
     }
 }
 

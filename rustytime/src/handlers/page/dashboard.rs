@@ -74,9 +74,11 @@ pub async fn dashboard(
             .into_response());
     };
 
+    let user_timezone = user.timezone.clone();
     let cache_key = DashboardCacheKey {
         user_id: session_data.user_id,
         range: query.range,
+        timezone: user_timezone.clone(),
     };
 
     let cached = app_state.cache.dashboard.get(&cache_key);
@@ -89,13 +91,19 @@ pub async fn dashboard(
             Heartbeat::get_user_heartbeat_count_by_range(
                 &mut conn,
                 session_data.user_id,
-                query.range
+                query.range,
+                &user_timezone
             ),
             "Database error getting heartbeat count"
         );
 
         let dashboard_stats = db_query!(
-            Heartbeat::get_dashboard_stats_by_range(&mut conn, session_data.user_id, query.range),
+            Heartbeat::get_dashboard_stats_by_range(
+                &mut conn,
+                session_data.user_id,
+                query.range,
+                &user_timezone
+            ),
             "Database error getting dashboard stats"
         );
 

@@ -4,7 +4,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::schema::users;
+use crate::schema::users::{self};
 
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
 #[diesel(table_name = users)]
@@ -18,6 +18,7 @@ pub struct User {
     pub is_banned: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    pub timezone: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, JsonSchema)]
@@ -42,6 +43,7 @@ pub struct NewUser {
     pub avatar_url: String,
     pub admin_level: i16,
     pub is_banned: bool,
+    pub timezone: String,
 }
 
 impl User {
@@ -89,6 +91,7 @@ impl User {
                     avatar_url: avatar_url.to_string(),
                     admin_level: if total_users == 0 { 2 } else { 0 }, // make the first real user an owner
                     is_banned: false,
+                    timezone: "UTC".to_string(),
                 };
                 Self::create(conn, &new_user)
             }
@@ -159,6 +162,16 @@ impl User {
             .set(users::admin_level.eq(new_level))
             .execute(conn)
     }
+
+    pub fn set_timezone(
+        conn: &mut PgConnection,
+        user_id: i32,
+        timezone: &str,
+    ) -> QueryResult<User> {
+        diesel::update(users::table.find(user_id))
+            .set(users::timezone.eq(timezone))
+            .get_result(conn)
+    }
 }
 
 #[cfg(test)]
@@ -177,6 +190,7 @@ mod tests {
             is_banned: false,
             created_at: Utc::now(),
             updated_at: Utc::now(),
+            timezone: "UTC".to_string(),
         };
         assert!(user.is_admin());
     }

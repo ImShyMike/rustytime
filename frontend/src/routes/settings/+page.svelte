@@ -25,6 +25,7 @@
 		deleteProjectAlias
 	} from '$lib/api/project';
 	import { startImport, getImportStatus } from '$lib/api/import';
+	import { updateSettings } from '$lib/api/settings';
 	import type { ImportStatusResponse } from '$lib/types/settings';
 	import { onDestroy } from 'svelte';
 	import { safeText } from '$lib/utils/text';
@@ -140,6 +141,52 @@
 
 	const isImportActive = $derived(checkIsImportActive(importStatus));
 
+	let savedTimezone = $state<string>('UTC');
+	let selectedTimezone = $state<string>('UTC');
+	let isSavingTimezone = $state(false);
+	let timezoneError: string | null = $state(null);
+	let timezoneSuccess = $state(false);
+	const hasTimezoneChanged = $derived(selectedTimezone !== savedTimezone);
+
+	const getAvailableTimezones = (): string[] => {
+		try {
+			// this should work
+			if (typeof Intl !== 'undefined' && 'supportedValuesOf' in Intl) {
+				return (
+					Intl as unknown as { supportedValuesOf: (key: string) => string[] }
+				).supportedValuesOf('timeZone');
+			}
+		} catch {}
+		// fallback
+		return ['UTC'];
+	};
+
+	const timezoneOptions = $derived(
+		getAvailableTimezones().map((tz) => ({ value: tz, label: tz.replace(/_/g, ' ') }))
+	);
+
+	async function handleTimezoneChange() {
+		if (selectedTimezone === savedTimezone) return;
+
+		isSavingTimezone = true;
+		timezoneError = null;
+		timezoneSuccess = false;
+
+		try {
+			await updateSettings(api, { timezone: selectedTimezone });
+			savedTimezone = selectedTimezone;
+			timezoneSuccess = true;
+			setTimeout(() => {
+				timezoneSuccess = false;
+			}, 3000);
+		} catch (error) {
+			console.error('Failed to update settings:', error);
+			timezoneError = error instanceof Error ? error.message : 'Failed to update settings';
+		} finally {
+			isSavingTimezone = false;
+		}
+	}
+
 	onMount(() => {
 		loadData();
 		loadImportStatus().then(() => {
@@ -158,6 +205,20 @@
 		} else if (platform.includes('linux')) {
 			os = 'linux';
 			setupVariant = 'unix';
+		}
+
+		if (settingsData?.timezone) {
+			savedTimezone = settingsData.timezone;
+			selectedTimezone = settingsData.timezone;
+		} else {
+			try {
+				const detected = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+				savedTimezone = detected;
+				selectedTimezone = detected;
+			} catch {
+				savedTimezone = 'UTC';
+				selectedTimezone = 'UTC';
+			}
 		}
 	});
 
@@ -244,8 +305,47 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 		<TabsPanel {tabs} bind:selected={selectedTab} className="mb-4" />
 
 		{#if selectedTab === 'setup'}
-			<!-- Setup stuff -->
+			<!-- Preferences -->
 			<Container>
+				<SectionTitle level="h2" className="mb-3">Preferences</SectionTitle>
+				<div class="space-y-4">
+					<div class="bg-ctp-surface0/40 border border-ctp-surface1 rounded-lg p-4 space-y-3">
+						<div class="flex flex-col sm:flex-row gap-3 items-end">
+							<div class="flex-1">
+								<Select
+									id="timezone"
+									label="Timezone"
+									options={timezoneOptions}
+									bind:value={selectedTimezone}
+									disabled={isSavingTimezone}
+									className="w-full"
+								/>
+							</div>
+							<Button
+								onClick={handleTimezoneChange}
+								disabled={isSavingTimezone || !hasTimezoneChanged}
+								className="inline-flex items-center gap-2 whitespace-nowrap"
+							>
+								{#if isSavingTimezone}
+									<LucideLoader2 class="w-4 h-4 animate-spin" />
+									<span>Saving…</span>
+								{:else}
+									<span>Save</span>
+								{/if}
+							</Button>
+						</div>
+						{#if timezoneError}
+							<p class="text-sm text-ctp-red">{timezoneError}</p>
+						{/if}
+						{#if timezoneSuccess}
+							<p class="text-sm text-ctp-green">Settings saved!</p>
+						{/if}
+					</div>
+				</div>
+			</Container>
+
+			<!-- Setup stuff -->
+			<Container className="mt-4">
 				<SectionTitle level="h2" className="mb-3">Setup</SectionTitle>
 				<div class="space-y-4">
 					<div class="flex flex-col gap-3">

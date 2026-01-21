@@ -1,19 +1,13 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    import_jobs (id) {
-        id -> Int8,
-        user_id -> Int4,
-        #[max_length = 20]
-        status -> Varchar,
-        imported_count -> Nullable<Int8>,
-        processed_count -> Nullable<Int8>,
-        request_count -> Nullable<Int4>,
-        start_date -> Nullable<Text>,
-        time_taken -> Nullable<Float8>,
-        error_message -> Nullable<Text>,
-        created_at -> Timestamptz,
-        updated_at -> Timestamptz,
+    _sqlx_migrations (version) {
+        version -> Int8,
+        description -> Text,
+        installed_on -> Timestamptz,
+        success -> Bool,
+        checksum -> Bytea,
+        execution_time -> Int8,
     }
 }
 
@@ -45,6 +39,23 @@ diesel::table! {
         cursorpos -> Nullable<Int4>,
         source_type -> Nullable<Int2>,
         project_id -> Nullable<Int4>,
+    }
+}
+
+diesel::table! {
+    import_jobs (id) {
+        id -> Int8,
+        user_id -> Int4,
+        #[max_length = 20]
+        status -> Varchar,
+        imported_count -> Nullable<Int8>,
+        processed_count -> Nullable<Int8>,
+        request_count -> Nullable<Int4>,
+        start_date -> Nullable<Text>,
+        time_taken -> Nullable<Float8>,
+        error_message -> Nullable<Text>,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
     }
 }
 
@@ -109,6 +120,8 @@ diesel::table! {
         is_banned -> Bool,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
+        #[max_length = 50]
+        timezone -> Varchar,
     }
 }
 
@@ -119,6 +132,7 @@ diesel::joinable!(project_aliases -> users (user_id));
 diesel::joinable!(projects -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
+    _sqlx_migrations,
     heartbeats,
     import_jobs,
     leaderboards,

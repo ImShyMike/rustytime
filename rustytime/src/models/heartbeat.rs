@@ -1,5 +1,6 @@
 use axum::http::HeaderMap;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Datelike, NaiveDate, NaiveDateTime, TimeZone, Utc};
+use chrono_tz::Tz;
 use diesel::prelude::*;
 use diesel::sql_types::{BigInt, Date, Int4, Nullable as SqlNullable, Text, Timestamptz};
 use ipnetwork::IpNetwork;
@@ -848,35 +849,18 @@ impl Heartbeat {
         conn: &mut PgConnection,
         user_id: i32,
         range: TimeRange,
+        user_timezone: &str,
     ) -> QueryResult<i64> {
+        let tz: Tz = user_timezone.parse().unwrap_or(chrono_tz::UTC);
         let now = Utc::now();
 
-        match range {
-            TimeRange::Day => {
-                let start = now.date_naive().and_hms_opt(0, 0, 0).unwrap().and_utc();
-                heartbeats::table
-                    .filter(heartbeats::user_id.eq(user_id))
-                    .filter(heartbeats::time.ge(start))
-                    .count()
-                    .get_result(conn)
-            }
-            TimeRange::Week => {
-                let start = now - chrono::Duration::days(7);
-                heartbeats::table
-                    .filter(heartbeats::user_id.eq(user_id))
-                    .filter(heartbeats::time.ge(start))
-                    .count()
-                    .get_result(conn)
-            }
-            TimeRange::Month => {
-                let start = now - chrono::Duration::days(30);
-                heartbeats::table
-                    .filter(heartbeats::user_id.eq(user_id))
-                    .filter(heartbeats::time.ge(start))
-                    .count()
-                    .get_result(conn)
-            }
-            TimeRange::All => Self::get_user_heartbeat_count(conn, user_id),
+        match Self::start_boundary_utc(range, tz, now) {
+            Some(start) => heartbeats::table
+                .filter(heartbeats::user_id.eq(user_id))
+                .filter(heartbeats::time.ge(start))
+                .count()
+                .get_result(conn),
+            None => Self::get_user_heartbeat_count(conn, user_id),
         }
     }
 
@@ -896,55 +880,77 @@ impl Heartbeat {
             .collect()
     }
 
+    /// Compute the start boundary in UTC for a given time range based on user's timezone
+    fn start_boundary_utc(
+        range: TimeRange,
+        tz: Tz,
+        now_utc: DateTime<Utc>,
+    ) -> Option<DateTime<Utc>> {
+        if range == TimeRange::All {
+            return None;
+        }
+
+        let now_local = now_utc.with_timezone(&tz);
+
+        let start_local_naive: NaiveDateTime = match range {
+            TimeRange::Day => {
+                // Today
+                now_local.date_naive().and_hms_opt(0, 0, 0).unwrap()
+            }
+            TimeRange::Week => {
+                // This week
+                let days_from_monday = now_local.weekday().num_days_from_monday() as i64;
+                let week_start_date =
+                    now_local.date_naive() - chrono::Duration::days(days_from_monday);
+                week_start_date.and_hms_opt(0, 0, 0).unwrap()
+            }
+            TimeRange::Month => {
+                // This month
+                let y = now_local.year();
+                let m = now_local.month();
+                NaiveDate::from_ymd_opt(y, m, 1)
+                    .unwrap()
+                    .and_hms_opt(0, 0, 0)
+                    .unwrap()
+            }
+            TimeRange::All => unreachable!(),
+        };
+
+        // timezones are weird
+        let start_local = tz
+            .from_local_datetime(&start_local_naive)
+            .earliest()
+            .or_else(|| tz.from_local_datetime(&start_local_naive).latest())
+            .unwrap_or(now_local);
+
+        Some(start_local.with_timezone(&Utc))
+    }
+
     /// Get dashboard stats filtered by time range (day, week, month, all)
     pub fn get_dashboard_stats_by_range(
         conn: &mut PgConnection,
         user_id: i32,
         range: TimeRange,
+        user_timezone: &str,
     ) -> QueryResult<DashboardStats> {
+        let tz: Tz = user_timezone.parse().unwrap_or(chrono_tz::UTC);
         let now = Utc::now();
 
-        let filtered_rows: Vec<DashboardMetricRow> = match range {
-            TimeRange::Day => {
-                let start_time = now - chrono::Duration::hours(24);
-                diesel::sql_query(
-                    "SELECT metric_type, name, total_seconds, total_time \
-                     FROM calculate_dashboard_stats_by_range($1, $2, $3, $4)",
-                )
-                .bind::<Int4, _>(user_id)
-                .bind::<Timestamptz, _>(start_time)
-                .bind::<Int4, _>(TIMEOUT_SECONDS)
-                .bind::<Int4, _>(10)
-                .load(conn)?
-            }
-            TimeRange::Week => {
-                let start_time = now - chrono::Duration::days(7);
-                diesel::sql_query(
-                    "SELECT metric_type, name, total_seconds, total_time \
-                     FROM calculate_dashboard_stats_by_range($1, $2, $3, $4)",
-                )
-                .bind::<Int4, _>(user_id)
-                .bind::<Timestamptz, _>(start_time)
-                .bind::<Int4, _>(TIMEOUT_SECONDS)
-                .bind::<Int4, _>(10)
-                .load(conn)?
-            }
-            TimeRange::Month => {
-                let start_time = now - chrono::Duration::days(30);
-                diesel::sql_query(
-                    "SELECT metric_type, name, total_seconds, total_time \
-                     FROM calculate_dashboard_stats_by_range($1, $2, $3, $4)",
-                )
-                .bind::<Int4, _>(user_id)
-                .bind::<Timestamptz, _>(start_time)
-                .bind::<Int4, _>(TIMEOUT_SECONDS)
-                .bind::<Int4, _>(10)
-                .load(conn)?
-            }
-            TimeRange::All => diesel::sql_query(
+        let filtered_rows: Vec<DashboardMetricRow> = match Self::start_boundary_utc(range, tz, now)
+        {
+            Some(start_time) => diesel::sql_query(
                 "SELECT metric_type, name, total_seconds, total_time \
-                 FROM calculate_dashboard_stats($1, $2, $3) \
-                 WHERE total_seconds > 0 OR metric_type = 'total_time'",
+                     FROM calculate_dashboard_stats_by_range($1, $2, $3, $4)",
+            )
+            .bind::<Int4, _>(user_id)
+            .bind::<Timestamptz, _>(start_time)
+            .bind::<Int4, _>(TIMEOUT_SECONDS)
+            .bind::<Int4, _>(10)
+            .load(conn)?,
+            None => diesel::sql_query(
+                "SELECT metric_type, name, total_seconds, total_time \
+                     FROM calculate_dashboard_stats($1, $2, $3) \
+                     WHERE total_seconds > 0 OR metric_type = 'total_time'",
             )
             .bind::<Int4, _>(user_id)
             .bind::<Int4, _>(TIMEOUT_SECONDS)

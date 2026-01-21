@@ -31,9 +31,9 @@
 	let selectedRange = $derived(data?.range || 'month');
 
 	const rangeOptions = [
-		{ value: 'day', label: 'Last 24 Hours' },
-		{ value: 'week', label: 'Last 7 Days' },
-		{ value: 'month', label: 'Last 30 Days' },
+		{ value: 'day', label: 'Today' },
+		{ value: 'week', label: 'This Week' },
+		{ value: 'month', label: 'This Month' },
 		{ value: 'all', label: 'All Time' }
 	];
 

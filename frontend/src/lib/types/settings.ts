@@ -1,5 +1,6 @@
 export interface SettingsResponse {
 	api_key?: string;
+	timezone: string;
 }
 
 export interface ImportStartResponse {
