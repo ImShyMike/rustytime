@@ -54,7 +54,7 @@
 	<title>Leaderboard - rustytime</title>
 </svelte:head>
 
-<PageScaffold title="Leaderboard" {lastUpdatedAt}>
+<PageScaffold title="Leaderboard (UTC)" {lastUpdatedAt}>
 	<Container>
 		<div class="flex justify-between items-end">
 			<Tabs {tabs} bind:selected={selectedTab} className="mb-4" />
