@@ -2,7 +2,6 @@
 macro_rules! db_query {
     ($expr:expr) => {
         $expr.map_err(|_e| {
-            #[cfg(debug_assertions)]
             tracing::error!("❌ Database error: {:?}", _e);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -13,7 +12,6 @@ macro_rules! db_query {
     };
     ($expr:expr, $msg:expr) => {
         $expr.map_err(|_e| {
-            #[cfg(debug_assertions)]
             tracing::error!("❌ Database error: {:?}", _e);
             (StatusCode::INTERNAL_SERVER_ERROR, $msg).into_response()
         })?
@@ -24,7 +22,6 @@ macro_rules! db_query {
 macro_rules! get_db_conn {
     ($state:expr) => {
         $state.db_pool.get().map_err(|_e| {
-            #[cfg(debug_assertions)]
             tracing::error!("❌ Failed to get database connection: {:?}", _e);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
