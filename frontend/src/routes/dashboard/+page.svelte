@@ -29,6 +29,7 @@
 	let dashboardData = $derived(data);
 	let lastUpdatedAt = $state(new Date());
 	let selectedRange = $derived(data?.range || 'month');
+	let loadedRange = $state('today');
 
 	const rangeOptions = [
 		{ value: 'day', label: 'Today' },
@@ -45,6 +46,8 @@
 		selectedRange = newRange;
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
 		await goto(`/dashboard?range=${newRange}`, { keepFocus: true });
+		loadedRange =
+			rangeOptions.find((opt) => opt.value === newRange)?.label.toLowerCase() || 'today';
 	};
 
 	setupVisibilityRefresh({
@@ -99,34 +102,34 @@
 			<ToggleGroup options={rangeOptions} selected={selectedRange} onchange={handleRangeChange} />
 		</Container>
 
-		<!-- Top Stats -->
-		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-			<StatCard
-				title="Total Time"
-				value={dashboardData?.human_readable_total || 'None'}
-				valueClass="text-xl font-semibold text-ctp-text"
-			/>
-			<StatCard
-				title="Top Project"
-				value={safeText(dashboardData?.projects?.[0]?.name) || 'None'}
-				valueClass="text-xl font-semibold text-ctp-text"
-			/>
-			<StatCard
-				title="Top Language"
-				value={safeText(dashboardData?.languages?.[0]?.name) || 'None'}
-				valueClass="text-xl font-semibold text-ctp-text"
-			/>
-			<StatCard
-				title="Total Heartbeats"
-				value={dashboardData?.total_heartbeats
-					? dashboardData.total_heartbeats.toLocaleString()
-					: '0'}
-				valueClass="text-xl font-semibold text-ctp-text"
-			/>
-		</div>
-
-		<!-- Dashboard Statistics -->
 		{#if dashboardData.projects.length || dashboardData.languages.length || dashboardData.editors.length || dashboardData.operating_systems.length}
+			<!-- Top Stats -->
+			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+				<StatCard
+					title="Total Time"
+					value={dashboardData?.human_readable_total || 'None'}
+					valueClass="text-xl font-semibold text-ctp-text"
+				/>
+				<StatCard
+					title="Top Project"
+					value={safeText(dashboardData?.projects?.[0]?.name) || 'None'}
+					valueClass="text-xl font-semibold text-ctp-text"
+				/>
+				<StatCard
+					title="Top Language"
+					value={safeText(dashboardData?.languages?.[0]?.name) || 'None'}
+					valueClass="text-xl font-semibold text-ctp-text"
+				/>
+				<StatCard
+					title="Total Heartbeats"
+					value={dashboardData?.total_heartbeats
+						? dashboardData.total_heartbeats.toLocaleString()
+						: '0'}
+					valueClass="text-xl font-semibold text-ctp-text"
+				/>
+			</div>
+
+			<!-- Dashboard Statistics -->
 			<Container className="mb-4">
 				<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 					<!-- Top Projects (Horizontal Bar Chart) -->
@@ -170,10 +173,16 @@
 					</div>
 				</div>
 			</Container>
-		{:else}
+		{:else if loadedRange === 'all'}
 			<EmptyState
 				title="No data to display :("
-				description="Complete the setup bellow to start tracking your time!"
+				description="Complete the setup in the settings page and start coding to see your stats here!"
+				className="mb-4"
+			/>
+		{:else}
+			<EmptyState
+				title={`No time tracked ${loadedRange}`}
+				description="Get coding or change the time range to see your stats."
 				className="mb-4"
 			/>
 		{/if}
