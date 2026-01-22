@@ -17,11 +17,14 @@ use crate::models::heartbeat::Heartbeat;
 use crate::models::leaderboard::{Leaderboard, NewLeaderboard};
 use crate::utils::time::get_week_start;
 
+const DAILY_RETENTION_DAYS: i64 = 30;
+const WEEKLY_RETENTION_WEEKS: i64 = 12;
+
 async fn regenerate_daily_leaderboard(_tick: Tick, pool: Data<DbPool>) {
     let started = std::time::Instant::now();
     let today = Utc::now().date_naive();
 
-    tracing::info!(period = "daily", date = %today, "Starting leaderboard regeneration");
+    tracing::debug!(period = "daily", date = %today, "Starting leaderboard regeneration");
 
     let result = regenerate_leaderboard_period(&pool, "daily", today);
 
@@ -33,7 +36,7 @@ async fn regenerate_daily_leaderboard(_tick: Tick, pool: Data<DbPool>) {
     metrics::histogram!("leaderboard_job_duration_seconds", "period" => "daily")
         .record(elapsed.as_secs_f64());
 
-    tracing::info!(
+    tracing::debug!(
         period = "daily",
         elapsed_ms = elapsed.as_millis() as u64,
         status = status,
@@ -46,7 +49,7 @@ async fn regenerate_weekly_leaderboard(_tick: Tick, pool: Data<DbPool>) {
     let today = Utc::now().date_naive();
     let week_start = get_week_start(today);
 
-    tracing::info!(period = "weekly", date = %week_start, "Starting leaderboard regeneration");
+    tracing::debug!(period = "weekly", date = %week_start, "Starting leaderboard regeneration");
 
     let result = regenerate_leaderboard_period(&pool, "weekly", week_start);
 
@@ -58,7 +61,7 @@ async fn regenerate_weekly_leaderboard(_tick: Tick, pool: Data<DbPool>) {
     metrics::histogram!("leaderboard_job_duration_seconds", "period" => "weekly")
         .record(elapsed.as_secs_f64());
 
-    tracing::info!(
+    tracing::debug!(
         period = "weekly",
         elapsed_ms = elapsed.as_millis() as u64,
         status = status,
@@ -70,7 +73,7 @@ async fn regenerate_all_time_leaderboard(_tick: Tick, pool: Data<DbPool>) {
     let started = std::time::Instant::now();
     let all_time_date = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap();
 
-    tracing::info!(period = "all_time", "Starting leaderboard regeneration");
+    tracing::debug!(period = "all_time", "Starting leaderboard regeneration");
 
     let result = regenerate_leaderboard_period(&pool, "all_time", all_time_date);
 
@@ -82,7 +85,7 @@ async fn regenerate_all_time_leaderboard(_tick: Tick, pool: Data<DbPool>) {
     metrics::histogram!("leaderboard_job_duration_seconds", "period" => "all_time")
         .record(elapsed.as_secs_f64());
 
-    tracing::info!(
+    tracing::debug!(
         period = "all_time",
         elapsed_ms = elapsed.as_millis() as u64,
         status = status,
@@ -160,14 +163,14 @@ fn cleanup_old_entries(pool: &DbPool) -> Result<(), diesel::result::Error> {
     })?;
 
     let today = Utc::now().date_naive();
-    let cutoff_daily = today - chrono::Duration::days(30);
-    let cutoff_weekly = today - chrono::Duration::weeks(12);
+    let cutoff_daily = today - chrono::Duration::days(DAILY_RETENTION_DAYS);
+    let cutoff_weekly = today - chrono::Duration::weeks(WEEKLY_RETENTION_WEEKS);
 
     conn.transaction(|conn| {
         let daily_deleted = Leaderboard::delete_old_daily(conn, cutoff_daily)?;
         let weekly_deleted = Leaderboard::delete_old_weekly(conn, cutoff_weekly)?;
 
-        tracing::info!(
+        tracing::debug!(
             daily_deleted,
             weekly_deleted,
             "Cleaned up old leaderboard entries"
