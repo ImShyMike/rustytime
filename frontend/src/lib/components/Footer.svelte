@@ -11,13 +11,13 @@
 
 <footer class="w-full pb-2 px-6 text-sm">
 	<div
-		class="group flex items-center justify-center gap-3 text-ctp-text/35 transition-colors hover:text-ctp-subtext1"
+		class="group flex flex-col sm:flex-row items-center justify-center sm:gap-3 text-ctp-text/35 transition-colors hover:text-ctp-subtext1 text-center"
 	>
 		{#if lastUpdatedAt}
-			<span class="font-mono" title={lastUpdatedAt.toLocaleString()}>
+			<span class="font-mono text-balance" title={lastUpdatedAt.toLocaleString()}>
 				data updated <RelativeTime datetime={lastUpdatedAt} />
 			</span>
-			<span>•</span>
+			<span class="hidden sm:inline">•</span>
 		{/if}
 		{#if commitHash !== 'dev'}
 			<a
