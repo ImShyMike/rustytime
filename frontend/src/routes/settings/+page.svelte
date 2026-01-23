@@ -156,7 +156,9 @@
 					Intl as unknown as { supportedValuesOf: (key: string) => string[] }
 				).supportedValuesOf('timeZone');
 			}
-		} catch {}
+		} catch {
+			// fallback
+		}
 		// fallback
 		return ['UTC'];
 	};

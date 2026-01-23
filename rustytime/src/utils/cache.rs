@@ -34,7 +34,6 @@ pub struct CachedLeaderboard {
 
 #[derive(Clone)]
 pub struct CachedAdminStats {
-    pub total_heartbeats: i64,
     pub daily_activity: Vec<DailyActivity>,
 }
 

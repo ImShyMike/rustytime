@@ -183,6 +183,12 @@ pub struct UserDurationRow {
 }
 
 #[derive(QueryableByName)]
+struct CountRow {
+    #[diesel(sql_type = BigInt)]
+    count: i64,
+}
+
+#[derive(QueryableByName)]
 struct NullableNameDurationRow {
     #[diesel(sql_type = SqlNullable<Text>)]
     name: Option<String>,
@@ -757,8 +763,10 @@ impl From<Heartbeat> for BulkResponseItem {
 }
 
 impl Heartbeat {
-    pub fn count_total_heartbeats(conn: &mut PgConnection) -> QueryResult<i64> {
-        heartbeats::table.count().get_result(conn)
+    pub fn total_heartbeat_count_estimate(conn: &mut PgConnection) -> QueryResult<i64> {
+        diesel::sql_query("SELECT * FROM approximate_row_count('heartbeats') AS count")
+            .get_result::<CountRow>(conn)
+            .map(|res| res.count)
     }
 
     pub fn count_heartbeats_last_24h(conn: &mut PgConnection) -> QueryResult<i64> {
