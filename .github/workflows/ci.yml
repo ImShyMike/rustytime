@@ -62,8 +62,8 @@ jobs:
     - name: Cargo formatting check
       run: cargo fmt --all -- --check
     - name: Cargo clippy check
-      run: cargo clippy --all-targets --all-features
+      run: cargo clippy --all-targets --all-features -- -D warnings
     - name: Run tests
       env:
         TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/rustytime_test
-      run: cargo test --locked --all-targets --all-features
+      run: cargo test --locked --all-features
