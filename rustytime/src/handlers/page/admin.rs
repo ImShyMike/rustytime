@@ -18,6 +18,7 @@ use crate::models::user::{PartialUser, User};
 use crate::state::AppState;
 use crate::utils::cache::CachedAdminStats;
 use crate::utils::session::{ImpersonationContext, SessionManager};
+use crate::utils::auth::AuthenticatedUser;
 use crate::{db_query, get_db_conn};
 
 #[derive(Deserialize, JsonSchema)]
@@ -54,13 +55,8 @@ pub struct AdminDashboardResponse {
 pub async fn admin_dashboard(
     State(app_state): State<AppState>,
     Query(query): Query<AdminQuery>,
-    user: NoApi<Option<Extension<User>>>,
+    NoApi(AuthenticatedUser(current_user)): NoApi<AuthenticatedUser>,
 ) -> Result<Json<AdminDashboardResponse>, Response> {
-    // check if user is an admin
-    let current_user = user
-        .0
-        .expect("User should be authenticated since middleware validated authentication")
-        .0;
 
     if !current_user.is_admin() {
         return Err((StatusCode::FORBIDDEN, "No permission").into_response());
@@ -145,14 +141,10 @@ pub async fn impersonate_user(
     Path(user_id): Path<i64>,
     cookies: NoApi<Cookies>,
     impersonation: NoApi<Option<Extension<ImpersonationContext>>>,
-    user: NoApi<Option<Extension<User>>>,
+    NoApi(AuthenticatedUser(session_user)): NoApi<AuthenticatedUser>,
 ) -> Result<StatusCode, Response> {
     let cookies = cookies.0;
     let impersonation = impersonation.0;
-    let session_user = user
-        .0
-        .expect("User should be authenticated since middleware validated authentication")
-        .0;
 
     let Some(session_id) = SessionManager::get_session_from_cookies(&cookies) else {
         return Err((StatusCode::UNAUTHORIZED, "Session missing").into_response());

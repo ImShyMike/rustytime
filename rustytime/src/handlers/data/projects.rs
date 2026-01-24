@@ -1,12 +1,11 @@
 use crate::models::project::Project as ProjectModel;
-use crate::models::user::User;
 use crate::state::AppState;
+use crate::utils::auth::AuthenticatedUser;
 use crate::{db_query, get_db_conn};
 use aide::NoApi;
 use axum::Json;
 use axum::extract::Path;
 use axum::{
-    Extension,
     extract::State,
     http::StatusCode,
     response::{IntoResponse, Response},
@@ -33,13 +32,8 @@ pub struct RepoUrlRequest {
 /// Handler for the projects list
 pub async fn projects_list(
     State(app_state): State<AppState>,
-    user: NoApi<Option<Extension<User>>>,
+    NoApi(AuthenticatedUser(current_user)): NoApi<AuthenticatedUser>,
 ) -> Result<Json<ProjectsListResponse>, Response> {
-    // get current user
-    let current_user = user
-        .0
-        .expect("User should be authenticated since middleware validated authentication")
-        .0;
 
     // get database connection
     let mut conn = get_db_conn!(app_state);
@@ -61,15 +55,10 @@ pub async fn projects_list(
 
 pub async fn set_project_repo(
     State(app_state): State<AppState>,
-    user: NoApi<Option<Extension<User>>>,
+    NoApi(AuthenticatedUser(current_user)): NoApi<AuthenticatedUser>,
     Path(project_id): Path<i32>,
     repo_url: Json<RepoUrlRequest>,
 ) -> Result<Response, Response> {
-    // get current user
-    let current_user = user
-        .0
-        .expect("User should be authenticated since middleware validated authentication")
-        .0;
 
     // get database connection
     let mut conn = get_db_conn!(app_state);

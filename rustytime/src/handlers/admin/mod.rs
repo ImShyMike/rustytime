@@ -1,7 +1,6 @@
 use aide::NoApi;
 use axum::extract::Path;
 use axum::{
-    Extension,
     extract::State,
     http::StatusCode,
     response::{IntoResponse, Response},
@@ -9,17 +8,14 @@ use axum::{
 
 use crate::models::user::User;
 use crate::state::AppState;
+use crate::utils::auth::AuthenticatedUser;
 use crate::{db_query, get_db_conn};
 
 pub async fn change_user_admin_level(
     State(app_state): State<AppState>,
     Path((user_id, new_level)): Path<(i32, i16)>,
-    user: NoApi<Option<Extension<User>>>,
+    NoApi(AuthenticatedUser(current_user)): NoApi<AuthenticatedUser>,
 ) -> Result<StatusCode, Response> {
-    let current_user = user
-        .0
-        .expect("User should be authenticated since middleware validated authentication")
-        .0;
 
     if !current_user.is_owner() {
         return Err((StatusCode::FORBIDDEN, "No permission").into_response());

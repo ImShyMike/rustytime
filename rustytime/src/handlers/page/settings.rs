@@ -3,13 +3,13 @@ use std::env;
 use crate::models::user::User;
 use crate::state::AppState;
 use crate::utils::session::SessionManager;
+use crate::utils::auth::AuthenticatedUser;
 use crate::{db_query, get_db_conn};
 use aide::NoApi;
 use axum::Json;
 use axum::extract::State;
 use axum::response::Redirect;
 use axum::{
-    Extension,
     http::StatusCode,
     response::{IntoResponse, Response},
 };
@@ -42,14 +42,9 @@ pub struct UpdateSettingsResponse {
 pub async fn settings_page(
     State(app_state): State<AppState>,
     cookies: NoApi<Cookies>,
-    user: NoApi<Option<Extension<User>>>,
+    NoApi(AuthenticatedUser(current_user)): NoApi<AuthenticatedUser>,
 ) -> Result<Json<SettingsResponse>, Response> {
     let cookies = cookies.0;
-    // get current user
-    let current_user = user
-        .0
-        .expect("User should be authenticated since middleware validated authentication")
-        .0;
 
     let frontend_url =
         env::var("FRONTEND_URL").unwrap_or_else(|_| "http://localhost:5173".to_string());
@@ -87,13 +82,9 @@ pub async fn settings_page(
 /// Handler for updating user settings
 pub async fn update_settings(
     State(app_state): State<AppState>,
-    user: NoApi<Option<Extension<User>>>,
+    NoApi(AuthenticatedUser(current_user)): NoApi<AuthenticatedUser>,
     Json(request): Json<UpdateSettingsRequest>,
 ) -> Result<Json<UpdateSettingsResponse>, Response> {
-    let current_user = user
-        .0
-        .expect("User should be authenticated since middleware validated authentication")
-        .0;
 
     let mut conn = get_db_conn!(app_state);
 

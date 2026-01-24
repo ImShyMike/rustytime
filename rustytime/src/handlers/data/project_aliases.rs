@@ -1,12 +1,11 @@
 use crate::models::project_alias::{NewProjectAlias, ProjectAlias as ProjectAliasModel};
-use crate::models::user::User;
 use crate::state::AppState;
+use crate::utils::auth::AuthenticatedUser;
 use crate::{db_query, get_db_conn};
 use aide::NoApi;
 use axum::Json;
 use axum::extract::Path;
 use axum::{
-    Extension,
     extract::State,
     http::StatusCode,
     response::{IntoResponse, Response},
@@ -35,13 +34,8 @@ pub struct ProjectAliasesResponse {
 /// Handler for the project aliases
 pub async fn project_aliases(
     State(app_state): State<AppState>,
-    user: NoApi<Option<Extension<User>>>,
+    NoApi(AuthenticatedUser(current_user)): NoApi<AuthenticatedUser>,
 ) -> Result<Json<ProjectAliasesResponse>, Response> {
-    // get current user
-    let current_user = user
-        .0
-        .expect("User should be authenticated since middleware validated authentication")
-        .0;
 
     // get database connection
     let mut conn = get_db_conn!(app_state);
@@ -78,13 +72,9 @@ pub async fn project_aliases(
 
 pub async fn add_project_alias(
     State(app_state): State<AppState>,
-    user: NoApi<Option<Extension<User>>>,
+    NoApi(AuthenticatedUser(current_user)): NoApi<AuthenticatedUser>,
     Path((id, alias_id)): Path<(i32, i32)>,
 ) -> Result<StatusCode, Response> {
-    let current_user = user
-        .0
-        .expect("User should be authenticated since middleware validated authentication")
-        .0;
 
     let mut conn = get_db_conn!(app_state);
 
@@ -104,13 +94,9 @@ pub async fn add_project_alias(
 
 pub async fn delete_project_alias(
     State(app_state): State<AppState>,
-    user: NoApi<Option<Extension<User>>>,
+    NoApi(AuthenticatedUser(current_user)): NoApi<AuthenticatedUser>,
     Path(id): Path<i32>,
 ) -> Result<StatusCode, Response> {
-    let current_user = user
-        .0
-        .expect("User should be authenticated since middleware validated authentication")
-        .0;
 
     let mut conn = get_db_conn!(app_state);
 

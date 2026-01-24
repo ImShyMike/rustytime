@@ -1,13 +1,12 @@
 use crate::models::heartbeat::{TimeRange, UsageStat};
-use crate::models::user::User;
 use crate::state::AppState;
 use crate::utils::cache::{CachedDashboardStats, DashboardCacheKey};
 use crate::utils::session::SessionManager;
 use crate::utils::time::{TimeFormat, human_readable_duration};
+use crate::utils::auth::AuthenticatedUser;
 use crate::{db_query, get_db_conn, models::heartbeat::Heartbeat};
 use aide::NoApi;
 use axum::{
-    Extension,
     extract::{Query, State},
     http::StatusCode,
     response::{IntoResponse, Json, Response},
@@ -45,33 +44,21 @@ pub struct DashboardResponse {
 pub async fn dashboard(
     State(app_state): State<AppState>,
     cookies: NoApi<Cookies>,
-    user: Option<Extension<User>>,
+    NoApi(AuthenticatedUser(user)): NoApi<AuthenticatedUser>,
     Query(query): Query<DashboardQuery>,
 ) -> Result<Json<DashboardResponse>, Response> {
     let cookies = cookies.0;
-    // check if user is authenticated
-    if user.is_none() {
-        return Err((
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "User should be authenticated since middleware validated authentication",
-        )
-            .into_response());
-    }
-    let user = user.unwrap().0;
 
     // get user's session info
-    let session_id = SessionManager::get_session_from_cookies(&cookies)
-        .expect("Session should exist since middleware validated authentication");
+    let Some(session_id) = SessionManager::get_session_from_cookies(&cookies) else {
+        return Err((StatusCode::UNAUTHORIZED, "Session missing").into_response());
+    };
 
     let Some(session_data) = db_query!(
         SessionManager::validate_session(&app_state.db_pool, session_id).await,
         "Session validation error"
     ) else {
-        return Err((
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "User should be authenticated since middleware validated authentication",
-        )
-            .into_response());
+        return Err((StatusCode::UNAUTHORIZED, "Session invalid").into_response());
     };
 
     let user_timezone = user.timezone.clone();

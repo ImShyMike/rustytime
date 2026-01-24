@@ -4,7 +4,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::response::Response;
-use axum::{Extension, Json};
+use axum::Json;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;
@@ -14,9 +14,9 @@ use tracing::{error, info};
 use crate::db_query;
 use crate::jobs::import::enqueue_import;
 use crate::models::import_job::{ImportJob, ImportJobStatus};
-use crate::models::user::User;
 use crate::state::AppState;
 use crate::utils::session::SessionManager;
+use crate::utils::auth::AuthenticatedUser;
 
 #[derive(Deserialize, JsonSchema)]
 pub struct ImportQuery {
@@ -65,12 +65,8 @@ pub async fn import_heartbeats(
     State(app_state): State<AppState>,
     Query(query): Query<ImportQuery>,
     cookies: NoApi<Cookies>,
-    user: NoApi<Option<Extension<User>>>,
+    NoApi(AuthenticatedUser(current_user)): NoApi<AuthenticatedUser>,
 ) -> Result<Json<ImportStartResponse>, Response> {
-    let current_user = user
-        .0
-        .expect("User should be authenticated since middleware validated authentication")
-        .0;
 
     let Some(session_id) = SessionManager::get_session_from_cookies(&cookies) else {
         return Err((StatusCode::UNAUTHORIZED, "User session is invalid").into_response());
@@ -153,13 +149,8 @@ pub async fn import_heartbeats(
 
 pub async fn import_status(
     State(app_state): State<AppState>,
-    user: NoApi<Option<Extension<User>>>,
+    NoApi(AuthenticatedUser(current_user)): NoApi<AuthenticatedUser>,
 ) -> Result<Json<ImportStatusResponse>, Response> {
-    let current_user = user
-        .0
-        .expect("User should be authenticated since middleware validated authentication")
-        .0;
-
     let user_id = current_user.id;
 
     let job = db_query!(

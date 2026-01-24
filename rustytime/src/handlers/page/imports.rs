@@ -2,7 +2,7 @@ use aide::NoApi;
 use axum::Json;
 use axum::extract::Query;
 use axum::{
-    Extension, extract::State, http::StatusCode, response::IntoResponse, response::Response,
+    extract::State, http::StatusCode, response::IntoResponse, response::Response,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -11,6 +11,7 @@ use crate::db_query;
 use crate::models::import_job::ImportJob;
 use crate::models::user::User;
 use crate::state::AppState;
+use crate::utils::auth::AuthenticatedUser;
 
 #[derive(Deserialize, JsonSchema)]
 pub struct ImportsQuery {
@@ -52,12 +53,8 @@ pub struct AdminImportsResponse {
 pub async fn admin_imports(
     State(app_state): State<AppState>,
     Query(query): Query<ImportsQuery>,
-    user: NoApi<Option<Extension<User>>>,
+    NoApi(AuthenticatedUser(current_user)): NoApi<AuthenticatedUser>,
 ) -> Result<Json<AdminImportsResponse>, Response> {
-    let current_user = user
-        .0
-        .expect("User should be authenticated since middleware validated authentication")
-        .0;
 
     if !current_user.is_admin() {
         return Err((StatusCode::FORBIDDEN, "No permission").into_response());
