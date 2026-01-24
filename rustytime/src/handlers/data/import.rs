@@ -12,12 +12,14 @@ use tower_cookies::Cookies;
 use tracing::{error, info};
 
 use crate::db_query;
+use crate::db_transaction;
 use crate::jobs::import::enqueue_import;
 use crate::models::import_job::{ImportJob, ImportJobStatus};
 use crate::state::AppState;
 use crate::utils::extractors::AuthenticatedUser;
 use crate::utils::extractors::DbConnection;
 use crate::utils::session::SessionManager;
+use crate::utils::transaction::{TxError, TxResultExt};
 
 #[derive(Deserialize, JsonSchema)]
 pub struct ImportQuery {
@@ -99,21 +101,18 @@ pub async fn import_heartbeats(
 
     let user_id = current_user.id;
 
-    if let Ok(Some(active_job)) = ImportJob::get_active_for_user(&mut conn, user_id) {
-        return Err((
-            StatusCode::CONFLICT,
-            format!(
+    let import_job = db_transaction!(conn, |conn| {
+        if let Some(active_job) = ImportJob::get_active_for_user(conn, user_id)
+            .db_err("Failed to check for active import jobs")?
+        {
+            return Err(TxError::conflict_owned(format!(
                 "An import job is already {} for this user (job_id: {})",
                 active_job.status, active_job.id
-            ),
-        )
-            .into_response());
-    }
+            )));
+        }
 
-    let import_job = db_query!(
-        ImportJob::create(&mut conn, user_id),
-        "Failed to create import job"
-    );
+        ImportJob::create(conn, user_id).db_err("Failed to create import job")
+    });
 
     let import_store = app_state.import_store.read().await;
     let Some(ref store) = *import_store else {

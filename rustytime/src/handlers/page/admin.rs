@@ -13,13 +13,16 @@ use serde::{Deserialize, Serialize};
 use tower_cookies::Cookies;
 
 use crate::db_query;
+use crate::db_transaction;
 use crate::models::heartbeat::Heartbeat;
 use crate::models::session::Session;
 use crate::models::user::{PartialUser, User};
 use crate::state::AppState;
+use crate::tx_bail;
 use crate::utils::cache::CachedAdminStats;
 use crate::utils::extractors::{AuthenticatedUser, DbConnection};
 use crate::utils::session::{ImpersonationContext, SessionManager};
+use crate::utils::transaction::{TxOptionExt, TxResultExt};
 
 #[derive(Deserialize, JsonSchema)]
 pub struct AdminQuery {
@@ -180,28 +183,24 @@ pub async fn impersonate_user(
         return Err((StatusCode::FORBIDDEN, "No permission").into_response());
     }
 
-    let Some(target_user) = db_query!(
-        User::get_by_id(&mut conn, user_id as i32),
-        "Failed to fetch target user"
-    ) else {
-        return Err((StatusCode::NOT_FOUND, "User not found").into_response());
-    };
+    let updated_session = db_transaction!(conn, |conn| {
+        let target_user = User::get_by_id(conn, user_id as i32)
+            .db_err("Failed to fetch target user")?
+            .or_not_found("User not found")?;
 
-    if acting_admin.admin_level <= target_user.admin_level && acting_admin.id != target_user.id {
-        return Err((StatusCode::BAD_REQUEST, "Cannot impersonate another admin").into_response());
-    }
+        if acting_admin.admin_level <= target_user.admin_level && acting_admin.id != target_user.id
+        {
+            tx_bail!(StatusCode::BAD_REQUEST, "Cannot impersonate another admin");
+        }
 
-    let updated_session = if target_user.id == acting_admin.id {
-        db_query!(
-            Session::clear_impersonation(&mut conn, session_id, &acting_admin),
-            "Failed to clear impersonation"
-        )
-    } else {
-        db_query!(
-            Session::impersonate(&mut conn, session_id, &target_user, acting_admin.id),
-            "Failed to impersonate user"
-        )
-    };
+        if target_user.id == acting_admin.id {
+            Session::clear_impersonation(conn, session_id, &acting_admin)
+                .db_err("Failed to clear impersonation")
+        } else {
+            Session::impersonate(conn, session_id, &target_user, acting_admin.id)
+                .db_err("Failed to impersonate user")
+        }
+    });
 
     let session_cookie = SessionManager::create_session_cookie(updated_session.id);
     cookies.add(session_cookie);

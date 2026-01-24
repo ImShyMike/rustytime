@@ -1,13 +1,13 @@
 use aide::NoApi;
 use axum::extract::Path;
-use axum::{
-    http::StatusCode,
-    response::{IntoResponse, Response},
-};
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
 
-use crate::db_query;
+use crate::db_transaction;
 use crate::models::user::User;
+use crate::tx_bail;
 use crate::utils::extractors::{AuthenticatedUser, DbConnection};
+use crate::utils::transaction::{TxOptionExt, TxResultExt};
 
 pub async fn change_user_admin_level(
     Path((user_id, new_level)): Path<(i32, i16)>,
@@ -18,33 +18,30 @@ pub async fn change_user_admin_level(
         return Err((StatusCode::FORBIDDEN, "No permission").into_response());
     }
 
-    let Some(target_user) = db_query!(
-        User::get_by_id(&mut conn, user_id),
-        "Failed to fetch target user"
-    ) else {
-        return Err((StatusCode::NOT_FOUND, "User not found").into_response());
-    };
+    db_transaction!(conn, |conn| {
+        let target_user = User::get_by_id(conn, user_id)
+            .db_err("Failed to fetch target user")?
+            .or_not_found("User not found")?;
 
-    if target_user.id == current_user.id {
-        return Err((StatusCode::BAD_REQUEST, "Cannot change own admin level").into_response());
-    }
+        if target_user.id == current_user.id {
+            tx_bail!(StatusCode::BAD_REQUEST, "Cannot change own admin level");
+        }
 
-    if target_user.is_owner() {
-        return Err((StatusCode::BAD_REQUEST, "Cannot change owner admin level").into_response());
-    }
+        if target_user.is_owner() {
+            tx_bail!(StatusCode::BAD_REQUEST, "Cannot change owner admin level");
+        }
 
-    if target_user.admin_level >= current_user.admin_level {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            "Cannot change admin level of equal or higher admin",
-        )
-            .into_response());
-    }
+        if target_user.admin_level >= current_user.admin_level {
+            tx_bail!(
+                StatusCode::BAD_REQUEST,
+                "Cannot change admin level of equal or higher admin"
+            );
+        }
 
-    db_query!(
-        User::set_admin_level(&mut conn, user_id, new_level),
-        "Failed to update admin level"
-    );
+        User::set_admin_level(conn, user_id, new_level).db_err("Failed to update admin level")?;
+
+        Ok(())
+    });
 
     Ok(StatusCode::OK)
 }
