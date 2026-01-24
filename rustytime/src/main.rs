@@ -145,11 +145,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let sqlx_pool = sqlx::PgPool::connect(&database_url)
         .await
         .expect("Failed to connect to database for jobs");
-    let (leaderboard_worker, import_worker, import_store) =
+    let (leaderboard_worker, import_worker, sessions_worker, import_store) =
         jobs::setup_jobs(sqlx_pool, pool.clone()).await;
     app_state.set_import_store(import_store);
     tokio::spawn(leaderboard_worker);
     tokio::spawn(import_worker);
+    tokio::spawn(sessions_worker);
     info!("✅ Jobs system started");
 
     let rate_period = if is_production {

@@ -8,7 +8,7 @@ use crate::models::user::User;
 use crate::schema::sessions;
 use crate::schema::sessions::dsl;
 
-const SESSION_EXPIRY_DAYS: i64 = 7;
+pub const SESSION_EXPIRY_DAYS: i64 = 7;
 
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
 #[diesel(table_name = sessions)]
@@ -92,8 +92,14 @@ impl Session {
     }
 
     #[allow(dead_code)]
+    #[inline(always)]
     pub fn delete_by_user_id(conn: &mut PgConnection, user_id: i32) -> QueryResult<usize> {
         diesel::delete(sessions::table.filter(dsl::user_id.eq(user_id))).execute(conn)
+    }
+
+    #[inline(always)]
+    pub fn delete_expired(conn: &mut PgConnection) -> QueryResult<usize> {
+        diesel::delete(sessions::table.filter(dsl::expires_at.le(now))).execute(conn)
     }
 
     pub fn impersonate(

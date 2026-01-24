@@ -155,7 +155,7 @@ fn regenerate_leaderboard_period(
 
 fn cleanup_old_entries(pool: &DbPool) -> Result<(), diesel::result::Error> {
     let mut conn = pool.get().map_err(|e| {
-        tracing::error!(error = ?e, "Failed to get connection for cleanup");
+        tracing::error!(error = ?e, "Failed to get connection for leaderboard cleanup");
         diesel::result::Error::DatabaseError(
             diesel::result::DatabaseErrorKind::Unknown,
             Box::new(e.to_string()),

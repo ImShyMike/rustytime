@@ -521,8 +521,8 @@ pub async fn setup(
 
     WorkerBuilder::new("import-worker")
         .backend(import_store)
-        .layer(PrometheusLayer::default())
         .enable_tracing()
+        .layer(PrometheusLayer::default())
         .catch_panic()
         .concurrency(2)
         .data(diesel_pool)
