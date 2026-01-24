@@ -4,6 +4,7 @@ use diesel::prelude::*;
 use serde::Deserialize;
 
 use crate::db::connection::DbPool;
+use crate::models::user::User;
 use crate::schema::users::dsl;
 
 /// Try to get API key from the "Authorization" header
@@ -72,6 +73,17 @@ pub async fn get_user_id_from_api_key(pool: &DbPool, api_key_value: &str) -> Opt
         .first(&mut conn)
         .ok()?;
     Some(user_id)
+}
+
+/// Get user from the API key
+pub async fn get_user_from_api_key(pool: &DbPool, api_key_value: &str) -> Option<User> {
+    let api_key_uuid = uuid::Uuid::parse_str(api_key_value).ok()?;
+    let mut conn = pool.get().ok()?;
+    let user: User = dsl::users
+        .filter(dsl::api_key.eq(api_key_uuid))
+        .first(&mut conn)
+        .ok()?;
+    Some(user)
 }
 
 #[cfg(test)]

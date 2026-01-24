@@ -1,5 +1,5 @@
 use axum::http::HeaderMap;
-use chrono::{DateTime, Datelike, NaiveDate, NaiveDateTime, TimeZone, Utc};
+use chrono::{DateTime, Utc};
 use chrono_tz::Tz;
 use diesel::dsl::sql;
 use diesel::prelude::*;
@@ -12,7 +12,10 @@ use std::fmt;
 
 use crate::schema::heartbeats::{self};
 use crate::utils::http::parse_user_agent;
-use crate::utils::time::{TimeFormat, human_readable_duration};
+use crate::utils::time::{
+    TimeFormat, get_day_start_utc, get_month_start_date, get_week_start_date,
+    human_readable_duration, parse_timezone,
+};
 
 diesel::define_sql_function! {
     /// Calculate user duration with filters
@@ -858,7 +861,7 @@ impl Heartbeat {
         range: TimeRange,
         user_timezone: &str,
     ) -> QueryResult<i64> {
-        let tz: Tz = user_timezone.parse().unwrap_or(chrono_tz::UTC);
+        let tz = parse_timezone(user_timezone);
         let now = Utc::now();
 
         match Self::start_boundary_utc(range, tz, now) {
@@ -897,40 +900,16 @@ impl Heartbeat {
             return None;
         }
 
-        let now_local = now_utc.with_timezone(&tz);
+        let today = now_utc.with_timezone(&tz).date_naive();
 
-        let start_local_naive: NaiveDateTime = match range {
-            TimeRange::Day => {
-                // Today
-                now_local.date_naive().and_hms_opt(0, 0, 0).unwrap()
-            }
-            TimeRange::Week => {
-                // This week
-                let days_from_monday = now_local.weekday().num_days_from_monday() as i64;
-                let week_start_date =
-                    now_local.date_naive() - chrono::Duration::days(days_from_monday);
-                week_start_date.and_hms_opt(0, 0, 0).unwrap()
-            }
-            TimeRange::Month => {
-                // This month
-                let y = now_local.year();
-                let m = now_local.month();
-                NaiveDate::from_ymd_opt(y, m, 1)
-                    .unwrap()
-                    .and_hms_opt(0, 0, 0)
-                    .unwrap()
-            }
+        let start_date = match range {
+            TimeRange::Day => today,
+            TimeRange::Week => get_week_start_date(today),
+            TimeRange::Month => get_month_start_date(today),
             TimeRange::All => unreachable!(),
         };
 
-        // timezones are weird
-        let start_local = tz
-            .from_local_datetime(&start_local_naive)
-            .earliest()
-            .or_else(|| tz.from_local_datetime(&start_local_naive).latest())
-            .unwrap_or(now_local);
-
-        Some(start_local.with_timezone(&Utc))
+        Some(get_day_start_utc(start_date, tz))
     }
 
     /// Get dashboard stats filtered by time range (day, week, month, all)
@@ -940,7 +919,7 @@ impl Heartbeat {
         range: TimeRange,
         user_timezone: &str,
     ) -> QueryResult<DashboardStats> {
-        let tz: Tz = user_timezone.parse().unwrap_or(chrono_tz::UTC);
+        let tz = parse_timezone(user_timezone);
         let now = Utc::now();
 
         let filtered_rows: Vec<DashboardMetricRow> = match Self::start_boundary_utc(range, tz, now)

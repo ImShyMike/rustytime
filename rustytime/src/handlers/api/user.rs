@@ -1,12 +1,14 @@
 use aide::NoApi;
+use axum::Json;
 use axum::extract::ConnectInfo;
-use axum::extract::{Json, Path, State};
+use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use chrono::Utc;
 use diesel::prelude::*;
 use ipnetwork::IpNetwork;
-use serde_json::json;
+use schemars::JsonSchema;
+use serde::Serialize;
 use std::net::IpAddr;
 use std::net::SocketAddr;
 
@@ -16,14 +18,46 @@ use crate::models::heartbeat::*;
 use crate::models::project::get_or_create_project_id;
 use crate::schema::heartbeats;
 use crate::state::AppState;
-use crate::utils::auth::{get_user_id_from_api_key, get_valid_api_key};
+use crate::utils::auth::{get_user_from_api_key, get_user_id_from_api_key, get_valid_api_key};
 use crate::utils::extractors::DbConnection;
 use crate::utils::http::extract_client_ip_from_headers;
-use crate::utils::time::{TimeFormat, human_readable_duration};
+use crate::utils::time::{
+    TimeFormat, get_day_end_utc, get_day_start_utc, get_today_in_timezone, human_readable_duration,
+    parse_timezone,
+};
 use std::collections::{HashMap, hash_map};
 
 const MAX_HEARTBEATS_PER_REQUEST: usize = 100;
 const HEARTBEAT_INSERT_BATCH_SIZE: usize = 1_000; // avoids hitting Postgres' 65k parameter limit
+
+#[derive(Serialize, JsonSchema)]
+pub struct StatusBarResponse {
+    data: StatusBarResponseData,
+}
+
+#[derive(Serialize, JsonSchema)]
+pub struct StatusBarResponseData {
+    grand_total: StatusBarResponseDataGrandTotal,
+    range: StatusBarResponseDataRange,
+}
+
+#[derive(Serialize, JsonSchema)]
+pub struct StatusBarResponseDataGrandTotal {
+    decimal: String,
+    digital: String,
+    hours: i64,
+    minutes: i64,
+    human_readable: String,
+    total_seconds: i64,
+}
+
+#[derive(Serialize, JsonSchema)]
+pub struct StatusBarResponseDataRange {
+    date: String,
+    end: String,
+    start: String,
+    timezone: String,
+}
 
 /// Process heartbeat request and store in the database
 async fn process_heartbeat_request(
@@ -132,14 +166,15 @@ pub async fn create_heartbeats(
 /// Handler to get today's status bar data
 pub async fn get_statusbar_today(
     State(app_state): State<AppState>,
-    Path(id): Path<String>,
     NoApi(DbConnection(mut conn)): NoApi<DbConnection>,
+    Path(id): Path<String>,
     headers: axum::http::HeaderMap,
     uri: axum::http::Uri,
-) -> Result<Json<serde_json::Value>, Response> {
-    let user_id: i32 = if id != "current" {
+) -> Result<Json<StatusBarResponse>, Response> {
+    let (user_id, timezone) = if id != "current" {
+        // not implemented
         match id.parse::<i32>() {
-            Ok(id) => id,
+            Ok(id) => (id, None),
             Err(_) => return Err((StatusCode::BAD_REQUEST, "Bad request").into_response()),
         }
     } else {
@@ -149,22 +184,20 @@ pub async fn get_statusbar_today(
             None => return Err((StatusCode::BAD_REQUEST, "Bad request").into_response()),
         };
 
-        let user_result = get_user_id_from_api_key(&app_state.db_pool, &api_key).await;
-        match user_result {
-            Some(id) => id,
+        let user_result = get_user_from_api_key(&app_state.db_pool, &api_key).await;
+        let user = match user_result {
+            Some(user) => user,
             None => return Err((StatusCode::BAD_REQUEST, "Bad request").into_response()),
-        }
+        };
+
+        (user.id, Some(user.timezone))
     };
 
-    // calculate today's date range
-    let today = Utc::now().date_naive();
-    let start_of_day = today.and_hms_opt(0, 0, 0).unwrap().and_utc();
-    let end_of_day = today
-        .succ_opt()
-        .unwrap_or(today)
-        .and_hms_opt(0, 0, 0)
-        .unwrap()
-        .and_utc();
+    // calculate today's date range in user's timezone
+    let user_tz = parse_timezone(timezone.as_deref().unwrap_or("UTC"));
+    let today = get_today_in_timezone(user_tz);
+    let start_of_day = get_day_start_utc(today, user_tz);
+    let end_of_day = get_day_end_utc(today, user_tz);
 
     match Heartbeat::get_user_duration_seconds(
         &mut conn,
@@ -181,18 +214,24 @@ pub async fn get_statusbar_today(
         Ok(total_seconds) => {
             let time_obj = human_readable_duration(total_seconds, TimeFormat::HourMinute);
 
-            Ok(Json(json!({
-                "data": {
-                    "grand_total": {
-                        "decimal": format!("{:.2}", total_seconds as f64 / 3600.0),
-                        "digital": format!("{:02}:{:02}", time_obj.hours, time_obj.minutes),
-                        "hours": time_obj.hours,
-                        "minutes": time_obj.minutes,
-                        "text": time_obj.human_readable,
-                        "total_seconds": total_seconds
-                    }
-                }
-            })))
+            Ok(Json(StatusBarResponse {
+                data: StatusBarResponseData {
+                    grand_total: StatusBarResponseDataGrandTotal {
+                        decimal: format!("{:.2}", total_seconds as f64 / 3600.0),
+                        digital: format!("{:02}:{:02}", time_obj.hours, time_obj.minutes),
+                        hours: time_obj.hours,
+                        minutes: time_obj.minutes,
+                        human_readable: time_obj.human_readable,
+                        total_seconds,
+                    },
+                    range: StatusBarResponseDataRange {
+                        date: today.format("%Y-%m-%d").to_string(),
+                        start: start_of_day.to_rfc3339(),
+                        end: end_of_day.to_rfc3339(),
+                        timezone: timezone.unwrap_or_else(|| "UTC".to_string()),
+                    },
+                },
+            }))
         }
         Err(err) => {
             eprintln!("❌ Error calculating duration: {}", err);

@@ -1,4 +1,7 @@
-use chrono::{DateTime, Datelike, Duration, NaiveDate, SecondsFormat, Utc};
+use chrono::{
+    DateTime, Datelike, Duration, NaiveDate, NaiveDateTime, SecondsFormat, TimeZone, Utc,
+};
+use chrono_tz::Tz;
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -136,6 +139,50 @@ pub fn determine_range(
 pub fn get_week_start(date: NaiveDate) -> NaiveDate {
     let weekday = date.weekday().num_days_from_monday();
     date - chrono::Duration::days(weekday as i64)
+}
+
+/// Parse a timezone string, returning the Tz or UTC as fallback
+#[inline(always)]
+pub fn parse_timezone(tz_str: &str) -> Tz {
+    tz_str.parse().unwrap_or(chrono_tz::UTC)
+}
+
+/// Convert a naive datetime in a timezone to UTC, handling DST transitions
+pub fn local_datetime_to_utc(naive_dt: NaiveDateTime, tz: Tz) -> DateTime<Utc> {
+    tz.from_local_datetime(&naive_dt)
+        .earliest()
+        .or_else(|| tz.from_local_datetime(&naive_dt).latest())
+        .map(|dt| dt.with_timezone(&Utc))
+        .unwrap_or_else(Utc::now)
+}
+
+/// Get the start of day (00:00:00) in the user's timezone, converted to UTC
+pub fn get_day_start_utc(date: NaiveDate, tz: Tz) -> DateTime<Utc> {
+    let naive_dt = date.and_hms_opt(0, 0, 0).unwrap();
+    local_datetime_to_utc(naive_dt, tz)
+}
+
+/// Get the end of day (start of next day) in the user's timezone, converted to UTC
+pub fn get_day_end_utc(date: NaiveDate, tz: Tz) -> DateTime<Utc> {
+    let tomorrow = date.succ_opt().unwrap_or(date);
+    let naive_dt = tomorrow.and_hms_opt(0, 0, 0).unwrap();
+    local_datetime_to_utc(naive_dt, tz)
+}
+
+/// Get today's date in the user's timezone
+pub fn get_today_in_timezone(tz: Tz) -> NaiveDate {
+    Utc::now().with_timezone(&tz).date_naive()
+}
+
+/// Get the start of the week (Monday) for a given date
+pub fn get_week_start_date(date: NaiveDate) -> NaiveDate {
+    let days_from_monday = date.weekday().num_days_from_monday() as i64;
+    date - chrono::Duration::days(days_from_monday)
+}
+
+/// Get the start of the month for a given date
+pub fn get_month_start_date(date: NaiveDate) -> NaiveDate {
+    NaiveDate::from_ymd_opt(date.year(), date.month(), 1).unwrap()
 }
 
 #[cfg(test)]
