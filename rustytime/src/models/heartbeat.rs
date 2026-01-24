@@ -1,6 +1,7 @@
 use axum::http::HeaderMap;
 use chrono::{DateTime, Datelike, NaiveDate, NaiveDateTime, TimeZone, Utc};
 use chrono_tz::Tz;
+use diesel::dsl::sql;
 use diesel::prelude::*;
 use diesel::sql_types::{BigInt, Date, Int4, Nullable as SqlNullable, Text, Timestamptz};
 use ipnetwork::IpNetwork;
@@ -790,12 +791,11 @@ impl Heartbeat {
     pub fn get_daily_activity_last_week(
         conn: &mut PgConnection,
     ) -> QueryResult<Vec<DailyActivity>> {
-        use diesel::dsl::*;
-        use diesel::sql_types::*;
+        let now = chrono::Utc::now();
 
-        let seven_days_ago = chrono::Utc::now() - chrono::Duration::days(7);
+        let start_today = now.date_naive().and_hms_opt(0, 0, 0).unwrap();
+        let seven_days_ago = start_today - chrono::Duration::days(7);
 
-        // Use Diesel's select with sql() for date functions not in DSL
         heartbeats::table
             .filter(heartbeats::time.ge(seven_days_ago))
             .select((sql::<Date>("DATE(time)"), sql::<BigInt>("COUNT(*)")))
@@ -814,7 +814,6 @@ impl Heartbeat {
         conn: &mut PgConnection,
         duration_input: DurationInput,
     ) -> QueryResult<i64> {
-        // Call database function using Diesel's define_sql_function!
         diesel::select(calculate_user_duration(
             duration_input.user_id,
             duration_input.start_date,
