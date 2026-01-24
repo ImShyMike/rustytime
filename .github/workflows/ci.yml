@@ -21,6 +21,20 @@ jobs:
     permissions:
       actions: write
       contents: read
+    services:
+      postgres:
+        image: timescale/timescaledb:latest-pg17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: rustytime_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
     defaults:
       run:
         working-directory: rustytime
@@ -43,7 +57,8 @@ jobs:
     - name: Cargo clippy check
       run: cargo clippy --all-targets --all-features
     - name: Run tests
+      env:
+        TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/rustytime_test
       run: cargo test --locked --all-targets --all-features
     - name: Cargo check
       run: cargo check --all-targets --all-features
-
