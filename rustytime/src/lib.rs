@@ -10,3 +10,7 @@ pub mod routes;
 pub mod schema;
 pub mod state;
 pub mod utils;
+
+use std::sync::LazyLock;
+use std::time::Instant;
+pub static START_TIME: LazyLock<Instant> = LazyLock::new(Instant::now);

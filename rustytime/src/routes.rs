@@ -9,6 +9,7 @@ use crate::handlers::data::project_aliases::{
 use crate::handlers::data::projects::{projects_list, set_project_repo};
 use crate::handlers::github::{callback, login, logout, verify_session};
 use crate::handlers::homepage::home_page;
+use crate::handlers::info::info;
 use crate::handlers::page::admin::admin_dashboard;
 use crate::handlers::page::admin::impersonate_user;
 use crate::handlers::page::dashboard::dashboard;
@@ -328,6 +329,13 @@ pub fn create_app_router(
                 .summary("Health Check Endpoint")
                 .description("Returns OK if the server is running.")
                 .tag("Health")
+        }))
+        // info endpoint
+        .api_route("/info", get_with(info, |op| {
+            op.id("info_endpoint")
+                .summary("Server Info Endpoint")
+                .description("Returns server name, version, and git SHA.")
+                .tag("Info")
         }))
         // include trace context as header into the response
         .layer(OtelInResponseLayer)
