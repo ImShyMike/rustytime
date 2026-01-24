@@ -326,7 +326,12 @@ mod heartbeat_tests {
         response.assert_status(StatusCode::ACCEPTED);
         let body: serde_json::Value = response.json();
         assert!(body.get("data").is_some());
-        assert!(body["data"]["entity"].as_str().unwrap().contains("test_file.rs"));
+        assert!(
+            body["data"]["entity"]
+                .as_str()
+                .unwrap()
+                .contains("test_file.rs")
+        );
 
         app.cleanup_test_user(user.id);
     }
@@ -482,7 +487,9 @@ mod data_retrieval_tests {
 
         response.assert_status_ok();
         let body: serde_json::Value = response.json();
-        let total_seconds = body["data"]["grand_total"]["total_seconds"].as_i64().unwrap_or(0);
+        let total_seconds = body["data"]["grand_total"]["total_seconds"]
+            .as_i64()
+            .unwrap_or(0);
         assert!(total_seconds >= 0);
 
         app.cleanup_test_user(user.id);

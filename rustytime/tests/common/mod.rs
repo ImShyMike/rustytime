@@ -149,8 +149,8 @@ impl TestApp {
 
         let mut server_config = TestServerConfig::new();
         server_config.save_cookies = true;
-        let server = TestServer::new_with_config(app, server_config)
-            .expect("Failed to create test server");
+        let server =
+            TestServer::new_with_config(app, server_config).expect("Failed to create test server");
 
         Self { server, db_pool }
     }
