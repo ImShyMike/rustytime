@@ -52,6 +52,13 @@ jobs:
       with:
         workspaces: rustytime -> target
         shared-key: ci
+    - name: Install diesel CLI
+      run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/diesel-rs/diesel/releases/download/v2.3.5/diesel_cli-installer.sh | sh
+      # the latest release (2.3.6) doesn't have prebuilt binaries for some reason
+    - name: Run database migrations
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/rustytime_test
+      run: diesel migration run
     - name: Cargo formatting check
       run: cargo fmt --all -- --check
     - name: Cargo clippy check
@@ -60,5 +67,3 @@ jobs:
       env:
         TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/rustytime_test
       run: cargo test --locked --all-targets --all-features
-    - name: Cargo check
-      run: cargo check --all-targets --all-features

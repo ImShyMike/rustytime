@@ -58,7 +58,7 @@ fn invalid_base64_in_basic_auth_returns_none() {
 fn invalid_utf8_after_base64_decode_returns_none() {
     let headers = {
         let mut map = axum::http::HeaderMap::new();
-        let invalid_utf8 = BASE64_STANDARD.encode(&[0x80, 0x81, 0x82, 0x83]);
+        let invalid_utf8 = BASE64_STANDARD.encode([0x80, 0x81, 0x82, 0x83]);
         map.insert(
             "Authorization",
             format!("Basic {}", invalid_utf8).parse().unwrap(),
