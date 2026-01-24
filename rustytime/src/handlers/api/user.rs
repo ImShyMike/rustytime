@@ -1,3 +1,4 @@
+use aide::NoApi;
 use axum::extract::ConnectInfo;
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
@@ -10,13 +11,13 @@ use std::net::IpAddr;
 use std::net::SocketAddr;
 
 use crate::db::connection::DbPool;
-use crate::get_db_conn;
 use crate::models::heartbeat::Heartbeat;
 use crate::models::heartbeat::*;
 use crate::models::project::get_or_create_project_id;
 use crate::schema::heartbeats;
 use crate::state::AppState;
 use crate::utils::auth::{get_user_id_from_api_key, get_valid_api_key};
+use crate::utils::extractors::DbConnection;
 use crate::utils::http::extract_client_ip_from_headers;
 use crate::utils::time::{TimeFormat, human_readable_duration};
 use std::collections::{HashMap, hash_map};
@@ -132,6 +133,7 @@ pub async fn create_heartbeats(
 pub async fn get_statusbar_today(
     State(app_state): State<AppState>,
     Path(id): Path<String>,
+    NoApi(DbConnection(mut conn)): NoApi<DbConnection>,
     headers: axum::http::HeaderMap,
     uri: axum::http::Uri,
 ) -> Result<Json<serde_json::Value>, Response> {
@@ -163,8 +165,6 @@ pub async fn get_statusbar_today(
         .and_hms_opt(0, 0, 0)
         .unwrap()
         .and_utc();
-
-    let mut conn = get_db_conn!(app_state);
 
     match Heartbeat::get_user_duration_seconds(
         &mut conn,

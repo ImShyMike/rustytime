@@ -1,10 +1,12 @@
+use crate::db_query;
 use crate::models::leaderboard::{Leaderboard, LeaderboardEntry};
 use crate::models::user::User;
 use crate::schema::users;
 use crate::state::AppState;
 use crate::utils::cache::{CachedLeaderboard, LeaderboardCacheKey};
+use crate::utils::extractors::DbConnection;
 use crate::utils::time::get_week_start;
-use crate::{db_query, get_db_conn};
+use aide::NoApi;
 use axum::{
     extract::State,
     http::StatusCode,
@@ -30,6 +32,7 @@ struct LeaderboardData {
 
 pub async fn leaderboard_page(
     State(app_state): State<AppState>,
+    NoApi(DbConnection(mut conn)): NoApi<DbConnection>,
 ) -> Result<Json<LeaderboardResponse>, Response> {
     let today = Utc::now().date_naive();
     let week_start = get_week_start(today);
@@ -63,8 +66,6 @@ pub async fn leaderboard_page(
             (daily.entries, weekly.entries, all_time.entries, users)
         }
         _ => {
-            let mut conn = get_db_conn!(app_state);
-
             let daily_data = db_query!(
                 Leaderboard::get_by_period(&mut conn, "daily", today),
                 "Database error getting daily leaderboard"

@@ -1,10 +1,10 @@
 use std::env;
 
+use crate::db_query;
 use crate::models::user::User;
 use crate::state::AppState;
+use crate::utils::extractors::{AuthenticatedUser, DbConnection};
 use crate::utils::session::SessionManager;
-use crate::utils::auth::AuthenticatedUser;
-use crate::{db_query, get_db_conn};
 use aide::NoApi;
 use axum::Json;
 use axum::extract::State;
@@ -81,13 +81,10 @@ pub async fn settings_page(
 
 /// Handler for updating user settings
 pub async fn update_settings(
-    State(app_state): State<AppState>,
     NoApi(AuthenticatedUser(current_user)): NoApi<AuthenticatedUser>,
+    NoApi(DbConnection(mut conn)): NoApi<DbConnection>,
     Json(request): Json<UpdateSettingsRequest>,
 ) -> Result<Json<UpdateSettingsResponse>, Response> {
-
-    let mut conn = get_db_conn!(app_state);
-
     // update timezone if provided
     if let Some(ref timezone) = request.timezone {
         if timezone.parse::<Tz>().is_err() {

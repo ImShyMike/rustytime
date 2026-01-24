@@ -15,10 +15,10 @@ use serde::{Deserialize, Serialize};
 use std::env;
 use tower_cookies::Cookies;
 
-use crate::state::AppState;
+use crate::models::session::Session;
 use crate::utils::session::SessionManager;
-use crate::{get_db_conn, models::session::Session};
 use crate::{models::user::User, utils::env::is_production_env};
+use crate::{state::AppState, utils::extractors::DbConnection};
 use axum::Json;
 use tracing::error;
 
@@ -137,6 +137,7 @@ pub async fn login(
 pub async fn callback(
     State(app_state): State<AppState>,
     cookies: NoApi<Cookies>,
+    NoApi(DbConnection(mut conn)): NoApi<DbConnection>,
     Query(params): Query<AuthRequest>,
 ) -> Result<Redirect, Response> {
     let cookies = cookies.0;
@@ -202,9 +203,6 @@ pub async fn callback(
         }
     };
 
-    // get database connection
-    let mut conn = get_db_conn!(app_state);
-
     let (user, session) = match conn.transaction::<_, diesel::result::Error, _>(|conn| {
         // create or update user in database
         let user = User::create_or_update(
@@ -253,6 +251,7 @@ pub async fn callback(
 pub async fn verify_session(
     State(app_state): State<AppState>,
     Query(params): Query<serde_json::Value>,
+    NoApi(DbConnection(mut conn)): NoApi<DbConnection>,
     cookies: NoApi<Cookies>,
 ) -> Result<Json<VerifySessionResponse>, Response> {
     let cookies = cookies.0;
@@ -272,7 +271,6 @@ pub async fn verify_session(
     match SessionManager::validate_session(&app_state.db_pool, session_id).await {
         Ok(Some(session_data)) => {
             // get user details
-            let mut conn = get_db_conn!(app_state);
             let user = crate::schema::users::table
                 .find(session_data.user_id)
                 .first::<User>(&mut conn)
@@ -333,15 +331,12 @@ pub async fn verify_session(
 
 /// Handler to log out the user
 pub async fn logout(
-    State(app_state): State<AppState>,
+    NoApi(DbConnection(mut conn)): NoApi<DbConnection>,
     cookies: NoApi<Cookies>,
 ) -> Result<Response, Response> {
     let cookies = cookies.0;
     // get session from cookie
     if let Some(session_id) = SessionManager::get_session_from_cookies(&cookies) {
-        // delete session from database
-        let mut conn = get_db_conn!(app_state);
-
         diesel::delete(
             crate::schema::sessions::table.filter(crate::schema::sessions::id.eq(session_id)),
         )

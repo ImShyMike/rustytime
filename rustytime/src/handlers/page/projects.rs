@@ -1,12 +1,10 @@
+use crate::db_query;
 use crate::models::project::Project as ProjectModel;
-use crate::state::AppState;
+use crate::utils::extractors::{AuthenticatedUser, DbConnection};
 use crate::utils::time::{TimeFormat, human_readable_duration};
-use crate::utils::auth::AuthenticatedUser;
-use crate::{db_query, get_db_conn};
 use aide::NoApi;
 use axum::Json;
 use axum::{
-    extract::State,
     http::StatusCode,
     response::{IntoResponse, Response},
 };
@@ -32,13 +30,9 @@ pub struct ProjectsDashboardResponse {
 
 /// Handler for the projects dashboard page
 pub async fn projects_dashboard(
-    State(app_state): State<AppState>,
     NoApi(AuthenticatedUser(current_user)): NoApi<AuthenticatedUser>,
+    NoApi(DbConnection(mut conn)): NoApi<DbConnection>,
 ) -> Result<Json<ProjectsDashboardResponse>, Response> {
-
-    // get database connection
-    let mut conn = get_db_conn!(app_state);
-
     // get projects with total time
     let project_rows = db_query!(
         ProjectModel::list_projects_by_user_with_time(&mut conn, current_user.id),

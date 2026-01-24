@@ -1,9 +1,7 @@
 use aide::NoApi;
 use axum::Json;
 use axum::extract::Query;
-use axum::{
-    extract::State, http::StatusCode, response::IntoResponse, response::Response,
-};
+use axum::{extract::State, http::StatusCode, response::IntoResponse, response::Response};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -11,7 +9,7 @@ use crate::db_query;
 use crate::models::import_job::ImportJob;
 use crate::models::user::User;
 use crate::state::AppState;
-use crate::utils::auth::AuthenticatedUser;
+use crate::utils::extractors::AuthenticatedUser;
 
 #[derive(Deserialize, JsonSchema)]
 pub struct ImportsQuery {
@@ -55,7 +53,6 @@ pub async fn admin_imports(
     Query(query): Query<ImportsQuery>,
     NoApi(AuthenticatedUser(current_user)): NoApi<AuthenticatedUser>,
 ) -> Result<Json<AdminImportsResponse>, Response> {
-
     if !current_user.is_admin() {
         return Err((StatusCode::FORBIDDEN, "No permission").into_response());
     }

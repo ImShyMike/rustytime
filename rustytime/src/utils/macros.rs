@@ -17,17 +17,3 @@ macro_rules! db_query {
         })?
     };
 }
-
-#[macro_export]
-macro_rules! get_db_conn {
-    ($state:expr) => {
-        $state.db_pool.get().map_err(|_e| {
-            tracing::error!("❌ Failed to get database connection: {:?}", _e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Failed to get database connection",
-            )
-                .into_response()
-        })?
-    };
-}

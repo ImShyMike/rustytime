@@ -12,14 +12,14 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use tower_cookies::Cookies;
 
+use crate::db_query;
 use crate::models::heartbeat::Heartbeat;
 use crate::models::session::Session;
 use crate::models::user::{PartialUser, User};
 use crate::state::AppState;
 use crate::utils::cache::CachedAdminStats;
+use crate::utils::extractors::{AuthenticatedUser, DbConnection};
 use crate::utils::session::{ImpersonationContext, SessionManager};
-use crate::utils::auth::AuthenticatedUser;
-use crate::{db_query, get_db_conn};
 
 #[derive(Deserialize, JsonSchema)]
 pub struct AdminQuery {
@@ -56,8 +56,8 @@ pub async fn admin_dashboard(
     State(app_state): State<AppState>,
     Query(query): Query<AdminQuery>,
     NoApi(AuthenticatedUser(current_user)): NoApi<AuthenticatedUser>,
+    NoApi(DbConnection(mut conn)): NoApi<DbConnection>,
 ) -> Result<Json<AdminDashboardResponse>, Response> {
-
     if !current_user.is_admin() {
         return Err((StatusCode::FORBIDDEN, "No permission").into_response());
     }
@@ -70,8 +70,6 @@ pub async fn admin_dashboard(
     let daily_activity = if let Some(cached) = cached {
         cached.daily_activity
     } else {
-        let mut conn = get_db_conn!(app_state);
-
         let raw_daily_activity = db_query!(
             Heartbeat::get_daily_activity_last_week(&mut conn),
             "Failed to fetch daily activity"
@@ -86,8 +84,6 @@ pub async fn admin_dashboard(
 
         raw_daily_activity
     };
-
-    let mut conn = get_db_conn!(app_state);
 
     let total_heartbeats = db_query!(Heartbeat::total_heartbeat_count_estimate(&mut conn));
     let total_users = db_query!(User::count_total_users(&mut conn, false));
@@ -142,6 +138,7 @@ pub async fn impersonate_user(
     cookies: NoApi<Cookies>,
     impersonation: NoApi<Option<Extension<ImpersonationContext>>>,
     NoApi(AuthenticatedUser(session_user)): NoApi<AuthenticatedUser>,
+    NoApi(DbConnection(mut conn)): NoApi<DbConnection>,
 ) -> Result<StatusCode, Response> {
     let cookies = cookies.0;
     let impersonation = impersonation.0;
@@ -149,8 +146,6 @@ pub async fn impersonate_user(
     let Some(session_id) = SessionManager::get_session_from_cookies(&cookies) else {
         return Err((StatusCode::UNAUTHORIZED, "Session missing").into_response());
     };
-
-    let mut conn = get_db_conn!(app_state);
 
     let Some(session_data) = db_query!(
         SessionManager::validate_session(&app_state.db_pool, session_id).await,

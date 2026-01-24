@@ -1,13 +1,9 @@
-use axum::extract::{FromRequestParts, Query};
-use axum::http::request::Parts;
-use axum::http::StatusCode;
-use axum::Extension;
+use axum::extract::Query;
 use base64::prelude::*;
 use diesel::prelude::*;
 use serde::Deserialize;
 
 use crate::db::connection::DbPool;
-use crate::models::user::User;
 use crate::schema::users::dsl;
 
 /// Try to get API key from the "Authorization" header
@@ -76,23 +72,6 @@ pub async fn get_user_id_from_api_key(pool: &DbPool, api_key_value: &str) -> Opt
         .first(&mut conn)
         .ok()?;
     Some(user_id)
-}
-
-/// Custom extractor for authenticated users
-pub struct AuthenticatedUser(pub User);
-
-impl<S> FromRequestParts<S> for AuthenticatedUser
-where
-    S: Send + Sync,
-{
-    type Rejection = StatusCode;
-
-    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        Extension::<User>::from_request_parts(parts, state)
-            .await
-            .map(|Extension(user)| AuthenticatedUser(user))
-            .map_err(|_| StatusCode::UNAUTHORIZED)
-    }
 }
 
 #[cfg(test)]

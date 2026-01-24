@@ -1,10 +1,11 @@
+use crate::db_query;
+use crate::models::heartbeat::Heartbeat;
 use crate::models::heartbeat::{TimeRange, UsageStat};
 use crate::state::AppState;
 use crate::utils::cache::{CachedDashboardStats, DashboardCacheKey};
+use crate::utils::extractors::{AuthenticatedUser, DbConnection};
 use crate::utils::session::SessionManager;
 use crate::utils::time::{TimeFormat, human_readable_duration};
-use crate::utils::auth::AuthenticatedUser;
-use crate::{db_query, get_db_conn, models::heartbeat::Heartbeat};
 use aide::NoApi;
 use axum::{
     extract::{Query, State},
@@ -45,6 +46,7 @@ pub async fn dashboard(
     State(app_state): State<AppState>,
     cookies: NoApi<Cookies>,
     NoApi(AuthenticatedUser(user)): NoApi<AuthenticatedUser>,
+    NoApi(DbConnection(mut conn)): NoApi<DbConnection>,
     Query(query): Query<DashboardQuery>,
 ) -> Result<Json<DashboardResponse>, Response> {
     let cookies = cookies.0;
@@ -72,8 +74,6 @@ pub async fn dashboard(
     let (total_heartbeats, dashboard_stats) = if let Some(cached) = cached {
         (cached.heartbeat_count, cached.stats)
     } else {
-        let mut conn = get_db_conn!(app_state);
-
         let total_heartbeats = db_query!(
             Heartbeat::get_user_heartbeat_count_by_range(
                 &mut conn,

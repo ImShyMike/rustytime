@@ -1,12 +1,10 @@
+use crate::db_query;
 use crate::models::project::Project as ProjectModel;
-use crate::state::AppState;
-use crate::utils::auth::AuthenticatedUser;
-use crate::{db_query, get_db_conn};
+use crate::utils::extractors::{AuthenticatedUser, DbConnection};
 use aide::NoApi;
 use axum::Json;
 use axum::extract::Path;
 use axum::{
-    extract::State,
     http::StatusCode,
     response::{IntoResponse, Response},
 };
@@ -31,13 +29,9 @@ pub struct RepoUrlRequest {
 
 /// Handler for the projects list
 pub async fn projects_list(
-    State(app_state): State<AppState>,
     NoApi(AuthenticatedUser(current_user)): NoApi<AuthenticatedUser>,
+    NoApi(DbConnection(mut conn)): NoApi<DbConnection>,
 ) -> Result<Json<ProjectsListResponse>, Response> {
-
-    // get database connection
-    let mut conn = get_db_conn!(app_state);
-
     // get all projects
     let projects = db_query!(
         ProjectModel::list_user_projects(&mut conn, current_user.id),
@@ -54,15 +48,11 @@ pub async fn projects_list(
 }
 
 pub async fn set_project_repo(
-    State(app_state): State<AppState>,
     NoApi(AuthenticatedUser(current_user)): NoApi<AuthenticatedUser>,
+    NoApi(DbConnection(mut conn)): NoApi<DbConnection>,
     Path(project_id): Path<i32>,
     repo_url: Json<RepoUrlRequest>,
 ) -> Result<Response, Response> {
-
-    // get database connection
-    let mut conn = get_db_conn!(app_state);
-
     // validate the url if provided
     if let Some(url) = &repo_url.repo_url {
         let parsed = url::Url::parse(url).map_err(|_| {

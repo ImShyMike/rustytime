@@ -1,6 +1,7 @@
 pub mod auth;
 pub mod cache;
 pub mod env;
+pub mod extractors;
 pub mod http;
 pub mod macros;
 pub mod metrics;

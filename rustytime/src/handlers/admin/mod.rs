@@ -1,27 +1,22 @@
 use aide::NoApi;
 use axum::extract::Path;
 use axum::{
-    extract::State,
     http::StatusCode,
     response::{IntoResponse, Response},
 };
 
+use crate::db_query;
 use crate::models::user::User;
-use crate::state::AppState;
-use crate::utils::auth::AuthenticatedUser;
-use crate::{db_query, get_db_conn};
+use crate::utils::extractors::{AuthenticatedUser, DbConnection};
 
 pub async fn change_user_admin_level(
-    State(app_state): State<AppState>,
     Path((user_id, new_level)): Path<(i32, i16)>,
     NoApi(AuthenticatedUser(current_user)): NoApi<AuthenticatedUser>,
+    NoApi(DbConnection(mut conn)): NoApi<DbConnection>,
 ) -> Result<StatusCode, Response> {
-
     if !current_user.is_owner() {
         return Err((StatusCode::FORBIDDEN, "No permission").into_response());
     }
-
-    let mut conn = get_db_conn!(app_state);
 
     let Some(target_user) = db_query!(
         User::get_by_id(&mut conn, user_id),

@@ -1,10 +1,10 @@
 use aide::NoApi;
+use axum::Json;
 use axum::extract::Query;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::response::Response;
-use axum::Json;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;
@@ -15,8 +15,8 @@ use crate::db_query;
 use crate::jobs::import::enqueue_import;
 use crate::models::import_job::{ImportJob, ImportJobStatus};
 use crate::state::AppState;
+use crate::utils::extractors::AuthenticatedUser;
 use crate::utils::session::SessionManager;
-use crate::utils::auth::AuthenticatedUser;
 
 #[derive(Deserialize, JsonSchema)]
 pub struct ImportQuery {
@@ -67,7 +67,6 @@ pub async fn import_heartbeats(
     cookies: NoApi<Cookies>,
     NoApi(AuthenticatedUser(current_user)): NoApi<AuthenticatedUser>,
 ) -> Result<Json<ImportStartResponse>, Response> {
-
     let Some(session_id) = SessionManager::get_session_from_cookies(&cookies) else {
         return Err((StatusCode::UNAUTHORIZED, "User session is invalid").into_response());
     };
