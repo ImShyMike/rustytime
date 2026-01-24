@@ -38,9 +38,10 @@ fn git_sha() -> String {
         .ok();
 
     if let Some(status) = status
-        && !status.success() {
-            sha.push_str("-dirty");
-        }
+        && !status.success()
+    {
+        sha.push_str("-dirty");
+    }
 
     sha
 }
