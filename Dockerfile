@@ -22,9 +22,10 @@ WORKDIR /app
 # Copy only Cargo files first for dependency caching
 COPY rustytime/Cargo.toml rustytime/Cargo.lock ./rustytime/
 
-# Create a dummy main.rs to compile dependencies (for caching)
+# Create dummy source files to compile dependencies (for caching)
 RUN mkdir -p rustytime/src && \
-    echo "fn main() {}" > rustytime/src/main.rs
+    echo "fn main() {}" > rustytime/src/main.rs && \
+    echo "pub fn lib_main() {}" > rustytime/src/lib.rs
 
 WORKDIR /app/rustytime
 
