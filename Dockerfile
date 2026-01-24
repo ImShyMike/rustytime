@@ -8,7 +8,8 @@ RUN apk add --no-cache \
     openssl-libs-static \
     postgresql-dev \
     bash \
-    netcat-openbsd
+    netcat-openbsd \
+    git
 
 # Set environment variables
 ENV OPENSSL_STATIC=1
@@ -43,7 +44,9 @@ RUN rm -rf src/
 
 # Copy actual source code
 COPY rustytime/src ./src
+COPY rustytime/build.rs ./build.rs
 COPY rustytime/migrations ./migrations
+COPY .git ../.git
 
 # Build with actual source and copy binary out of cache
 RUN --mount=type=cache,target=/usr/local/cargo/registry \

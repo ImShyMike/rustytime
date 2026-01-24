@@ -3,7 +3,6 @@ target/
 rustytime/target/
 
 # Git and version control
-.git/
 .gitignore
 
 # Documentation
