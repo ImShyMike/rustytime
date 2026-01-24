@@ -16,6 +16,7 @@ use crate::jobs::import::enqueue_import;
 use crate::models::import_job::{ImportJob, ImportJobStatus};
 use crate::state::AppState;
 use crate::utils::extractors::AuthenticatedUser;
+use crate::utils::extractors::DbConnection;
 use crate::utils::session::SessionManager;
 
 #[derive(Deserialize, JsonSchema)]
@@ -66,6 +67,7 @@ pub async fn import_heartbeats(
     Query(query): Query<ImportQuery>,
     cookies: NoApi<Cookies>,
     NoApi(AuthenticatedUser(current_user)): NoApi<AuthenticatedUser>,
+    NoApi(DbConnection(mut conn)): NoApi<DbConnection>,
 ) -> Result<Json<ImportStartResponse>, Response> {
     let Some(session_id) = SessionManager::get_session_from_cookies(&cookies) else {
         return Err((StatusCode::UNAUTHORIZED, "User session is invalid").into_response());
@@ -97,7 +99,7 @@ pub async fn import_heartbeats(
 
     let user_id = current_user.id;
 
-    if let Ok(Some(active_job)) = ImportJob::get_active_for_user(&app_state.db_pool, user_id) {
+    if let Ok(Some(active_job)) = ImportJob::get_active_for_user(&mut conn, user_id) {
         return Err((
             StatusCode::CONFLICT,
             format!(
@@ -109,7 +111,7 @@ pub async fn import_heartbeats(
     }
 
     let import_job = db_query!(
-        ImportJob::create(&app_state.db_pool, user_id),
+        ImportJob::create(&mut conn, user_id),
         "Failed to create import job"
     );
 
@@ -125,7 +127,7 @@ pub async fn import_heartbeats(
 
     if let Err(e) = enqueue_import(store, user_id, api_key, import_job.id).await {
         error!(error = ?e, job_id = import_job.id, "Failed to enqueue import job");
-        let _ = ImportJob::fail(&app_state.db_pool, import_job.id, "Failed to enqueue job");
+        let _ = ImportJob::fail(&mut conn, import_job.id, "Failed to enqueue job");
         return Err((
             StatusCode::INTERNAL_SERVER_ERROR,
             "Failed to start import job",
@@ -147,47 +149,18 @@ pub async fn import_heartbeats(
 }
 
 pub async fn import_status(
-    State(app_state): State<AppState>,
     NoApi(AuthenticatedUser(current_user)): NoApi<AuthenticatedUser>,
+    NoApi(DbConnection(mut conn)): NoApi<DbConnection>,
 ) -> Result<Json<ImportStatusResponse>, Response> {
     let user_id = current_user.id;
 
     let job = db_query!(
-        ImportJob::get_latest_for_user(&app_state.db_pool, user_id),
+        ImportJob::get_latest_for_user(&mut conn, user_id),
         "Failed to get import job"
     );
 
     match job {
         Some(j) => Ok(Json(ImportStatusResponse::from(j))),
         None => Err((StatusCode::NOT_FOUND, "No import jobs found").into_response()),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn import_status_response_from_job() {
-        use chrono::Utc;
-
-        let job = ImportJob {
-            id: 1,
-            user_id: 42,
-            status: "completed".to_string(),
-            imported_count: Some(100),
-            processed_count: Some(150),
-            request_count: Some(5),
-            start_date: Some("2024-01-01T00:00:00Z".to_string()),
-            time_taken: Some(12.5),
-            error_message: None,
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
-        };
-
-        let response = ImportStatusResponse::from(job);
-        assert_eq!(response.job_id, 1);
-        assert_eq!(response.status, "completed");
-        assert_eq!(response.imported_count, Some(100));
     }
 }

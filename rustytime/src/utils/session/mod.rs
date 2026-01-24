@@ -126,25 +126,6 @@ impl SessionManager {
         cookie_builder.build()
     }
 
-    /// Check if user is authenticated
-    #[allow(dead_code)]
-    #[inline(always)]
-    pub async fn is_authenticated(cookies: &Cookies, pool: &DbPool) -> bool {
-        matches!(Self::resolve_session(cookies, pool).await, Ok(Some(_)))
-    }
-
-    /// Try to get the current user using the session cookie
-    #[allow(dead_code)]
-    #[inline(always)]
-    pub async fn get_current_user(
-        cookies: &Cookies,
-        pool: &DbPool,
-    ) -> Result<Option<User>, diesel::result::Error> {
-        Ok(Self::resolve_session(cookies, pool)
-            .await?
-            .map(|resolved| resolved.user))
-    }
-
     pub async fn resolve_session(
         cookies: &Cookies,
         pool: &DbPool,
@@ -188,28 +169,4 @@ impl SessionManager {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn create_session_cookie_sets_secure_attributes_in_production() {
-        let session_id = Uuid::new_v4();
-        let cookie = SessionManager::create_session_cookie(session_id);
-        if is_production_env() {
-            assert!(cookie.secure().unwrap_or(false));
-            assert_eq!(cookie.domain().unwrap_or(""), ".shymike.dev");
-            assert_eq!(cookie.same_site().unwrap_or(SameSite::Lax), SameSite::Lax);
-        } else {
-            assert!(!cookie.secure().unwrap_or(true));
-        }
-    }
-
-    #[test]
-    fn get_session_from_cookies_parses_uuid() {
-        let session_id = Uuid::new_v4();
-        let cookies = Cookies::default();
-        cookies.add(Cookie::new(SESSION_COOKIE_NAME, session_id.to_string()));
-        let extracted = SessionManager::get_session_from_cookies(&cookies);
-        assert_eq!(extracted, Some(session_id));
-    }
-}
+mod tests;

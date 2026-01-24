@@ -120,6 +120,8 @@ async fn run_import(job: ImportJob, pool: Data<DbPool>) -> Result<String, BoxDyn
 
     let elapsed = started.elapsed();
 
+    let conn = &mut *pool.get().expect("Failed to get DB connection from pool");
+
     match result {
         Ok((imported, processed, requests, earliest_requested)) => {
             let start_date = earliest_requested
@@ -127,7 +129,7 @@ async fn run_import(job: ImportJob, pool: Data<DbPool>) -> Result<String, BoxDyn
                 .unwrap_or_else(|| cutoff.to_rfc3339_opts(SecondsFormat::Millis, true));
 
             if let Err(e) = ImportJobModel::complete(
-                &pool,
+                conn,
                 job_id,
                 imported as i64,
                 processed as i64,
@@ -154,7 +156,7 @@ async fn run_import(job: ImportJob, pool: Data<DbPool>) -> Result<String, BoxDyn
             ))
         }
         Err(error_message) => {
-            if let Err(e) = ImportJobModel::fail(&pool, job_id, &error_message) {
+            if let Err(e) = ImportJobModel::fail(conn, job_id, &error_message) {
                 error!(error = ?e, "Failed to update import job as failed");
             }
 

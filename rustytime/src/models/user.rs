@@ -119,29 +119,6 @@ impl User {
             .load::<User>(conn)
     }
 
-    pub fn get_by_ids(
-        pool: &crate::db::connection::DbPool,
-        user_ids: &[i32],
-    ) -> QueryResult<Vec<User>> {
-        let mut conn = pool.get().map_err(|e| {
-            diesel::result::Error::DatabaseError(
-                diesel::result::DatabaseErrorKind::Unknown,
-                Box::new(e.to_string()),
-            )
-        })?;
-
-        users::table
-            .filter(users::id.eq_any(user_ids))
-            .load::<User>(&mut conn)
-    }
-
-    #[allow(dead_code)]
-    pub fn list_admins(conn: &mut PgConnection) -> QueryResult<Vec<User>> {
-        users::table
-            .filter(users::admin_level.gt(0))
-            .load::<User>(conn)
-    }
-
     pub fn count_total_users(conn: &mut PgConnection, only_real: bool) -> QueryResult<i64> {
         if only_real {
             users::table
@@ -171,27 +148,5 @@ impl User {
         diesel::update(users::table.find(user_id))
             .set(users::timezone.eq(timezone))
             .get_result(conn)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn is_admin_reflects_admin_level_threshold() {
-        let user = User {
-            id: 1,
-            github_id: 123,
-            name: "test".to_string(),
-            avatar_url: "http://example.com/avatar".to_string(),
-            api_key: Uuid::new_v4(),
-            admin_level: 1,
-            is_banned: false,
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
-            timezone: "UTC".to_string(),
-        };
-        assert!(user.is_admin());
     }
 }

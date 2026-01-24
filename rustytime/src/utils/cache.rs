@@ -51,6 +51,7 @@ impl AppCache {
                 Cache::builder()
                     .max_capacity(1_000)
                     .time_to_live(Duration::from_secs(300)) // 5 minute TTL
+                    .support_invalidation_closures()
                     .build(),
             ),
             leaderboard: Arc::new(

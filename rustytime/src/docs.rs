@@ -1,3 +1,5 @@
+use std::env;
+
 use aide::openapi::{
     ApiKeyLocation, Components, License, OpenApi, ReferenceOr, SecurityScheme, Server, Tag,
 };
@@ -20,7 +22,7 @@ pub fn get_openapi_docs() -> OpenApi {
 
     openapi.servers = vec![
         Server {
-            url: "https://api-rustytime.shymike.dev".into(),
+            url: env::var("PUBLIC_BACKEND_API_URL").unwrap_or_else(|_| "https://api-rustytime.shymike.dev".into()),
             description: Some("Production deployment".into()),
             ..Default::default()
         },

@@ -96,11 +96,6 @@ impl Session {
         diesel::delete(sessions::table.filter(dsl::user_id.eq(user_id))).execute(conn)
     }
 
-    #[allow(dead_code)]
-    pub fn is_expired(&self) -> bool {
-        self.expires_at < Utc::now()
-    }
-
     pub fn impersonate(
         conn: &mut PgConnection,
         session_id: Uuid,

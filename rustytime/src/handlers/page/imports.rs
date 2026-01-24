@@ -1,15 +1,14 @@
 use aide::NoApi;
 use axum::Json;
 use axum::extract::Query;
-use axum::{extract::State, http::StatusCode, response::IntoResponse, response::Response};
+use axum::{http::StatusCode, response::IntoResponse, response::Response};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::db_query;
 use crate::models::import_job::ImportJob;
-use crate::models::user::User;
-use crate::state::AppState;
-use crate::utils::extractors::AuthenticatedUser;
+use crate::models::import_job::ImportJobWithUser;
+use crate::utils::extractors::{AuthenticatedUser, DbConnection};
 
 #[derive(Deserialize, JsonSchema)]
 pub struct ImportsQuery {
@@ -24,23 +23,6 @@ fn default_limit() -> i64 {
 }
 
 #[derive(Serialize, JsonSchema)]
-pub struct ImportJobWithUser {
-    pub id: i64,
-    pub user_id: i32,
-    pub user_name: Option<String>,
-    pub user_avatar_url: Option<String>,
-    pub status: String,
-    pub imported_count: Option<i64>,
-    pub processed_count: Option<i64>,
-    pub request_count: Option<i32>,
-    pub start_date: Option<String>,
-    pub time_taken: Option<f64>,
-    pub error_message: Option<String>,
-    pub created_at: String,
-    pub updated_at: String,
-}
-
-#[derive(Serialize, JsonSchema)]
 pub struct AdminImportsResponse {
     pub imports: Vec<ImportJobWithUser>,
     pub total: i64,
@@ -49,11 +31,11 @@ pub struct AdminImportsResponse {
 }
 
 pub async fn admin_imports(
-    State(app_state): State<AppState>,
     Query(query): Query<ImportsQuery>,
     NoApi(AuthenticatedUser(current_user)): NoApi<AuthenticatedUser>,
+    NoApi(DbConnection(mut conn)): NoApi<DbConnection>,
 ) -> Result<Json<AdminImportsResponse>, Response> {
-    if !current_user.is_admin() {
+    if !current_user.is_owner() {
         return Err((StatusCode::FORBIDDEN, "No permission").into_response());
     }
 
@@ -61,42 +43,14 @@ pub async fn admin_imports(
     let offset = query.offset.max(0);
 
     let total = db_query!(
-        ImportJob::count_all(&app_state.db_pool),
+        ImportJob::count_all(&mut conn),
         "Failed to count import jobs"
     );
 
-    let jobs = db_query!(
-        ImportJob::get_all(&app_state.db_pool, limit, offset),
+    let imports = db_query!(
+        ImportJob::get_all_with_users(&mut conn, limit, offset),
         "Failed to fetch import jobs"
     );
-
-    let user_ids: Vec<i32> = jobs.iter().map(|j| j.user_id).collect();
-    let users = db_query!(
-        User::get_by_ids(&app_state.db_pool, &user_ids),
-        "Failed to fetch users"
-    );
-
-    let imports: Vec<ImportJobWithUser> = jobs
-        .into_iter()
-        .map(|job| {
-            let user = users.iter().find(|u| u.id == job.user_id);
-            ImportJobWithUser {
-                id: job.id,
-                user_id: job.user_id,
-                user_name: user.map(|u| u.name.clone()),
-                user_avatar_url: user.map(|u| u.avatar_url.clone()),
-                status: job.status,
-                imported_count: job.imported_count,
-                processed_count: job.processed_count,
-                request_count: job.request_count,
-                start_date: job.start_date,
-                time_taken: job.time_taken,
-                error_message: job.error_message,
-                created_at: job.created_at.to_rfc3339(),
-                updated_at: job.updated_at.to_rfc3339(),
-            }
-        })
-        .collect();
 
     Ok(Json(AdminImportsResponse {
         imports,

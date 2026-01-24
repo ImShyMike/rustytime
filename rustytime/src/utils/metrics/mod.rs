@@ -66,3 +66,6 @@ impl MetricsTracker {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;
