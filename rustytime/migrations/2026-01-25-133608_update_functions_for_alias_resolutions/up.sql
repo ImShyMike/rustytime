@@ -84,7 +84,7 @@ CREATE OR REPLACE FUNCTION list_projects_with_time(
 ) AS $$
     WITH project_totals AS (
         SELECT
-            par.resolved_project_id AS project_id,
+            resolved_project_id AS project_id,
             SUM(
                 CASE
                     WHEN prev_time IS NULL THEN 0
@@ -105,9 +105,7 @@ CREATE OR REPLACE FUNCTION list_projects_with_time(
             WHERE h.user_id = p_user_id
               AND h.project_id IS NOT NULL
         ) resolved_with_lag
-        JOIN project_alias_resolutions par 
-            ON par.user_id = p_user_id AND par.resolved_project_id = resolved_with_lag.resolved_project_id
-        GROUP BY par.resolved_project_id
+        GROUP BY resolved_project_id
     )
     SELECT
         p.id,
