@@ -83,6 +83,7 @@ pub async fn add_project_alias(
     );
 
     app_state.cache.invalidate_user_dashboard(current_user.id);
+    app_state.cache.invalidate_user_projects(current_user.id);
 
     Ok(StatusCode::CREATED)
 }
@@ -99,6 +100,7 @@ pub async fn delete_project_alias(
     );
 
     app_state.cache.invalidate_user_dashboard(current_user.id);
+    app_state.cache.invalidate_user_projects(current_user.id);
 
     Ok(StatusCode::OK)
 }
