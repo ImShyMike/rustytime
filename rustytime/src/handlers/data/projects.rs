@@ -60,7 +60,8 @@ pub async fn update_project(
     Path(project_id): Path<i32>,
     Json(request): Json<UpdateProjectRequest>,
 ) -> Result<Response, Response> {
-    let mut changed = false;
+    let mut cache_hidden: Option<bool> = None;
+    let mut cache_project_url: Option<Option<String>> = None;
 
     // validate and set project_url if provided
     if let Some(ref url) = request.project_url {
@@ -102,7 +103,7 @@ pub async fn update_project(
             "Failed to set project URL"
         );
 
-        changed = true;
+        cache_project_url = Some(project_url_value);
     }
 
     // set hidden if provided
@@ -112,11 +113,16 @@ pub async fn update_project(
             "Failed to set project hidden status"
         );
 
-        changed = true;
+        cache_hidden = Some(hidden);
     }
 
-    if changed {
-        state.cache.invalidate_user_projects(current_user.id);
+    if cache_hidden.is_some() || cache_project_url.is_some() {
+        state.cache.update_project_settings(
+            current_user.id,
+            project_id,
+            cache_hidden,
+            cache_project_url,
+        );
     }
 
     Ok(StatusCode::OK.into_response())

@@ -97,6 +97,28 @@ impl AppCache {
     pub fn invalidate_user_projects(&self, user_id: i32) {
         self.projects.invalidate(&ProjectsCacheKey { user_id });
     }
+
+    pub fn update_project_settings(
+        &self,
+        user_id: i32,
+        project_id: i32,
+        hidden: Option<bool>,
+        project_url: Option<Option<String>>,
+    ) {
+        let cache_key = ProjectsCacheKey { user_id };
+
+        if let Some(mut projects) = self.projects.get(&cache_key) {
+            if let Some(project) = projects.iter_mut().find(|p| p.id == project_id) {
+                if let Some(h) = hidden {
+                    project.hidden = h;
+                }
+                if let Some(url) = project_url {
+                    project.project_url = url;
+                }
+            }
+            self.projects.insert(cache_key, projects);
+        }
+    }
 }
 
 impl Default for AppCache {
