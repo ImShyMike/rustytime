@@ -77,12 +77,6 @@
 	{#if manifest}
 		<link rel="manifest" href={manifest} />
 	{/if}
-	<script
-		defer
-		src="https://umami.shy.rip/cat.js"
-		data-do-not-track="false"
-		data-website-id="f5a98829-9a50-48c5-9a99-a048ddf4c821"
-	></script>
 </svelte:head>
 
 {#if renderChildren}
