@@ -14,7 +14,6 @@
 		IconButton
 	} from '$lib';
 	import LucideTrash2 from '~icons/lucide/trash-2';
-	import LucidePlus from '~icons/lucide/plus';
 	import LucideLoader2 from '~icons/lucide/loader-2';
 	import { onMount } from 'svelte';
 	import { createApi } from '$lib/api/api';
@@ -143,7 +142,7 @@
 
 	let savedTimezone = $state<string>('UTC');
 	let selectedTimezone = $state<string>('UTC');
-	let isSavingTimezone = $state(false);
+	let isSaving = $state(false);
 	let timezoneError: string | null = $state(null);
 	let timezoneSuccess = $state(false);
 	const hasTimezoneChanged = $derived(selectedTimezone !== savedTimezone);
@@ -170,7 +169,7 @@
 	async function handleTimezoneChange() {
 		if (selectedTimezone === savedTimezone) return;
 
-		isSavingTimezone = true;
+		isSaving = true;
 		timezoneError = null;
 		timezoneSuccess = false;
 
@@ -185,7 +184,7 @@
 			console.error('Failed to update settings:', error);
 			timezoneError = error instanceof Error ? error.message : 'Failed to update settings';
 		} finally {
-			isSavingTimezone = false;
+			isSaving = false;
 		}
 	}
 
@@ -313,22 +312,22 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 				<div class="space-y-4">
 					<div class="bg-ctp-surface0/40 border border-ctp-surface1 rounded-lg p-4 space-y-3">
 						<div class="flex flex-col sm:flex-row gap-3 items-end">
-							<div class="flex-1">
+							<div class="flex-1 w-full">
 								<Select
 									id="timezone"
 									label="Timezone"
 									options={timezoneOptions}
 									bind:value={selectedTimezone}
-									disabled={isSavingTimezone}
+									disabled={isSaving}
 									className="w-full"
 								/>
 							</div>
 							<Button
 								onClick={handleTimezoneChange}
-								disabled={isSavingTimezone || !hasTimezoneChanged}
-								className="inline-flex items-center gap-2 whitespace-nowrap"
+								disabled={isSaving || !hasTimezoneChanged}
+								className="w-full sm:w-auto inline-flex items-center gap-2 whitespace-nowrap"
 							>
-								{#if isSavingTimezone}
+								{#if isSaving}
 									<LucideLoader2 class="w-4 h-4 animate-spin" />
 									<span>Saving…</span>
 								{:else}
@@ -464,9 +463,8 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 								<Button
 									onClick={handleAddAlias}
 									disabled={!selectedMainProject || !selectedAliasProject || isAddingAlias}
-									className="inline-flex items-center gap-2 px-4 py-2 whitespace-nowrap"
+									className="w-full sm:w-auto inline-flex items-center gap-2 whitespace-nowrap"
 								>
-									<LucidePlus class="w-4 h-4" />
 									Add
 								</Button>
 							</div>
@@ -550,7 +548,7 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 							<Button
 								onClick={handleHackatimeImport}
 								disabled={isStartingImport || isImportActive || !isValidHackatimeApiKey}
-								className="inline-flex items-center gap-2 whitespace-nowrap"
+								className="w-full sm:w-auto inline-flex items-center gap-2 whitespace-nowrap"
 							>
 								{#if isStartingImport}
 									<LucideLoader2 class="w-4 h-4 animate-spin" />
