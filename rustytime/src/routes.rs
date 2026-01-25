@@ -6,7 +6,7 @@ use crate::handlers::data::import::{import_heartbeats, import_status};
 use crate::handlers::data::project_aliases::{
     add_project_alias, delete_project_alias, project_aliases,
 };
-use crate::handlers::data::projects::{projects_list, set_project_repo};
+use crate::handlers::data::projects::{projects_list, update_project};
 use crate::handlers::github::{callback, login, logout, verify_session};
 use crate::handlers::homepage::home_page;
 use crate::handlers::info::info;
@@ -162,11 +162,11 @@ pub fn create_app_router(
                                 .tag("Data")
                                 .security_requirement("Authenticated")
                         }))
-                        .api_route("/projects/{id}/repo", post_with(set_project_repo, |op| {
-                            op.id("set_project_repo")
-                                .summary("Set Project Repository")
+                        .api_route("/projects/{id}", put_with(update_project, |op| {
+                            op.id("update_project")
+                                .summary("Update Project")
                                 .description(
-                                    "Sets the repository URL for the specified project.",
+                                    "Updates the specified project's settings (repo_url, hidden).",
                                 )
                                 .tag("Data")
                                 .security_requirement("Authenticated")

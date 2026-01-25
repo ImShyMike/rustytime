@@ -1,6 +1,7 @@
 use crate::db_query;
 use crate::models::project::Project as ProjectModel;
 use crate::state::AppState;
+use crate::utils::cache::ProjectsCacheKey;
 use crate::utils::extractors::{AuthenticatedUser, DbConnection};
 use crate::utils::time::{TimeFormat, human_readable_duration};
 use aide::NoApi;
@@ -18,9 +19,10 @@ pub struct Project {
     pub id: i32,
     pub user_id: i32,
     pub name: String,
-    pub repo_url: Option<String>,
+    pub project_url: Option<String>,
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,
     pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub hidden: bool,
     pub total_seconds: i64,
     pub human_readable_total: String,
 }
@@ -36,7 +38,7 @@ pub async fn projects_dashboard(
     NoApi(AuthenticatedUser(current_user)): NoApi<AuthenticatedUser>,
     NoApi(DbConnection(mut conn)): NoApi<DbConnection>,
 ) -> Result<Json<ProjectsDashboardResponse>, Response> {
-    let cache_key = crate::utils::cache::ProjectsCacheKey {
+    let cache_key = ProjectsCacheKey {
         user_id: current_user.id,
     };
 
@@ -56,9 +58,10 @@ pub async fn projects_dashboard(
                     id: proj.id,
                     user_id: proj.user_id,
                     name: proj.name,
-                    repo_url: proj.repo_url,
+                    project_url: proj.project_url,
                     created_at: proj.created_at,
                     updated_at: proj.updated_at,
+                    hidden: proj.hidden,
                     total_seconds: time,
                     human_readable_total: human_readable_duration(time, TimeFormat::NoDays)
                         .human_readable,

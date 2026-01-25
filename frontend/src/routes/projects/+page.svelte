@@ -16,6 +16,10 @@
 	import LucideGithub from '~icons/lucide/github';
 	import LucideExternalLink from '~icons/lucide/external-link';
 	import LucidePencilLine from '~icons/lucide/pencil-line';
+	import LucideEye from '~icons/lucide/eye';
+	import LucideEyeOff from '~icons/lucide/eye-off';
+	import { createApi } from '$lib/api/api';
+	import { updateProject } from '$lib/api/project';
 	import StatCard from '$lib/components/ui/StatCard.svelte';
 	import { formatRelativeTime, creationDateFormatter } from '$lib/utils/time';
 	import RelativeTime from '$lib/components/ui/RelativeTime.svelte';
@@ -31,7 +35,7 @@
 		createdAtFormatted: string;
 		lastUpdated: Date | null;
 		lastUpdatedExact: string | null;
-		repoLabel: string | null;
+		urlLabel: string | null;
 	};
 
 	type SortOption = 'time' | 'recentUpdate' | 'recentCreate' | 'name';
@@ -49,10 +53,12 @@
 
 	let searchQuery = $state('');
 	let sortOption = $state<SortOption>('time');
+	let showHidden = $state(false);
 
 	const resetFilters = () => {
 		searchQuery = '';
 		sortOption = 'time';
+		showHidden = true;
 	};
 
 	const refreshProjectsData = async () => {
@@ -61,6 +67,13 @@
 
 	let editingProject = $state<Project | null>(null);
 	let lastUpdatedAt = $state(new Date());
+
+	const api = createApi(fetch);
+
+	async function toggleProjectHidden(project: Project) {
+		await updateProject(api, project.id, { hidden: !project.hidden });
+		await refreshProjectsData();
+	}
 
 	setupVisibilityRefresh({
 		refresh: refreshProjectsData,
@@ -75,9 +88,9 @@
 		}
 	});
 
-	const formatRepoLabel = (repoUrl: string): string => {
+	const formatUrlLabel = (projectUrl: string): string => {
 		try {
-			const url = new URL(repoUrl);
+			const url = new URL(projectUrl);
 
 			if (url.hostname.includes('github.com') && url.pathname) {
 				return url.pathname.replace(/^\/+/, '').replace(/\.git$/u, '');
@@ -85,7 +98,7 @@
 
 			return url.hostname;
 		} catch {
-			return repoUrl;
+			return projectUrl;
 		}
 	};
 
@@ -108,7 +121,7 @@
 				lastUpdated: isUpdatedAtValid && updatedDate ? updatedDate : null,
 				lastUpdatedExact:
 					isUpdatedAtValid && updatedDate ? creationDateFormatter.format(updatedDate) : null,
-				repoLabel: project.repo_url ? formatRepoLabel(project.repo_url) : null
+				urlLabel: project.project_url ? formatUrlLabel(project.project_url) : null
 			} satisfies EnhancedProject;
 		});
 	});
@@ -135,16 +148,26 @@
 		const normalizedQuery = searchQuery.trim().toLowerCase();
 
 		const filtered = enhancedProjects.filter((project) => {
+			if (!showHidden && project.hidden) {
+				return false;
+			}
+
 			if (!normalizedQuery) {
 				return true;
 			}
 
-			const fullText = `${project.name} ${project.repoLabel ?? ''}`.toLowerCase();
+			const fullText = `${project.name} ${project.urlLabel ?? ''}`.toLowerCase();
 			return fullText.includes(normalizedQuery);
 		});
 
 		const comparator = sortComparators[sortOption] ?? sortComparators.time;
-		return filtered.sort(comparator);
+
+		return filtered.sort((a, b) => {
+			if (a.hidden !== b.hidden) {
+				return a.hidden ? 1 : -1;
+			}
+			return comparator(a, b);
+		});
 	});
 
 	const lastUpdatedProject = $derived.by<EnhancedProject | null>(() => {
@@ -168,13 +191,14 @@
 			: 'Awaiting activity';
 	});
 
-	const projectCount = $derived(enhancedProjects.length);
-	const repoCount = $derived(
-		enhancedProjects.filter((project) => Boolean(project.repo_url)).length
+	const projectCount = $derived(formattedProjects.length);
+	const urlCount = $derived(
+		formattedProjects.filter((project) => Boolean(project.project_url)).length
 	);
+	const hiddenCount = $derived(enhancedProjects.filter((project) => project.hidden).length);
 	const hasProjects = $derived(projectCount > 0);
 	const hasActiveFilters = $derived.by(() => {
-		return Boolean(searchQuery.trim());
+		return Boolean(searchQuery.trim()) || !showHidden;
 	});
 </script>
 
@@ -201,8 +225,8 @@
 			<div class="grid grid-cols-1 gap-4 mb-4 sm:grid-cols-2">
 				<StatCard
 					title="Total projects"
-					value={formattedProjects.length}
-					subvalue="{repoCount} with repositories"
+					value={projectCount}
+					subvalue="{urlCount} with project URLs"
 				/>
 
 				{#if lastUpdatedProject}
@@ -216,26 +240,52 @@
 
 			<!-- Filters and search -->
 			<Container className="flex flex-col mb-4 gap-4">
-				<div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+				<div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
 					<label class="flex flex-col gap-1 text-sm text-ctp-subtext0 flex-1">
 						<span class="text-xs uppercase tracking-wide text-ctp-overlay1">Search</span>
 						<SearchInput
 							bind:value={searchQuery}
-							placeholder="Search by name or repo"
+							placeholder="Search by name or URL"
 							oninput={(val) => {
 								searchQuery = val;
 							}}
 						/>
 					</label>
 
-					<Select
-						bind:value={sortOption}
-						options={sortOptions}
-						label="Sort by"
-						onchange={(val) => {
-							sortOption = val;
-						}}
-					/>
+					<div class="flex flex-col sm:flex-row items-stretch sm:items-end gap-4">
+						{#if hiddenCount > 0}
+							<div class="flex flex-col gap-1 flex-1">
+								<span class="text-xs uppercase tracking-wide text-ctp-overlay1">Visibility</span>
+								<Button
+									variant="secondary"
+									size="md"
+									className="min-w-42.5"
+									onClick={() => {
+										showHidden = !showHidden;
+									}}
+								>
+									{#if showHidden}
+										<LucideEyeOff class="h-4 w-4" />
+										<span>Hide hidden ({hiddenCount})</span>
+									{:else}
+										<LucideEye class="h-4 w-4" />
+										<span>Show hidden ({hiddenCount})</span>
+									{/if}
+								</Button>
+							</div>
+						{/if}
+
+						<div class="flex-1">
+							<Select
+								bind:value={sortOption}
+								options={sortOptions}
+								label="Sort by"
+								onchange={(val) => {
+									sortOption = val;
+								}}
+							/>
+						</div>
+					</div>
 				</div>
 			</Container>
 
@@ -243,24 +293,43 @@
 			{#if formattedProjects.length}
 				<div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
 					{#each formattedProjects as project (project.id)}
-						<Container className="flex h-full flex-col gap-2">
+						<Container className="flex h-full flex-col gap-2 {project.hidden ? 'opacity-50' : ''}">
 							<div class="flex items-start justify-between gap-3">
 								<div class="flex items-center gap-3">
 									<SectionTitle level="h2" size="md" className="text-ctp-text"
 										>{noUnknownText(project.name)}</SectionTitle
 									>
+									{#if project.hidden}
+										<span class="text-xs px-2 py-0.5 rounded bg-ctp-surface0 text-ctp-subtext0"
+											>Hidden</span
+										>
+									{/if}
 								</div>
 
-								<IconButton
-									variant="ghost"
-									size="sm"
-									title="Edit Project"
-									onclick={() => {
-										editingProject = project;
-									}}
-								>
-									<LucidePencilLine class="h-4 w-4" />
-								</IconButton>
+								<div class="flex items-center gap-1">
+									<IconButton
+										variant="ghost"
+										size="sm"
+										title={project.hidden ? 'Unhide Project' : 'Hide Project'}
+										onclick={() => toggleProjectHidden(project)}
+									>
+										{#if project.hidden}
+											<LucideEye class="h-4 w-4" />
+										{:else}
+											<LucideEyeOff class="h-4 w-4" />
+										{/if}
+									</IconButton>
+									<IconButton
+										variant="ghost"
+										size="sm"
+										title="Edit Project"
+										onclick={() => {
+											editingProject = project;
+										}}
+									>
+										<LucidePencilLine class="h-4 w-4" />
+									</IconButton>
+								</div>
 							</div>
 
 							<div class="flex flex-col justify-between h-full gap-3 text-sm text-ctp-subtext1">
@@ -268,19 +337,19 @@
 									>{project.human_readable_total}</span
 								>
 
-								{#if project.repo_url}
+								{#if project.project_url}
 									<a
-										href={project.repo_url}
+										href={project.project_url}
 										class="group flex items-center gap-1 text-sm font-medium text-ctp-blue hover:text-ctp-blue-400"
 										target="_blank"
 										rel="noopener noreferrer external"
 									>
-										{#if project.repo_url.includes('github.com')}
+										{#if project.project_url.includes('github.com')}
 											<LucideGithub class="h-4 w-4" aria-hidden="true" />
 										{:else}
 											<LucideExternalLink class="h-4 w-4" aria-hidden="true" />
 										{/if}
-										<span>{safeText(project.repoLabel || '')}</span>
+										<span>{safeText(project.urlLabel || '')}</span>
 									</a>
 								{/if}
 

@@ -1,8 +1,13 @@
 import type { FullProjectListResponse, ProjectAliasesResponse } from '$lib/types/projects';
 import type { Api } from './api';
 
-export async function setRepoUrl(api: Api, id: number, url: string | null) {
-	await api.post<void>(`/data/projects/${id}/repo`, { repo_url: url });
+export interface UpdateProjectRequest {
+	project_url?: string;
+	hidden?: boolean;
+}
+
+export async function updateProject(api: Api, id: number, updates: UpdateProjectRequest) {
+	await api.put<void>(`/data/projects/${id}`, updates);
 }
 
 export async function getProjectAliases(api: Api) {

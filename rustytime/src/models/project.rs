@@ -5,7 +5,7 @@ use crate::utils::cache::HeartbeatProjectCacheKey;
 use diesel::QueryableByName;
 use diesel::insert_into;
 use diesel::prelude::*;
-use diesel::sql_types::{BigInt, Int4, Nullable as SqlNullable, Text, Timestamptz};
+use diesel::sql_types::{BigInt, Bool, Int4, Nullable as SqlNullable, Text, Timestamptz};
 use moka::sync::Cache;
 use once_cell::sync::Lazy;
 
@@ -50,9 +50,12 @@ pub struct Project {
     pub id: i32,
     pub user_id: i32,
     pub name: String,
+    #[allow(dead_code)]
     pub repo_url: Option<String>,
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,
     pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub hidden: bool,
+    pub project_url: Option<String>,
 }
 
 #[derive(QueryableByName)]
@@ -71,6 +74,10 @@ struct ProjectWithTimeRow {
     updated_at: Option<chrono::DateTime<chrono::Utc>>,
     #[diesel(sql_type = BigInt)]
     total_seconds: i64,
+    #[diesel(sql_type = Bool)]
+    hidden: bool,
+    #[diesel(sql_type = SqlNullable<Text>)]
+    project_url: Option<String>,
 }
 
 pub fn get_or_create_project_id(
@@ -129,11 +136,11 @@ impl Project {
             .load::<Project>(conn)
     }
 
-    pub fn set_repo_url(
+    pub fn set_project_url(
         conn: &mut PgConnection,
         project_id_param: i32,
         user_id_param: i32,
-        new_repo_url: &Option<String>,
+        new_project_url: &Option<String>,
     ) -> QueryResult<()> {
         use crate::schema::projects::dsl::*;
 
@@ -142,7 +149,7 @@ impl Project {
                 .filter(id.eq(project_id_param))
                 .filter(user_id.eq(user_id_param)),
         )
-        .set(repo_url.eq(new_repo_url))
+        .set(project_url.eq(new_project_url))
         .execute(conn)?;
 
         Ok(())
@@ -153,7 +160,7 @@ impl Project {
         user_id_param: i32,
     ) -> QueryResult<Vec<(Project, i64)>> {
         let rows: Vec<ProjectWithTimeRow> = diesel::sql_query(
-            "SELECT id, user_id, name, repo_url, created_at, updated_at, total_seconds \
+            "SELECT id, user_id, name, repo_url, created_at, updated_at, total_seconds, hidden, project_url \
              FROM list_projects_with_time($1, $2)",
         )
         .bind::<Int4, _>(user_id_param)
@@ -171,10 +178,31 @@ impl Project {
                         repo_url: row.repo_url,
                         created_at: row.created_at,
                         updated_at: row.updated_at,
+                        hidden: row.hidden,
+                        project_url: row.project_url,
                     },
                     row.total_seconds,
                 )
             })
             .collect())
+    }
+
+    pub fn set_hidden(
+        conn: &mut PgConnection,
+        project_id_param: i32,
+        user_id_param: i32,
+        new_hidden: bool,
+    ) -> QueryResult<()> {
+        use crate::schema::projects::dsl::*;
+
+        diesel::update(
+            projects
+                .filter(id.eq(project_id_param))
+                .filter(user_id.eq(user_id_param)),
+        )
+        .set(hidden.eq(new_hidden))
+        .execute(conn)?;
+
+        Ok(())
     }
 }

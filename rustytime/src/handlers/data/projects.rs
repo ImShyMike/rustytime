@@ -1,15 +1,18 @@
 use crate::db_query;
 use crate::models::project::Project as ProjectModel;
+use crate::state::AppState;
 use crate::utils::extractors::{AuthenticatedUser, DbConnection};
 use aide::NoApi;
 use axum::Json;
-use axum::extract::Path;
+use axum::extract::{Path, State};
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+const MAX_PROJECT_URL_LENGTH: usize = 255;
 
 #[derive(Serialize, JsonSchema)]
 pub struct SimpleProject {
@@ -23,8 +26,11 @@ pub struct ProjectsListResponse {
 }
 
 #[derive(Deserialize, JsonSchema)]
-pub struct RepoUrlRequest {
-    pub repo_url: Option<String>,
+pub struct UpdateProjectRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub project_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hidden: Option<bool>,
 }
 
 /// Handler for the projects list
@@ -47,44 +53,71 @@ pub async fn projects_list(
     Ok(Json(ProjectsListResponse { projects }))
 }
 
-pub async fn set_project_repo(
+pub async fn update_project(
+    State(state): State<AppState>,
     NoApi(AuthenticatedUser(current_user)): NoApi<AuthenticatedUser>,
     NoApi(DbConnection(mut conn)): NoApi<DbConnection>,
     Path(project_id): Path<i32>,
-    repo_url: Json<RepoUrlRequest>,
+    Json(request): Json<UpdateProjectRequest>,
 ) -> Result<Response, Response> {
-    // validate the url if provided
-    if let Some(url) = &repo_url.repo_url {
-        let parsed = url::Url::parse(url).map_err(|_| {
-            (
-                StatusCode::BAD_REQUEST,
-                "Invalid repository URL".to_string(),
-            )
-                .into_response()
-        })?;
+    let mut changed = false;
 
-        if parsed.scheme() != "http" && parsed.scheme() != "https" {
-            return Err((
-                StatusCode::BAD_REQUEST,
-                "Repository URL must use http or https".to_string(),
-            )
-                .into_response());
+    // validate and set project_url if provided
+    if let Some(ref url) = request.project_url {
+        if !url.is_empty() {
+            let parsed = url::Url::parse(url).map_err(|_| {
+                (StatusCode::BAD_REQUEST, "Invalid project URL".to_string()).into_response()
+            })?;
+
+            if parsed.scheme() != "http" && parsed.scheme() != "https" {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    "Project URL must use http or https".to_string(),
+                )
+                    .into_response());
+            }
+
+            if url.len() > MAX_PROJECT_URL_LENGTH {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    "Project URL is too long".to_string(),
+                )
+                    .into_response());
+            }
         }
 
-        if url.len() > 128 {
-            return Err((
-                StatusCode::BAD_REQUEST,
-                "Repository URL is too long".to_string(),
-            )
-                .into_response());
-        }
+        // convert empty string to None
+        let project_url_value = if url.is_empty() {
+            None
+        } else {
+            Some(url.clone())
+        };
+        db_query!(
+            ProjectModel::set_project_url(
+                &mut conn,
+                project_id,
+                current_user.id,
+                &project_url_value
+            ),
+            "Failed to set project URL"
+        );
+
+        changed = true;
     }
 
-    // set project repo url
-    db_query!(
-        ProjectModel::set_repo_url(&mut conn, project_id, current_user.id, &repo_url.repo_url),
-        "Failed to set project repo URL"
-    );
+    // set hidden if provided
+    if let Some(hidden) = request.hidden {
+        db_query!(
+            ProjectModel::set_hidden(&mut conn, project_id, current_user.id, hidden),
+            "Failed to set project hidden status"
+        );
+
+        changed = true;
+    }
+
+    if changed {
+        state.cache.invalidate_user_projects(current_user.id);
+    }
 
     Ok(StatusCode::OK.into_response())
 }

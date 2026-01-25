@@ -2,7 +2,8 @@ export interface Project {
 	id: number;
 	name: string;
 	total_seconds: number;
-	repo_url: string | null;
+	project_url: string | null;
+	hidden: boolean;
 	human_readable_total: string;
 	created_at: string | null;
 	updated_at: string | null;
@@ -33,14 +34,11 @@ export interface ProjectAliasesResponse {
 	aliases: ProjectAliasEntry[];
 }
 
-export interface SetProjectRepoRequest {
-	repo_url: string | null;
-}
-
 export interface SimpleProject {
 	id: number;
 	name: string;
-	repo_url: string | null;
+	project_url: string | null;
+	hidden: boolean;
 }
 
 export interface FullProjectListResponse {

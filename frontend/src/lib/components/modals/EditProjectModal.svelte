@@ -3,21 +3,24 @@
 	import type { Project } from '$lib/types/projects';
 	import { auth } from '$lib/stores/auth';
 	import { createApi, ApiError } from '$lib/api/api';
-	import { setRepoUrl } from '$lib/api/project';
+	import { updateProject } from '$lib/api/project';
 
 	const props = $props<{
 		project: Project;
 		onclose?: () => void;
-		onsuccess?: (updatedRepoUrl: string | null) => void;
+		onsuccess?: (updatedProjectUrl: string | null) => void;
 	}>();
 
 	const api = createApi(fetch);
 
-	let projectRepo = $state(props.project.repo_url ?? '');
+	const originalProjectUrl = props.project.project_url ?? '';
+	let projectUrl = $state(originalProjectUrl);
 	let isOpen = $state(true);
 	let username = $state($auth.user?.name ?? 'user');
 	let isSaving = $state(false);
 	let errorMessage = $state<string | null>(null);
+
+	const hasChanges = $derived(projectUrl.trim() !== originalProjectUrl);
 
 	function closeModal() {
 		props.onclose?.();
@@ -26,15 +29,21 @@
 	async function saveChanges() {
 		if (isSaving) return;
 
+		const newProjectUrl = projectUrl.trim();
+
+		if (!hasChanges) {
+			props.onclose?.();
+			return;
+		}
+
 		isSaving = true;
 		errorMessage = null;
 
 		try {
-			const newRepoUrl = projectRepo.trim() === '' ? null : projectRepo.trim();
-			await setRepoUrl(api, props.project.id, newRepoUrl);
+			await updateProject(api, props.project.id, { project_url: newProjectUrl });
 
-			props.project.repo_url = newRepoUrl;
-			props.onsuccess?.(newRepoUrl);
+			props.project.project_url = newProjectUrl === '' ? null : newProjectUrl;
+			props.onsuccess?.(newProjectUrl === '' ? null : newProjectUrl);
 
 			props.onclose?.();
 		} catch (error) {
@@ -58,10 +67,10 @@
 <Modal bind:isOpen onclose={closeModal} title="Edit Project">
 	<div class="space-y-6">
 		<TextInput
-			id="project-repo"
+			id="project-url"
 			type="text"
-			label="Project Repository URL"
-			bind:value={projectRepo}
+			label="Project URL"
+			bind:value={projectUrl}
 			placeholder={`https://github.com/${username}/...`}
 			disabled={isSaving}
 		/>
