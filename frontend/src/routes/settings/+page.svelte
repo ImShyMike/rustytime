@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import { page } from '$app/state';
 	import {
 		Container,
 		PageScaffold,
@@ -34,6 +35,8 @@
 	interface Props {
 		data: PageData;
 	}
+
+	const hash = $state(page.url.hash);
 
 	let { data }: Props = $props();
 
@@ -111,12 +114,21 @@
 		return `$env:RT_API_KEY="${apiKey}"; $env:RT_API_URL="${PUBLIC_BACKEND_API_URL}/api/v1"; irm ${PUBLIC_SITE_URL}/install.ps1 | iex`;
 	};
 
-	let selectedTab = $state<'setup' | 'projects' | 'migration'>('setup');
 	const tabs = [
 		{ id: 'setup' as const, label: 'Setup' },
 		{ id: 'projects' as const, label: 'Projects' },
 		{ id: 'migration' as const, label: 'Migration' }
 	];
+
+	let selectedTab = $state<'setup' | 'projects' | 'migration'>('setup');
+	$effect(() => {
+		const tabId = hash.slice(1) as 'setup' | 'projects' | 'migration';
+		if (tabId && tabs.some((tab) => tab.id === tabId)) {
+			selectedTab = tabId;
+		} else if (!hash) {
+			selectedTab = 'setup';
+		}
+	});
 
 	let config: string = $state('');
 	let os = $state<'linux' | 'macos' | 'windows'>('windows');
