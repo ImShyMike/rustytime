@@ -69,23 +69,23 @@ pub async fn admin_dashboard(
     let limit = query.limit.clamp(1, 100);
     let offset = query.offset.max(0);
 
-    let cached = app_state.cache.admin.get(&());
-    let daily_activity = if let Some(cached) = cached {
-        cached.daily_activity
-    } else {
-        let raw_daily_activity = db_query!(
-            Heartbeat::get_daily_activity_last_week(&mut conn),
-            "Failed to fetch daily activity"
-        );
+    let daily_activity = match app_state.cache.admin.get(&()) {
+        Some(cached) => cached.daily_activity,
+        None => {
+            let raw_daily_activity = db_query!(
+                Heartbeat::get_daily_activity_last_week(&mut conn),
+                "Failed to fetch daily activity"
+            );
 
-        app_state.cache.admin.insert(
-            (),
-            CachedAdminStats {
-                daily_activity: raw_daily_activity.clone(),
-            },
-        );
+            app_state.cache.admin.insert(
+                (),
+                CachedAdminStats {
+                    daily_activity: raw_daily_activity.clone(),
+                },
+            );
 
-        raw_daily_activity
+            raw_daily_activity
+        }
     };
 
     let total_heartbeats = db_query!(Heartbeat::total_heartbeat_count_estimate(&mut conn));

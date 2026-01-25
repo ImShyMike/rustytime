@@ -70,39 +70,39 @@ pub async fn dashboard(
         timezone: user_timezone.clone(),
     };
 
-    let cached = app_state.cache.dashboard.get(&cache_key);
-    let (total_heartbeats, dashboard_stats) = if let Some(cached) = cached {
-        (cached.heartbeat_count, cached.stats)
-    } else {
-        let total_heartbeats = db_query!(
-            Heartbeat::get_user_heartbeat_count_by_range(
-                &mut conn,
-                session_data.user_id,
-                query.range,
-                &user_timezone
-            ),
-            "Database error getting heartbeat count"
-        );
+    let (total_heartbeats, dashboard_stats) = match app_state.cache.dashboard.get(&cache_key) {
+        Some(cached) => (cached.heartbeat_count, cached.stats),
+        None => {
+            let total_heartbeats = db_query!(
+                Heartbeat::get_user_heartbeat_count_by_range(
+                    &mut conn,
+                    session_data.user_id,
+                    query.range,
+                    &user_timezone
+                ),
+                "Database error getting heartbeat count"
+            );
 
-        let dashboard_stats = db_query!(
-            Heartbeat::get_dashboard_stats_by_range(
-                &mut conn,
-                session_data.user_id,
-                query.range,
-                &user_timezone
-            ),
-            "Database error getting dashboard stats"
-        );
+            let dashboard_stats = db_query!(
+                Heartbeat::get_dashboard_stats_by_range(
+                    &mut conn,
+                    session_data.user_id,
+                    query.range,
+                    &user_timezone
+                ),
+                "Database error getting dashboard stats"
+            );
 
-        app_state.cache.dashboard.insert(
-            cache_key,
-            CachedDashboardStats {
-                stats: dashboard_stats.clone(),
-                heartbeat_count: total_heartbeats,
-            },
-        );
+            app_state.cache.dashboard.insert(
+                cache_key,
+                CachedDashboardStats {
+                    stats: dashboard_stats.clone(),
+                    heartbeat_count: total_heartbeats,
+                },
+            );
 
-        (total_heartbeats, dashboard_stats)
+            (total_heartbeats, dashboard_stats)
+        }
     };
 
     Ok(Json(DashboardResponse {
