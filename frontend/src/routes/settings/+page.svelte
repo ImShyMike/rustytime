@@ -543,8 +543,12 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 				<SectionTitle level="h2" className="mb-3">Hackatime Import</SectionTitle>
 				<div class="space-y-4">
 					<p class="text-ctp-text">
-						Import your existing Hackatime heartbeats directly into rustytime. Provide a Hackatime
-						API key to begin importing. Your key is only used for this session and is not stored.
+						Import your existing Hackatime heartbeats directly into rustytime. Provide a <a
+							class="text-ctp-blue underline hover:text-ctp-blue/80"
+							href="https://hackatime.hackclub.com/my/wakatime_setup"
+							target="_blank"
+							rel="noopener noreferrer external">Hackatime API key</a
+						> to begin importing. Your key is only used for this session and is not stored.
 					</p>
 					<div class="bg-ctp-surface0/40 border border-ctp-surface1 rounded-lg p-4 space-y-3">
 						<h3 class="text-sm font-semibold text-ctp-text mb-3">Hackatime API Key</h3>
