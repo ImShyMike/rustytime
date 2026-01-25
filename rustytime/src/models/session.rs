@@ -98,8 +98,10 @@ impl Session {
     }
 
     #[inline(always)]
-    pub fn delete_expired(conn: &mut PgConnection) -> QueryResult<usize> {
-        diesel::delete(sessions::table.filter(dsl::expires_at.le(now))).execute(conn)
+    pub fn delete_expired(conn: &mut PgConnection, retention_days: i64) -> QueryResult<usize> {
+        diesel::delete(sessions::table.filter(
+            dsl::expires_at.lt(Utc::now() - chrono::Duration::days(retention_days)),
+        )).execute(conn)
     }
 
     pub fn impersonate(

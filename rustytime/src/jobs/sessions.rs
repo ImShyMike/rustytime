@@ -13,6 +13,8 @@ use diesel::Connection;
 use crate::db::connection::DbPool;
 use crate::models::session::Session;
 
+const SESSION_RETENTION_DAYS: i64 = 30;
+
 fn cleanup_expired_sessions(pool: &DbPool) -> Result<(), diesel::result::Error> {
     let mut conn = pool.get().map_err(|e| {
         tracing::error!(error = ?e, "Failed to get connection for session cleanup");
@@ -23,7 +25,7 @@ fn cleanup_expired_sessions(pool: &DbPool) -> Result<(), diesel::result::Error> 
     })?;
 
     conn.transaction(|conn| {
-        let deleted = Session::delete_expired(conn)?;
+        let deleted = Session::delete_expired(conn, SESSION_RETENTION_DAYS)?;
 
         tracing::debug!(deleted, "Cleaned up old leaderboard entries");
 
