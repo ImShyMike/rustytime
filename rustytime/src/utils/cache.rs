@@ -37,6 +37,12 @@ pub struct CachedAdminStats {
     pub daily_activity: Vec<DailyActivity>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct HeartbeatProjectCacheKey {
+    pub user_id: i32,
+    pub project_name: String,
+}
+
 #[derive(Clone)]
 pub struct AppCache {
     pub dashboard: Arc<Cache<DashboardCacheKey, CachedDashboardStats>>,

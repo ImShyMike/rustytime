@@ -1,15 +1,24 @@
+use std::sync::Arc;
+
 use crate::models::heartbeat::TIMEOUT_SECONDS;
+use crate::utils::cache::HeartbeatProjectCacheKey;
 use diesel::QueryableByName;
 use diesel::insert_into;
 use diesel::prelude::*;
 use diesel::sql_types::{BigInt, Int4, Nullable as SqlNullable, Text, Timestamptz};
+use moka::sync::Cache;
 use once_cell::sync::Lazy;
-use std::collections::HashMap;
-use std::sync::Mutex;
 
 use crate::schema::projects;
 
-use std::time::SystemTime;
+static PROJECT_CACHE: Lazy<Arc<Cache<HeartbeatProjectCacheKey, i32>>> = Lazy::new(|| {
+    Arc::new(
+        Cache::builder()
+            .max_capacity(1_000)
+            .time_to_live(std::time::Duration::from_secs(600)) // 10 minute TTL
+            .build(),
+    )
+});
 
 diesel::define_sql_function! {
     fn list_projects_with_time(
@@ -27,26 +36,6 @@ diesel::define_sql_function! {
         )>
     >;
 }
-
-struct CachedProjectId {
-    id: i32,
-    cached_at: SystemTime,
-}
-
-struct ProjectCache {
-    map: HashMap<(i32, String), CachedProjectId>,
-    last_cleanup: SystemTime,
-}
-
-const TTL_SECONDS: u64 = 600; // 10 minutes
-const CLEANUP_INTERVAL_SECS: u64 = 60; // Only clean every 60 seconds
-
-static PROJECT_CACHE: Lazy<Mutex<ProjectCache>> = Lazy::new(|| {
-    Mutex::new(ProjectCache {
-        map: HashMap::new(),
-        last_cleanup: SystemTime::now(),
-    })
-});
 
 #[derive(Insertable)]
 #[diesel(table_name = projects)]
@@ -90,36 +79,13 @@ pub fn get_or_create_project_id(
     project_name: &str,
     repo_url_param: Option<&str>,
 ) -> QueryResult<i32> {
-    let now = SystemTime::now();
-    let cache_key = (user_id_param, project_name.to_string());
+    let cache_key = HeartbeatProjectCacheKey {
+        user_id: user_id_param,
+        project_name: project_name.to_string(),
+    };
 
-    {
-        let mut cache = PROJECT_CACHE.lock().unwrap();
-
-        if cache
-            .last_cleanup
-            .elapsed()
-            .map(|e| e.as_secs() >= CLEANUP_INTERVAL_SECS)
-            .unwrap_or(true)
-        {
-            cache.map.retain(|_, v| {
-                v.cached_at
-                    .elapsed()
-                    .map(|e| e.as_secs() < TTL_SECONDS)
-                    .unwrap_or(false)
-            });
-            cache.last_cleanup = now;
-        }
-
-        if let Some(cached) = cache.map.get(&cache_key)
-            && cached
-                .cached_at
-                .elapsed()
-                .map(|e| e.as_secs() < TTL_SECONDS)
-                .unwrap_or(false)
-        {
-            return Ok(cached.id);
-        }
+    if let Some(cached_id) = PROJECT_CACHE.get(&cache_key) {
+        return Ok(cached_id);
     }
 
     use crate::schema::projects::dsl::*;
@@ -145,13 +111,7 @@ pub fn get_or_create_project_id(
                 .first(conn)
         })?;
 
-    PROJECT_CACHE.lock().unwrap().map.insert(
-        cache_key,
-        CachedProjectId {
-            id: inserted_id,
-            cached_at: now,
-        },
-    );
+    PROJECT_CACHE.insert(cache_key, inserted_id);
 
     Ok(inserted_id)
 }
