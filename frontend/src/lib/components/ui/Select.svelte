@@ -31,7 +31,8 @@
 
 	function handleChange(event: Event) {
 		const target = event.currentTarget as HTMLSelectElement;
-		const newValue = (typeof value === 'number' ? Number(target.value) : target.value) as T;
+		const isNumeric = options.length > 0 && typeof options[0].value === 'number';
+		const newValue = (isNumeric ? Number(target.value) : target.value) as T;
 		value = newValue;
 		onchange?.(newValue);
 	}
@@ -44,12 +45,12 @@
 			<select
 				{id}
 				class="w-full rounded-lg border border-ctp-surface1 bg-ctp-base pl-3 pr-10 py-2 text-sm text-ctp-text transition-colors focus:border-ctp-blue focus:outline-none focus:ring-1 focus:ring-ctp-blue/40 disabled:cursor-not-allowed disabled:opacity-50 appearance-none {className}"
-				{value}
+				value={value ?? ''}
 				{disabled}
 				onchange={handleChange}
 			>
 				{#if placeholder}
-					<option value={undefined} disabled>{placeholder}</option>
+					<option value="" disabled selected={value === undefined}>{placeholder}</option>
 				{/if}
 				{#each options as option (option.value)}
 					<option value={option.value} disabled={option.disabled}>{option.label}</option>
@@ -65,12 +66,12 @@
 		<select
 			{id}
 			class="w-full rounded-lg border border-ctp-surface1 bg-ctp-base pl-3 pr-10 py-2 text-sm text-ctp-text transition-colors focus:border-ctp-blue focus:outline-none focus:ring-1 focus:ring-ctp-blue/40 disabled:cursor-not-allowed disabled:opacity-50 appearance-none {className}"
-			{value}
+			value={value ?? ''}
 			{disabled}
 			onchange={handleChange}
 		>
 			{#if placeholder}
-				<option value={undefined} disabled>{placeholder}</option>
+				<option value="" disabled selected={value === undefined}>{placeholder}</option>
 			{/if}
 			{#each options as option (option.value)}
 				<option value={option.value} disabled={option.disabled}>{option.label}</option>
