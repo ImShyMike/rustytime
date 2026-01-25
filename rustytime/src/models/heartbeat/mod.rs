@@ -33,25 +33,6 @@ diesel::define_sql_function! {
 }
 
 diesel::define_sql_function! {
-    /// Get field statistics (language, editor, OS, etc.)
-    fn calculate_field_stats(
-        user_id: Int4,
-        field_name: Text,
-        timeout_seconds: Int4,
-        limit_count: Int4
-    ) -> diesel::sql_types::Array<diesel::sql_types::Record<(Text, BigInt)>>;
-}
-
-diesel::define_sql_function! {
-    /// Get project statistics with alias resolution
-    fn calculate_project_stats_with_aliases(
-        user_id: Int4,
-        timeout_seconds: Int4,
-        limit_count: Int4
-    ) -> diesel::sql_types::Array<diesel::sql_types::Record<(Text, BigInt)>>;
-}
-
-diesel::define_sql_function! {
     /// Calculate all user durations in a time range
     fn calculate_all_user_durations(
         start_date: Timestamptz,
