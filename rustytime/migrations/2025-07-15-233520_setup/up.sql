@@ -42,7 +42,7 @@ SELECT diesel_manage_updated_at('sessions');
 
 -- Create heartbeats table
 CREATE TABLE IF NOT EXISTS heartbeats (
-  id                SERIAL NOT NULL,
+  id                BIGSERIAL NOT NULL,
   time              TIMESTAMPTZ NOT NULL DEFAULT now(),
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
   user_id           INTEGER NOT NULL REFERENCES users(id),
@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS heartbeats (
   line_deletions    INTEGER,
   lineno            INTEGER,
   cursorpos         INTEGER,
-  source_type       TEXT,
+  source_type       SMALLINT,
   PRIMARY KEY (user_id, time)
 );
 

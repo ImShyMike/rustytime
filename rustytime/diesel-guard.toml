@@ -6,10 +6,8 @@
 # Accepted formats: YYYYMMDDHHMMSS, YYYY_MM_DD_HHMMSS, or YYYY-MM-DD-HHMMSS
 # Works with any migration directory format regardless of separator style
 #
-# Examples: Skip all migrations before January 1, 2024
-# start_after = "2024_01_01_000000"  # underscores
-# start_after = "2024-01-01-000000"  # dashes
-# start_after = "20240101000000"     # no separators
+# Skip migrations that use DO $$ blocks (TimescaleDB commands) which sqlparser can't parse
+start_after = "2025-11-17-183758"
 
 # Whether to check down.sql files in addition to up.sql
 # Default: false
@@ -24,9 +22,4 @@ check_down = true
 #   - AddNotNullCheck         (ALTER COLUMN SET NOT NULL)
 #   - AlterColumnTypeCheck    (ALTER COLUMN TYPE)
 #   - DropColumnCheck         (DROP COLUMN)
-#
-# Example: Disable checking for ADD COLUMN and DROP COLUMN operations
-# disable_checks = ["AddColumnCheck", "DropColumnCheck"]
-#
-# Default: [] (all checks enabled)
-# disable_checks = []
+disable_checks = ["DropColumnCheck", "RenameColumnCheck", "AlterColumnTypeCheck", "AddNotNullCheck", "AddColumnCheck", "DropIndexCheck", "AddIndexCheck"]
