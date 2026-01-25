@@ -1,6 +1,6 @@
 <div align="center">
   <a href="https://rustytime.shymike.dev">
-    <img src="https://raw.githubusercontent.com/ImShyMike/rustytime/refs/heads/main/frontend/static/pwa/favicon-196.png" alt="rustytime" width="180">
+    <img alt="rustytime" width="180" src="https://raw.githubusercontent.com/ImShyMike/rustytime/refs/heads/main/frontend/static/pwa/favicon-196.png">
   </a>
   <div id="user-content-toc" align="center">
     <ul>
@@ -19,7 +19,8 @@
 
 ## What is rustytime?
 
-`rustytime` is a self-hosted, [WakaTime](https://wakatime.com)-compatible backend for tracking your coding time that works with any* existing WakaTime [plugin](https://wakatime.com/plugins)!
+`rustytime` is a self-hosted, [WakaTime](https://wakatime.com)-compatible backend
+ for tracking your coding time that works with any* existing WakaTime [plugin](https://wakatime.com/plugins)!
 
 *every plugin that allows setting custom API URLs
 
@@ -80,7 +81,8 @@ Configure your WakaTime plugin to use rustytime:
 | **Local** | `http://localhost:3000/api/v1` |
 | **Hosted** | `https://api-rustytime.shymike.dev/api/v1` |
 
-Most plugins support setting a custom API URL in their settings. Use your rustytime API key from the settings page.
+Most plugins support setting a custom API URL in their settings.
+Use your rustytime API key from the settings page.
 
 ## Development
 
@@ -130,7 +132,8 @@ PYROSCOPE_SAMPLE_RATE=99
 
 ## Is this better than wakapi?
 
-Probably not... this was just a fun side project, if you want something that's actually production ready just use [Wakapi](https://wakapi.dev) 😭
+Probably not... this was just a fun side project, if you want something that's
+actually production ready just use [Wakapi](https://wakapi.dev) 😭
 
 ## Architecture
 
@@ -144,9 +147,9 @@ Probably not... this was just a fun side project, if you want something that's a
 
 <a href="https://www.star-history.com/#imshymike/rustytime&type=date&legend=top-left">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=imshymike/rustytime&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=imshymike/rustytime&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=imshymike/rustytime&type=date&legend=top-left" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=imshymike/rustytime&type=date&theme=dark&legend=top-left"/>
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=imshymike/rustytime&type=date&legend=top-left"/>
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=imshymike/rustytime&type=date&legend=top-left"/>
  </picture>
 </a>
 
