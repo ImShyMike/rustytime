@@ -259,7 +259,7 @@
 								<Button
 									variant="secondary"
 									size="md"
-									className="min-w-44"
+									className="min-w-46"
 									onClick={() => {
 										showHidden = !showHidden;
 									}}
