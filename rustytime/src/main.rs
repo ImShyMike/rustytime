@@ -20,6 +20,7 @@ use tower_http::{
     normalize_path::NormalizePathLayer, timeout::TimeoutLayer, trace::TraceLayer,
 };
 
+use sentry::integrations::tower::NewSentryLayer;
 use tracing::{error, info};
 use tracing_subscriber::layer::SubscriberExt;
 
@@ -45,8 +46,7 @@ const DEFAULT_BURST_SIZE: u32 = 60;
 const DEFAULT_RATE_LIMIT_REPLENISH_DURATION: Duration = Duration::from_millis(250);
 const DEFAULT_REQUEST_TIMEOUT: Duration = Duration::from_secs(300);
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // initialize start time for uptime tracking
     START_TIME
         .set(Instant::now())
@@ -55,11 +55,39 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // load environment variables from .env file
     dotenvy::dotenv().ok();
 
-    // get git sha from environment variable set at build time
-    let git_sha = option_env!("GIT_SHA").unwrap_or("unknown");
-
     // check if running in production
     let is_production = is_production_env();
+
+    // init sentry error tracking before tokio runtime starts
+    let _sentry_guard = env::var("SENTRY_DSN").ok().map(|dsn| {
+        eprintln!("✅ Sentry error tracking enabled");
+        sentry::init((
+            dsn,
+            sentry::ClientOptions {
+                release: sentry::release_name!(),
+                debug: !is_production,
+                environment: Some(if is_production {
+                    "production".into()
+                } else {
+                    "development".into()
+                }),
+                traces_sample_rate: 0.1,
+                send_default_pii: true,
+                ..Default::default()
+            },
+        ))
+    });
+
+    // build and run tokio runtime
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()?
+        .block_on(async_main(is_production))
+}
+
+async fn async_main(is_production: bool) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    // get git sha from environment variable set at build time
+    let git_sha = option_env!("GIT_SHA").unwrap_or("unknown");
 
     // get service name for tracing and profiling
     let service_name =
@@ -82,9 +110,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     };
 
     let _guard = if let Some(layer) = otel_log_layer {
-        tracing_config.init_subscriber_ext(|subscriber| subscriber.with(layer))?
+        tracing_config.init_subscriber_ext(|subscriber| {
+            subscriber
+                .with(layer)
+                .with(sentry::integrations::tracing::layer())
+        })?
     } else {
-        tracing_config.init_subscriber()?
+        tracing_config.init_subscriber_ext(|subscriber| {
+            subscriber.with(sentry::integrations::tracing::layer())
+        })?
     };
 
     let _otel_log_guard = otel_log_guard;
@@ -233,7 +267,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                     client_ip = %client_ip
                 )
             }),
-        );
+        )
+        .layer(NewSentryLayer::new_from_top()); // sentry hub layer for error context
 
     // bind to address
     let port = env::var("PORT")

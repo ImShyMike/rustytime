@@ -93,6 +93,10 @@ impl AppCache {
             .dashboard
             .invalidate_entries_if(move |key, _| key.user_id == user_id);
     }
+
+    pub fn invalidate_user_projects(&self, user_id: i32) {
+        self.projects.invalidate(&ProjectsCacheKey { user_id });
+    }
 }
 
 impl Default for AppCache {
