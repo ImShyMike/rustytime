@@ -259,17 +259,17 @@
 								<Button
 									variant="secondary"
 									size="md"
-									className="min-w-42.5"
+									className="min-w-44"
 									onClick={() => {
 										showHidden = !showHidden;
 									}}
 								>
 									{#if showHidden}
 										<LucideEyeOff class="h-4 w-4" />
-										<span>Hide hidden ({hiddenCount})</span>
+										<span class="whitespace-nowrap">Hide hidden ({hiddenCount})</span>
 									{:else}
 										<LucideEye class="h-4 w-4" />
-										<span>Show hidden ({hiddenCount})</span>
+										<span class="whitespace-nowrap">Show hidden ({hiddenCount})</span>
 									{/if}
 								</Button>
 							</div>
