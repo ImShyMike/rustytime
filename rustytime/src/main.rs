@@ -47,6 +47,9 @@ const DEFAULT_REQUEST_TIMEOUT: Duration = Duration::from_secs(300);
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    // initialize start time for uptime tracking
+    START_TIME.set(Instant::now()).expect("Failed to set START_TIME");
+
     // load environment variables from .env file
     dotenvy::dotenv().ok();
 
