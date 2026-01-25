@@ -63,6 +63,15 @@ diesel::table! {
 }
 
 diesel::table! {
+    project_alias_resolutions (user_id, project_id) {
+        user_id -> Int4,
+        project_id -> Int4,
+        resolved_project_id -> Int4,
+        updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     project_aliases (id) {
         id -> Int4,
         user_id -> Int4,
@@ -117,6 +126,7 @@ diesel::table! {
 diesel::joinable!(heartbeats -> users (user_id));
 diesel::joinable!(import_jobs -> users (user_id));
 diesel::joinable!(leaderboards -> users (user_id));
+diesel::joinable!(project_alias_resolutions -> users (user_id));
 diesel::joinable!(project_aliases -> users (user_id));
 diesel::joinable!(projects -> users (user_id));
 
@@ -124,6 +134,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     heartbeats,
     import_jobs,
     leaderboards,
+    project_alias_resolutions,
     project_aliases,
     projects,
     sessions,

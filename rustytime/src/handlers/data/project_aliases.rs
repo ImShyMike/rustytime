@@ -1,9 +1,10 @@
 use crate::db_query;
 use crate::models::project_alias::{NewProjectAlias, ProjectAlias as ProjectAliasModel};
+use crate::state::AppState;
 use crate::utils::extractors::{AuthenticatedUser, DbConnection};
 use aide::NoApi;
 use axum::Json;
-use axum::extract::Path;
+use axum::extract::{Path, State};
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
@@ -65,6 +66,7 @@ pub async fn project_aliases(
 }
 
 pub async fn add_project_alias(
+    State(app_state): State<AppState>,
     NoApi(AuthenticatedUser(current_user)): NoApi<AuthenticatedUser>,
     Path((id, alias_id)): Path<(i32, i32)>,
     NoApi(DbConnection(mut conn)): NoApi<DbConnection>,
@@ -80,10 +82,13 @@ pub async fn add_project_alias(
         "Failed to create project alias"
     );
 
+    app_state.cache.invalidate_user_dashboard(current_user.id);
+
     Ok(StatusCode::CREATED)
 }
 
 pub async fn delete_project_alias(
+    State(app_state): State<AppState>,
     NoApi(AuthenticatedUser(current_user)): NoApi<AuthenticatedUser>,
     Path(id): Path<i32>,
     NoApi(DbConnection(mut conn)): NoApi<DbConnection>,
@@ -92,6 +97,8 @@ pub async fn delete_project_alias(
         ProjectAliasModel::delete_project_alias(&mut conn, current_user.id, id),
         "Failed to delete project alias"
     );
+
+    app_state.cache.invalidate_user_dashboard(current_user.id);
 
     Ok(StatusCode::OK)
 }
