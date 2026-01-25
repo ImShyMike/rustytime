@@ -18,6 +18,9 @@ ENV PKG_CONFIG_ALLOW_CROSS=1
 ENV PQ_LIB_DIR=/usr/lib
 ENV RUSTFLAGS="-C target-feature=-crt-static"
 
+ARG BUILD_JOBS=4
+ENV CARGO_BUILD_JOBS=${BUILD_JOBS}
+
 WORKDIR /app
 
 # Copy only Cargo files first for dependency caching
