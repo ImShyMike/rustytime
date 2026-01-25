@@ -25,7 +25,7 @@ use tracing_subscriber::layer::SubscriberExt;
 
 use db::connection::create_pool;
 use state::AppState;
-use std::sync::LazyLock;
+use std::sync::OnceLock;
 use std::time::Instant;
 use utils::http::{CloudflareAwareKeyExtractor, extract_client_ip};
 use utils::middleware::cors_layer;
@@ -38,7 +38,7 @@ use crate::{
     },
 };
 
-pub static START_TIME: LazyLock<Instant> = LazyLock::new(Instant::now);
+pub static START_TIME: OnceLock<Instant> = OnceLock::new();
 
 // about 4 requests per second with a max burst of 60
 const DEFAULT_BURST_SIZE: u32 = 60;

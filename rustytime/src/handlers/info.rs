@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use axum::Json;
 use schemars::JsonSchema;
 use serde::Serialize;
@@ -28,7 +30,12 @@ pub async fn info() -> Json<InfoResponse> {
         } else {
             "development".to_string()
         },
-        uptime: START_TIME.elapsed().as_secs().to_string(),
+        uptime: START_TIME
+            .get()
+            .unwrap_or(&Instant::now())
+            .elapsed()
+            .as_secs()
+            .to_string(),
         build_profile: if cfg!(debug_assertions) {
             "debug".to_string()
         } else {

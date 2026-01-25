@@ -11,6 +11,6 @@ pub mod schema;
 pub mod state;
 pub mod utils;
 
-use std::sync::LazyLock;
+use std::sync::OnceLock;
 use std::time::Instant;
-pub static START_TIME: LazyLock<Instant> = LazyLock::new(Instant::now);
+pub static START_TIME: OnceLock<Instant> = OnceLock::new();

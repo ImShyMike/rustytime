@@ -32,6 +32,10 @@ fn git_sha() -> String {
     let mut sha = String::from_utf8(output.stdout).unwrap_or_else(|_| "unknown".to_string());
     sha = sha.trim().to_string();
 
+    let _ = Command::new("git")
+        .args(["update-index", "--refresh"])
+        .output();
+
     let status = Command::new("git")
         .args(["diff-index", "--quiet", "HEAD"])
         .status()
