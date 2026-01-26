@@ -86,7 +86,7 @@ apalis-cron = { version = "1.0.0-rc.2", features = ["cron"], default-features = 
 cron = { version = "0.15.0", default-features = false }
 futures = { version = "0.3.31", default-features = false }
 sqlx = { version = "0.8.6", default-features = false }
-moka = { version = "0.12.10", features = ["sync"], default-features = false }
+moka = { version = "0.12.13", features = ["sync"], default-features = false }
 sentry = { version = "0.46.1", default-features = false, features = ["rustls", "tower", "tracing", "backtrace", "contexts", "panic", "transport"] }
 
 [dev-dependencies]
