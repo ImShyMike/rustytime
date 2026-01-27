@@ -156,7 +156,7 @@ const createAuthStore = () => {
 				if (auth_url) window.location.href = auth_url;
 			} catch (e) {
 				console.log('Login error:', e);
-				setError('unknown', 'Login failed. Please try again.');
+				setError('unknown', 'Login failed. Please try again. Please check https://stats.uptimerobot.com/S3OiEoxnNo for status updates');
 			}
 		},
 
