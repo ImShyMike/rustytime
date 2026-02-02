@@ -67,7 +67,7 @@ const createAuthStore = () => {
 		impersonation: null
 	});
 
-	const setError = (type: AuthErrorType, message: string) => {
+	const setError = (type: AuthErrorType, message: string = '') => {
 		if (!browser) return;
 		update((s) => ({ ...s, error: { type, message, timestamp: new Date() } }));
 	};
@@ -141,7 +141,7 @@ const createAuthStore = () => {
 
 		clearError: () => update((s) => ({ ...s, error: null })),
 
-		setError: (type: AuthErrorType, message: string) => setError(type, message),
+		setError: (type: AuthErrorType, message?: string) => setError(type, message),
 
 		verify: async (fetchFn = fetch) => {
 			if (browser) await verify(fetchFn);
@@ -155,8 +155,13 @@ const createAuthStore = () => {
 				const { auth_url } = await api.get<{ auth_url: string }>('/auth/github/login');
 				if (auth_url) window.location.href = auth_url;
 			} catch (e) {
+				const err = e as ApiError;
+				if (err.status == 530) {
+					setError('server');
+					return;
+				}
 				console.log('Login error:', e);
-				setError('unknown', 'Login failed. Please try again.');
+				setError('unknown');
 			}
 		},
 

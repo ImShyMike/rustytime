@@ -97,6 +97,20 @@
 					<p class="text-sm opacity-90 text-subtext0">
 						{$auth.error.message ? $auth.error.message : getErrorDisplayMessage($auth.error)}
 					</p>
+					{#if $auth.error.type === 'server' && import.meta.env.PUBLIC_UPTIME_MONITORING_URL}
+						<p class="text-sm opacity-70">
+							<!-- eslint-disable svelte/no-navigation-without-resolve -->
+							<a
+								href={import.meta.env.PUBLIC_UPTIME_MONITORING_URL}
+								target="_blank"
+								rel="noopener noreferrer"
+								class="underline hover:text-foreground"
+							>
+								Chech the server status here.
+							</a>.
+							<!-- eslint-enable svelte/no-navigation-without-resolve -->
+						</p>
+					{/if}
 					<div class="flex items-center justify-between">
 						{#if $auth.error.type === 'unauthorized'}
 							<Button size="sm" onClick={auth.login} disabled={$auth.isLoading}>Log in</Button>

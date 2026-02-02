@@ -21,7 +21,8 @@
 	"vars": {
 		"ENVIRONMENT": "production",
 		"PUBLIC_BACKEND_API_URL": "https://api-rustytime.shymike.dev",
-		"PUBLIC_SITE_URL": "https://rustytime.shymike.dev"
+		"PUBLIC_SITE_URL": "https://rustytime.shymike.dev",
+		"PUBLIC_UPTIME_MONITORING_URL": "https://stats.uptimerobot.com/S3OiEoxnNo"
 	},
 	"observability": {
 		"logs": {
