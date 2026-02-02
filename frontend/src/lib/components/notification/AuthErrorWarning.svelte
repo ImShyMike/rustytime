@@ -2,6 +2,7 @@
 	import { auth } from '../../stores/auth.js';
 	import type { AuthError } from '../../stores/auth.js';
 	import { Button, IconButton } from '$lib';
+	import { env } from '$env/dynamic/public';
 
 	import LucideTriangleAlert from '~icons/lucide/triangle-alert';
 	import LucideCircleAlert from '~icons/lucide/circle-alert';
@@ -97,11 +98,11 @@
 					<p class="text-sm opacity-90 text-subtext0">
 						{$auth.error.message ? $auth.error.message : getErrorDisplayMessage($auth.error)}
 					</p>
-					{#if $auth.error.type === 'server' && import.meta.env.PUBLIC_UPTIME_MONITORING_URL}
+					{#if $auth.error.type === 'server' && env.PUBLIC_UPTIME_MONITORING_URL}
 						<p class="text-sm opacity-70">
 							<!-- eslint-disable svelte/no-navigation-without-resolve -->
 							<a
-								href={import.meta.env.PUBLIC_UPTIME_MONITORING_URL}
+								href={env.PUBLIC_UPTIME_MONITORING_URL}
 								target="_blank"
 								rel="noopener noreferrer"
 								class="underline hover:text-foreground"
