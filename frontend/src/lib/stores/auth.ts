@@ -155,13 +155,8 @@ const createAuthStore = () => {
 				const { auth_url } = await api.get<{ auth_url: string }>('/auth/github/login');
 				if (auth_url) window.location.href = auth_url;
 			} catch (e) {
-				const err = e as ApiError;
-				if (err.status == 530) {
-					setError('server');
-					return;
-				}
+				setError('server');
 				console.log('Login error:', e);
-				setError('unknown');
 			}
 		},
 
