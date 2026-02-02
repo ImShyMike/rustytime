@@ -107,8 +107,8 @@
 								rel="noopener noreferrer"
 								class="underline hover:text-foreground"
 							>
-								Chech the server status here.
-							</a>.
+								Check the server status here.
+							</a>
 							<!-- eslint-enable svelte/no-navigation-without-resolve -->
 						</p>
 					{/if}
