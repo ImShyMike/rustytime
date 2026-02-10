@@ -90,10 +90,6 @@
 	}
 </script>
 
-<svelte:head>
-	<title>Imports - rustytime</title>
-</svelte:head>
-
 {#if importsData}
 	<PageScaffold title="Import Jobs" {lastUpdatedAt}>
 		<Container>

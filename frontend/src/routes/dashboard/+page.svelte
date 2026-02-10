@@ -4,21 +4,14 @@
 	import { theme } from '$lib/stores/theme';
 	import type { Theme } from '$lib/stores/theme';
 	import type { PageData } from './$types';
+	import type { DashboardResponse } from '$lib/types/dashboard';
+	import { createDeferredData } from '$lib/utils/deferred-data.svelte';
 	import { setupVisibilityRefresh } from '$lib/utils/refresh';
-	import {
-		Container,
-		PageScaffold,
-		SectionTitle,
-		StatCard,
-		UserTag,
-		ToggleGroup,
-		EmptyState
-	} from '$lib';
-	import RelativeTime from '$lib/components/ui/RelativeTime.svelte';
+	import { Container, PageScaffold, SectionTitle, StatCard, ToggleGroup, EmptyState } from '$lib';
 	import { safeGraphData, safeText } from '$lib/utils/text';
-	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import BarChart from '$lib/charts/BarChart.svelte';
 	import PieChart from '$lib/charts/PieChart.svelte';
+	import DashboardSkeleton from './DashboardSkeleton.svelte';
 
 	interface Props {
 		data: PageData;
@@ -26,10 +19,21 @@
 
 	let { data }: Props = $props();
 
-	let dashboardData = $derived(data);
 	let lastUpdatedAt = $state(new Date());
 	let selectedRange = $derived(data?.range || 'month');
 	let loadedRange = $state('today');
+
+	const deferred = createDeferredData(() => data.dashboard);
+
+	$effect(() => {
+		if (deferred.data) {
+			lastUpdatedAt = new Date();
+		}
+	});
+
+	const refreshDashboardData = async () => {
+		await invalidate('app:dashboard');
+	};
 
 	const rangeOptions = [
 		{ value: 'day', label: 'Today' },
@@ -37,10 +41,6 @@
 		{ value: 'month', label: 'This Month' },
 		{ value: 'all', label: 'All Time' }
 	];
-
-	const refreshDashboardData = async () => {
-		await invalidate('app:dashboard');
-	};
 
 	const handleRangeChange = async (newRange: string) => {
 		selectedRange = newRange;
@@ -57,73 +57,50 @@
 		}
 	});
 
-	$effect(() => {
-		if (data) {
-			lastUpdatedAt = new Date();
-		}
-	});
-
 	let activeTheme = $derived(browser ? ($theme as Theme) : 'dark');
-	let topProjects = $derived(safeGraphData(dashboardData?.projects?.slice(0, 8) ?? []));
-	let topLanguages = $derived(safeGraphData(dashboardData?.languages?.slice(0, 8) ?? []));
-	let topEditors = $derived(safeGraphData(dashboardData?.editors?.slice(0, 8) ?? []));
-	let topOperatingSystems = $derived(
-		safeGraphData(dashboardData?.operating_systems?.slice(0, 8) ?? [])
-	);
+
+	const getDerivedData = (d: DashboardResponse) => ({
+		topProjects: safeGraphData(d?.projects?.slice(0, 8).reverse() ?? []),
+		topLanguages: safeGraphData(d?.languages?.slice(0, 8) ?? []),
+		topEditors: safeGraphData(d?.editors?.slice(0, 8) ?? []),
+		topOperatingSystems: safeGraphData(d?.operating_systems?.slice(0, 8) ?? [])
+	});
 </script>
 
-<svelte:head>
-	<title>Dashboard - rustytime</title>
-</svelte:head>
-
-{#if dashboardData}
+{#if deferred.showSkeleton}
+	<DashboardSkeleton />
+{:else if deferred.data}
+	{@const { topProjects, topLanguages, topEditors, topOperatingSystems } = getDerivedData(
+		deferred.data
+	)}
 	<PageScaffold title="Dashboard" {lastUpdatedAt}>
-		<!-- User Information -->
-		<Container className="pb-1 mb-4">
-			<div class="flex items-center gap-4 mb-4">
-				{#if dashboardData.avatar_url}
-					<Avatar url={dashboardData.avatar_url} size={80} />
-				{/if}
-				<div class="flex flex-col">
-					<div class="flex items-center gap-2">
-						<UserTag admin_level={dashboardData.admin_level} />
-						<p class="font-bold text-lg text-ctp-text">{dashboardData.username}</p>
-					</div>
-					<p class="text-ctp-subtext1">User ID: {dashboardData.user_id}</p>
-					<p class="text-ctp-subtext0" title={new Date(dashboardData.created_at).toLocaleString()}>
-						Joined <RelativeTime datetime={new Date(dashboardData.created_at)} />
-					</p>
-				</div>
-			</div>
-		</Container>
-
 		<!-- Time Range Filter -->
 		<Container className="mb-4">
 			<ToggleGroup options={rangeOptions} selected={selectedRange} onchange={handleRangeChange} />
 		</Container>
 
-		{#if dashboardData.projects.length || dashboardData.languages.length || dashboardData.editors.length || dashboardData.operating_systems.length}
+		{#if deferred.data.projects.length || deferred.data.languages.length || deferred.data.editors.length || deferred.data.operating_systems.length}
 			<!-- Top Stats -->
 			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
 				<StatCard
 					title="Total Time"
-					value={dashboardData?.human_readable_total || 'None'}
+					value={deferred.data?.human_readable_total || 'None'}
 					valueClass="text-xl font-semibold text-ctp-text"
 				/>
 				<StatCard
 					title="Top Project"
-					value={safeText(dashboardData?.projects?.[0]?.name) || 'None'}
+					value={safeText(deferred.data?.projects?.[0]?.name) || 'None'}
 					valueClass="text-xl font-semibold text-ctp-text"
 				/>
 				<StatCard
 					title="Top Language"
-					value={safeText(dashboardData?.languages?.[0]?.name) || 'None'}
+					value={safeText(deferred.data?.languages?.[0]?.name) || 'None'}
 					valueClass="text-xl font-semibold text-ctp-text"
 				/>
 				<StatCard
 					title="Total Heartbeats"
-					value={dashboardData?.total_heartbeats
-						? dashboardData.total_heartbeats.toLocaleString()
+					value={deferred.data?.total_heartbeats
+						? deferred.data.total_heartbeats.toLocaleString()
 						: '0'}
 					valueClass="text-xl font-semibold text-ctp-text"
 				/>
@@ -132,9 +109,9 @@
 			<!-- Dashboard Statistics -->
 			<Container className="mb-4">
 				<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-					<!-- Top Projects (Horizontal Bar Chart) -->
+					<!-- Projects (Horizontal Bar Chart) -->
 					<div>
-						<SectionTitle>Top Projects</SectionTitle>
+						<SectionTitle size="sm">Projects</SectionTitle>
 						{#if topProjects.length > 0}
 							<BarChart data={topProjects} theme={activeTheme} horizontal class="h-87.5" />
 						{:else}
@@ -142,9 +119,9 @@
 						{/if}
 					</div>
 
-					<!-- Top Languages (Pie Chart) -->
+					<!-- Languages (Pie Chart) -->
 					<div>
-						<SectionTitle size="sm" className="mb-4">Top Languages</SectionTitle>
+						<SectionTitle size="sm" className="mb-4">Languages</SectionTitle>
 						{#if topLanguages.length > 0}
 							<PieChart data={topLanguages} theme={activeTheme} class="h-87.5" />
 						{:else}
@@ -152,25 +129,27 @@
 						{/if}
 					</div>
 
-					<!-- Top Editors (Pie Chart) -->
-					<div>
-						<SectionTitle size="sm" className="mb-4">Top Editors</SectionTitle>
-						{#if topEditors.length > 0}
-							<PieChart data={topEditors} theme={activeTheme} class="h-87.5" />
-						{:else}
-							<p class="text-ctp-subtext0">No editor data available</p>
-						{/if}
-					</div>
+					{#if deferred.data.editors.length > 1 && deferred.data.operating_systems.length > 1}
+						<!-- Editors (Pie Chart) -->
+						<div>
+							<SectionTitle size="sm" className="mb-4">Editors</SectionTitle>
+							{#if topEditors.length > 0}
+								<PieChart data={topEditors} theme={activeTheme} class="h-87.5" />
+							{:else}
+								<p class="text-ctp-subtext0">No editor data available</p>
+							{/if}
+						</div>
 
-					<!-- Top Operating Systems (Pie Chart) -->
-					<div>
-						<SectionTitle size="sm" className="mb-4">Top Operating Systems</SectionTitle>
-						{#if topOperatingSystems.length > 0}
-							<PieChart data={topOperatingSystems} theme={activeTheme} class="h-87.5" />
-						{:else}
-							<p class="text-ctp-subtext0">No operating system data available</p>
-						{/if}
-					</div>
+						<!-- Operating Systems (Pie Chart) -->
+						<div>
+							<SectionTitle size="sm" className="mb-4">Operating Systems</SectionTitle>
+							{#if topOperatingSystems.length > 0}
+								<PieChart data={topOperatingSystems} theme={activeTheme} class="h-87.5" />
+							{:else}
+								<p class="text-ctp-subtext0">No operating system data available</p>
+							{/if}
+						</div>
+					{/if}
 				</div>
 			</Container>
 		{:else if loadedRange === 'all'}
@@ -186,5 +165,13 @@
 				className="mb-4"
 			/>
 		{/if}
+	</PageScaffold>
+{:else if deferred.loadError}
+	<PageScaffold title="Dashboard" showLastUpdated={false}>
+		<EmptyState
+			title="Failed to load dashboard"
+			description="Something went wrong loading your dashboard data. Please try again."
+			className="mb-4"
+		/>
 	</PageScaffold>
 {/if}

@@ -36,6 +36,7 @@
 </script>
 
 <svelte:head>
+	<title>{name}</title>
 	<meta property="og:locale" content={locale} />
 	<meta property="og:type" content="website" />
 	<meta property="og:site_name" content={name} />

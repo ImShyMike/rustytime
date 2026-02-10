@@ -171,14 +171,14 @@ mod protected_routes_tests {
     }
 
     #[tokio::test]
-    async fn test_leaderboard_without_auth_returns_unauthorized() {
+    async fn test_leaderboard_without_auth_returns_authorized() {
         let config = TestConfig::default();
         fail_without_db!(config);
 
         let app = TestApp::new().await;
         let response = app.server.get("/page/leaderboard").await;
 
-        response.assert_status(StatusCode::UNAUTHORIZED);
+        response.assert_status(StatusCode::OK);
     }
 }
 

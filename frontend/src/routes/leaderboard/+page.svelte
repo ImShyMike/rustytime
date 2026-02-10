@@ -50,10 +50,6 @@
 	];
 </script>
 
-<svelte:head>
-	<title>Leaderboard - rustytime</title>
-</svelte:head>
-
 <PageScaffold title="Leaderboard (UTC)" {lastUpdatedAt}>
 	<Container>
 		<div class="flex justify-between items-end">
