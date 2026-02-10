@@ -132,9 +132,9 @@
 			<!-- Dashboard Statistics -->
 			<Container className="mb-4">
 				<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-					<!-- Top Projects (Horizontal Bar Chart) -->
+					<!-- Projects (Horizontal Bar Chart) -->
 					<div>
-						<SectionTitle>Top Projects</SectionTitle>
+						<SectionTitle>Projects</SectionTitle>
 						{#if topProjects.length > 0}
 							<BarChart data={topProjects} theme={activeTheme} horizontal class="h-87.5" />
 						{:else}
@@ -142,9 +142,9 @@
 						{/if}
 					</div>
 
-					<!-- Top Languages (Pie Chart) -->
+					<!-- Languages (Pie Chart) -->
 					<div>
-						<SectionTitle size="sm" className="mb-4">Top Languages</SectionTitle>
+						<SectionTitle size="sm" className="mb-4">Languages</SectionTitle>
 						{#if topLanguages.length > 0}
 							<PieChart data={topLanguages} theme={activeTheme} class="h-87.5" />
 						{:else}
@@ -152,9 +152,9 @@
 						{/if}
 					</div>
 
-					<!-- Top Editors (Pie Chart) -->
+					<!-- Editors (Pie Chart) -->
 					<div>
-						<SectionTitle size="sm" className="mb-4">Top Editors</SectionTitle>
+						<SectionTitle size="sm" className="mb-4">Editors</SectionTitle>
 						{#if topEditors.length > 0}
 							<PieChart data={topEditors} theme={activeTheme} class="h-87.5" />
 						{:else}
@@ -162,9 +162,9 @@
 						{/if}
 					</div>
 
-					<!-- Top Operating Systems (Pie Chart) -->
+					<!-- Operating Systems (Pie Chart) -->
 					<div>
-						<SectionTitle size="sm" className="mb-4">Top Operating Systems</SectionTitle>
+						<SectionTitle size="sm" className="mb-4">Operating Systems</SectionTitle>
 						{#if topOperatingSystems.length > 0}
 							<PieChart data={topOperatingSystems} theme={activeTheme} class="h-87.5" />
 						{:else}
