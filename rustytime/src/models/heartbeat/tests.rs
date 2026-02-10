@@ -256,11 +256,25 @@ fn truncates_optional_strings_when_present() {
 // ============================================================================
 
 #[test]
-fn converts_datetime_to_f64_with_nanosecond_precision() {
-    let dt = DateTime::<Utc>::from_timestamp(1_700_000_000, 987_654_321).expect("valid timestamp");
+fn converts_datetime_to_f64_with_milisecond_precision() {
+    let dt = DateTime::<Utc>::from_timestamp(1_700_000_000, 987_000_000).expect("valid timestamp");
 
     let converted = datetime_to_f64(dt);
-    let expected = 1_700_000_000f64 + 987_654_321f64 / 1e9;
+    let expected = 1_700_000_000f64 + 987_000_000f64 / 1e9;
+    let diff = (converted - expected).abs();
+
+    assert!(
+        diff <= 1e-12,
+        "expected {expected}, got {converted}, diff {diff}"
+    );
+}
+
+#[test]
+fn datetime_to_f64_rounds_to_nearest_millisecond() {
+    let dt = DateTime::<Utc>::from_timestamp(1_700_000_000, 987_354_321).expect("valid timestamp");
+
+    let converted = datetime_to_f64(dt);
+    let expected = 1_700_000_000f64 + 987_000_000f64 / 1e9;
     let diff = (converted - expected).abs();
 
     assert!(

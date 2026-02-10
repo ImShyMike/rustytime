@@ -135,18 +135,26 @@ fn truncate_optional_string(s: Option<String>, max_length: usize) -> Option<Stri
     s.map(|s| truncate_string(s, max_length))
 }
 
-/// Convert DateTime<Utc> to f64 timestamp
+/// Convert DateTime<Utc> to f64 timestamp, rounded to 3 decimal places
 #[inline(always)]
 pub fn datetime_to_f64(time: DateTime<Utc>) -> f64 {
-    time.timestamp() as f64 + time.timestamp_subsec_nanos() as f64 / 1e9
+    let raw = time.timestamp() as f64 + time.timestamp_subsec_nanos() as f64 / 1e9;
+    round_timestamp(raw)
 }
 
-/// Convert f64 timestamp to DateTime<Utc>
+/// Round a timestamp to 3 decimal places (millisecond precision)
+#[inline(always)]
+fn round_timestamp(timestamp: f64) -> f64 {
+    (timestamp * 1000.0).round() / 1000.0
+}
+
+/// Convert f64 timestamp to DateTime<Utc>, rounded to millisecond precision
 #[inline(always)]
 pub fn f64_to_datetime(timestamp: f64) -> DateTime<Utc> {
-    let secs = timestamp.trunc() as i64;
-    let nsecs = (timestamp.fract() * 1e9) as u32;
-    DateTime::from_timestamp(secs, nsecs).unwrap_or_else(Utc::now)
+    let rounded = round_timestamp(timestamp);
+    let secs = rounded.trunc() as i64;
+    let millis = ((rounded.fract()) * 1000.0).round() as u32;
+    DateTime::from_timestamp(secs, millis * 1_000_000).unwrap_or_else(Utc::now)
 }
 
 #[repr(i16)]
@@ -545,12 +553,8 @@ pub struct SanitizedHeartbeatRequest {
 
 impl SanitizedHeartbeatRequest {
     pub fn from_request(request: HeartbeatRequest) -> Self {
-        // Convert timestamp (seconds since epoch) to DateTime<Utc>
-        let time = DateTime::from_timestamp(
-            request.time.trunc() as i64,
-            (request.time.fract() * 1e9) as u32,
-        )
-        .unwrap_or_else(Utc::now);
+        // Convert timestamp (seconds since epoch) to DateTime<Utc>, rounded to millisecond precision
+        let time = f64_to_datetime(request.time);
 
         // Handle test heartbeats
         let source_type_ = if request.entity == "test.txt" {
