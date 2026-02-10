@@ -24,16 +24,8 @@ pub struct DashboardQuery {
 
 #[derive(Serialize, JsonSchema)]
 pub struct DashboardResponse {
-    avatar_url: String,
-    username: String,
-    user_id: i32,
-    github_id: i64,
-    created_at: String,
-    expires_at: String,
     total_heartbeats: i64,
     human_readable_total: String,
-    admin_level: i16,
-    dev_mode: bool,
     range: String,
     projects: Vec<UsageStat>,
     editors: Vec<UsageStat>,
@@ -106,20 +98,12 @@ pub async fn dashboard(
     };
 
     Ok(Json(DashboardResponse {
-        avatar_url: user.avatar_url,
-        username: user.name,
-        user_id: user.id,
-        github_id: session_data.github_user_id,
-        created_at: user.created_at.to_rfc3339(),
-        expires_at: session_data.expires_at.to_rfc3339(),
         total_heartbeats,
         human_readable_total: human_readable_duration(
             dashboard_stats.total_time,
             TimeFormat::NoDays,
         )
         .human_readable,
-        admin_level: user.admin_level,
-        dev_mode: cfg!(debug_assertions),
         range: query.range.as_str().to_string(),
         projects: dashboard_stats.top_projects,
         editors: dashboard_stats.top_editors,

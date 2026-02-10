@@ -39,10 +39,6 @@
 	}
 </script>
 
-<svelte:head>
-	<title>rustytime</title>
-</svelte:head>
-
 <div class="bg-mantle">
 	<!-- Header -->
 	<header class="text-center mb-4 mt-[5vh] sm:mt-[10vh]">

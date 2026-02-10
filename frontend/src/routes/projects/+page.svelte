@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { invalidate } from '$app/navigation';
 	import { setupVisibilityRefresh } from '$lib/utils/refresh';
+	import { createDeferredData } from '$lib/utils/deferred-data.svelte';
 	import type { PageData } from './$types';
 	import {
 		Container,
@@ -13,6 +14,7 @@
 		IconButton
 	} from '$lib';
 	import type { Project } from '$lib/types/projects';
+	import ProjectsSkeleton from './ProjectsSkeleton.svelte';
 	import LucideGithub from '~icons/lucide/github';
 	import LucideExternalLink from '~icons/lucide/external-link';
 	import LucidePencilLine from '~icons/lucide/pencil-line';
@@ -49,7 +51,9 @@
 
 	let { data }: Props = $props();
 
-	let projectsData = $derived(data);
+	const deferred = createDeferredData(() => data.projects);
+
+	let projectsData = $derived(deferred.data);
 
 	let searchQuery = $state('');
 	let sortOption = $state<SortOption>('time');
@@ -83,7 +87,7 @@
 	});
 
 	$effect(() => {
-		if (data) {
+		if (deferred.data) {
 			lastUpdatedAt = new Date();
 		}
 	});
@@ -202,10 +206,6 @@
 	});
 </script>
 
-<svelte:head>
-	<title>Projects - rustytime</title>
-</svelte:head>
-
 {#if editingProject !== null}
 	<EditProjectModal
 		project={editingProject}
@@ -218,7 +218,9 @@
 	/>
 {/if}
 
-{#if projectsData}
+{#if deferred.showSkeleton}
+	<ProjectsSkeleton />
+{:else if projectsData}
 	<PageScaffold title="Projects" {lastUpdatedAt}>
 		{#if hasProjects}
 			<!-- Project Statistics -->
@@ -390,5 +392,13 @@
 				description="Start tracking your time to see your projects here!"
 			/>
 		{/if}
+	</PageScaffold>
+{:else if deferred.loadError}
+	<PageScaffold title="Projects" showLastUpdated={false}>
+		<EmptyState
+			title="Failed to load projects"
+			description="Something went wrong loading your projects data. Please try again."
+			className="mb-4"
+		/>
 	</PageScaffold>
 {/if}

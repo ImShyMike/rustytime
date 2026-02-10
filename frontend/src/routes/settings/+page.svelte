@@ -308,10 +308,6 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 	});
 </script>
 
-<svelte:head>
-	<title>Settings - rustytime</title>
-</svelte:head>
-
 {#if settingsData}
 	<PageScaffold title="Settings">
 		<!-- Top selector -->

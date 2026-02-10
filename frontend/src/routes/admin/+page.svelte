@@ -77,10 +77,6 @@
 	let activeTheme = $derived(browser ? ($theme as Theme) : 'dark');
 </script>
 
-<svelte:head>
-	<title>Admin - rustytime</title>
-</svelte:head>
-
 {#if adminData}
 	<PageScaffold title="Admin Dashboard" {lastUpdatedAt}>
 		<!-- System Statistics -->

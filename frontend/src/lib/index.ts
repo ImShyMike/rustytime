@@ -32,3 +32,4 @@ export { default as CodeBlock } from './components/ui/CodeBlock.svelte';
 export { default as TabsPanel } from './components/ui/TabsPanel.svelte';
 export { default as NavLink } from './components/ui/NavLink.svelte';
 export { default as NavButton } from './components/ui/NavButton.svelte';
+export { default as Skeleton } from './components/ui/Skeleton.svelte';

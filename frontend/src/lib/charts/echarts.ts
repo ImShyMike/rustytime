@@ -168,11 +168,10 @@ export function createBarChartOptions(
 			}
 		},
 		grid: {
-			left: '1%',
-			right: '2%',
-			bottom: '1%',
-			top: '3%',
-			containLabel: true
+			left: '3%',
+			right: '4%',
+			bottom: '3%',
+			top: '5%'
 		},
 		xAxis: horizontal ? valueAxis : categoryAxis,
 		yAxis: horizontal ? categoryAxis : valueAxis,
@@ -244,11 +243,10 @@ export function createDateBarChartOptions(
 			}
 		},
 		grid: {
-			left: '1%',
-			right: '1%',
-			bottom: '1%',
-			top: '3%',
-			containLabel: true
+			left: '3%',
+			right: '3%',
+			bottom: '3%',
+			top: '5%'
 		},
 		xAxis: horizontal ? valueAxis : categoryAxis,
 		yAxis: horizontal ? categoryAxis : valueAxis,
