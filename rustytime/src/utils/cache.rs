@@ -3,6 +3,7 @@ use moka::sync::Cache;
 use std::sync::Arc;
 use std::time::Duration;
 
+use crate::handlers::page::profile::ProfileResponse;
 use crate::handlers::page::projects::Project;
 use crate::models::heartbeat::{DailyActivity, DashboardStats, TimeRange};
 use crate::models::leaderboard::Leaderboard;
@@ -55,6 +56,7 @@ pub struct AppCache {
     pub projects: Arc<Cache<ProjectsCacheKey, Vec<Project>>>,
     pub leaderboard: Arc<Cache<LeaderboardCacheKey, CachedLeaderboard>>,
     pub admin: Arc<Cache<(), CachedAdminStats>>,
+    pub profile: Arc<Cache<String, ProfileResponse>>,
 }
 
 impl AppCache {
@@ -82,6 +84,12 @@ impl AppCache {
             admin: Arc::new(
                 Cache::builder()
                     .max_capacity(1)
+                    .time_to_live(Duration::from_secs(300)) // 5 minute TTL
+                    .build(),
+            ),
+            profile: Arc::new(
+                Cache::builder()
+                    .max_capacity(100)
                     .time_to_live(Duration::from_secs(300)) // 5 minute TTL
                     .build(),
             ),

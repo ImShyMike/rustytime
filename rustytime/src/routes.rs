@@ -15,6 +15,7 @@ use crate::handlers::page::admin::impersonate_user;
 use crate::handlers::page::dashboard::dashboard;
 use crate::handlers::page::imports::admin_imports;
 use crate::handlers::page::leaderboard::leaderboard_page;
+use crate::handlers::page::profile::profile_handler;
 use crate::handlers::page::projects::projects_dashboard;
 use crate::handlers::page::settings::{settings_page, update_settings};
 use crate::state::AppState;
@@ -61,6 +62,12 @@ pub fn create_app_router(
                     op.id("leaderboard_page")
                         .summary("Leaderboard Page")
                         .description("Data for the leaderboard page.")
+                        .tag("Pages")
+                }))
+                .api_route("/profile/{username}", get_with(profile_handler, |op| {
+                    op.id("profile_page")
+                        .summary("User Profile Page")
+                        .description("Data for the user profile page.")
                         .tag("Pages")
                 })),
         )

@@ -6,6 +6,7 @@
 	import { setupVisibilityRefresh } from '$lib/utils/refresh';
 	import { formatDuration } from '$lib/utils/time';
 	import { auth } from '$lib/stores/auth';
+	import { resolve } from '$app/paths';
 
 	interface Props {
 		data: PageData;
@@ -101,11 +102,8 @@
 									$auth.user?.id
 										? 'text-ctp-blue'
 										: 'text-ctp-text'}"
-									href={entry.user_name ? `https://github.com/${entry.user_name}` : undefined}
-									target="_blank"
-									data-umami-event="github-profile-link"
-									data-umami-event-name={entry.user_name}
-									rel="noopener noreferrer external">{entry.user_name || 'Unknown'}</a
+									href={resolve(`/@[slug]`, { slug: entry.user_name })}
+									>{entry.user_name || 'Unknown'}</a
 								>
 							</div>
 						</td>

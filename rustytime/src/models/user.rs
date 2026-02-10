@@ -1,10 +1,16 @@
 use chrono::{DateTime, Utc};
+use chrono_tz::Tz;
 use diesel::prelude::*;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::models::heartbeat::{DurationInput, Heartbeat};
+use crate::models::project::Project;
 use crate::schema::users::{self};
+use crate::utils::time::{
+    get_day_start_utc, get_month_start_date, get_week_start_date, parse_timezone,
+};
 
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
 #[diesel(table_name = users)]
@@ -149,4 +155,74 @@ impl User {
             .set(users::timezone.eq(timezone))
             .get_result(conn)
     }
+
+    pub fn get_user_profile(conn: &mut PgConnection, username: &str) -> QueryResult<UserProfile> {
+        let user = users::table
+            .filter(users::name.ilike(username))
+            .first::<User>(conn)?;
+
+        let tz: Tz = parse_timezone(&user.timezone);
+        let now = Utc::now();
+        let today_local = now.with_timezone(&tz).date_naive();
+
+        let today_start = get_day_start_utc(today_local, tz);
+        let week_start = get_day_start_utc(get_week_start_date(today_local), tz);
+
+        let make_input = |start: Option<DateTime<Utc>>| DurationInput {
+            user_id: Some(user.id),
+            start_date: start,
+            end_date: Some(now),
+            project: None,
+            language: None,
+            entity: None,
+            type_filter: None,
+        };
+
+        let today_seconds =
+            Heartbeat::get_user_duration_seconds(conn, make_input(Some(today_start)))?;
+        let week_seconds =
+            Heartbeat::get_user_duration_seconds(conn, make_input(Some(week_start)))?;
+        let all_time_seconds = Heartbeat::get_user_duration_seconds(conn, make_input(None))?;
+
+        let month_start = get_day_start_utc(get_month_start_date(today_local), tz);
+        let top_projects = Project::top_projects_by_range(conn, user.id, month_start, now, 6)?;
+        let profile_projects: Vec<UserProfileProject> = top_projects
+            .into_iter()
+            .map(|p| UserProfileProject {
+                name: p.name,
+                project_url: p.project_url,
+                total_seconds: p.total_seconds,
+            })
+            .collect();
+
+        Ok(UserProfile {
+            username: user.name,
+            avatar_url: user.avatar_url,
+            projects: profile_projects,
+            time: UserProfileTime {
+                today: today_seconds,
+                week: week_seconds,
+                all_time: all_time_seconds,
+            },
+        })
+    }
+}
+
+pub struct UserProfileTime {
+    pub today: i64,
+    pub week: i64,
+    pub all_time: i64,
+}
+
+pub struct UserProfileProject {
+    pub name: String,
+    pub project_url: Option<String>,
+    pub total_seconds: i64,
+}
+
+pub struct UserProfile {
+    pub username: String,
+    pub avatar_url: String,
+    pub projects: Vec<UserProfileProject>,
+    pub time: UserProfileTime,
 }

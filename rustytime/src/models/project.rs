@@ -80,6 +80,16 @@ struct ProjectWithTimeRow {
     project_url: Option<String>,
 }
 
+#[derive(QueryableByName, Debug, Clone)]
+pub struct TopProjectRow {
+    #[diesel(sql_type = Text)]
+    pub name: String,
+    #[diesel(sql_type = SqlNullable<Text>)]
+    pub project_url: Option<String>,
+    #[diesel(sql_type = BigInt)]
+    pub total_seconds: i64,
+}
+
 pub fn get_or_create_project_id(
     conn: &mut PgConnection,
     user_id_param: i32,
@@ -185,6 +195,25 @@ impl Project {
                 )
             })
             .collect())
+    }
+
+    pub fn top_projects_by_range(
+        conn: &mut PgConnection,
+        user_id_param: i32,
+        start_time: chrono::DateTime<chrono::Utc>,
+        end_time: chrono::DateTime<chrono::Utc>,
+        limit: i32,
+    ) -> QueryResult<Vec<TopProjectRow>> {
+        diesel::sql_query(
+            "SELECT name, project_url, total_seconds \
+             FROM top_projects_by_range($1, $2, $3, $4, $5)",
+        )
+        .bind::<Int4, _>(user_id_param)
+        .bind::<Int4, _>(TIMEOUT_SECONDS)
+        .bind::<Timestamptz, _>(start_time)
+        .bind::<Timestamptz, _>(end_time)
+        .bind::<Int4, _>(limit)
+        .load(conn)
     }
 
     pub fn set_hidden(

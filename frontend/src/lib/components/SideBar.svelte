@@ -20,6 +20,7 @@
 	import LucideTrophy from '~icons/lucide/trophy';
 	import LucideImport from '~icons/lucide/import';
 	import LucideBook from '~icons/lucide/book';
+	import LucideCircleUser from '~icons/lucide/circle-user';
 	import { onMount } from 'svelte';
 	import { NavLink, NavButton, IconButton } from '$lib';
 	import UserTag from '$lib/components/ui/UserTag.svelte';
@@ -179,6 +180,16 @@
 					>
 						{#snippet icon()}<LucideLayoutDashboard class="w-6 h-6" />{/snippet}
 						Projects
+					</NavLink>
+
+					<NavLink
+						href={`/@${$auth.user.name}`}
+						active={page.url.pathname === `/@${$auth.user.name}`}
+						{collapsed}
+						onclick={() => setTimeout(closeMobileSidebar, 100)}
+					>
+						{#snippet icon()}<LucideCircleUser class="w-6 h-6" />{/snippet}
+						Profile
 					</NavLink>
 				{/if}
 

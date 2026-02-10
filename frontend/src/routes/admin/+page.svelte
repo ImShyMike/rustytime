@@ -20,6 +20,7 @@
 	import { impersonateUser, changeAdminLevel } from '$lib/api/admin';
 	import { createApi } from '$lib/api/api';
 	import DateBarChart from '$lib/charts/DateBarChart.svelte';
+	import { resolve } from '$app/paths';
 
 	interface Props {
 		data: PageData;
@@ -153,11 +154,7 @@
 										class="text-sm font-medium {user.id === $auth.user?.id
 											? 'text-blue'
 											: 'text-text'}"
-										href={user.name ? `https://github.com/${user.name}` : undefined}
-										target="_blank"
-										data-umami-event="github-profile-link"
-										data-umami-event-name={user.name}
-										rel="noopener noreferrer external">{user.name || 'Unknown'}</a
+										href={resolve(`/@[slug]`, { slug: user.name })}>{user.name || 'Unknown'}</a
 									>
 								</div>
 							</td>
