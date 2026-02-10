@@ -10,7 +10,7 @@ export interface DeferredDataState<T> {
 
 export function createDeferredData<T>(getPromise: () => Promise<T>): DeferredDataState<T> {
 	let data = $state<T | null>(null);
-	let showSkeleton = $state(false);
+	let showSkeleton = $state(true);
 	let loadError = $state(false);
 
 	$effect(() => {

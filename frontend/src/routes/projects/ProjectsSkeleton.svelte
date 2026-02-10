@@ -16,7 +16,7 @@
 	</div>
 
 	<!-- Filter Bar Skeleton -->
-	<Container className="flex flex-col mb-4 gap-4">
+	<Container className="flex flex-col mb-4 gap-4 h-23">
 		<div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
 			<div class="flex flex-col gap-1 flex-1">
 				<Skeleton className="w-12 h-3" />

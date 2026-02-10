@@ -1,18 +1,17 @@
-import type { PageLoad } from './$types';
+import type { PageServerLoad } from './$types';
 import { createApi, ApiError } from '$lib/api/api';
 import { redirect, error } from '@sveltejs/kit';
 import type { DashboardResponse } from '$lib/types/dashboard';
 
-export const ssr = false;
-
-export const load: PageLoad = async ({ fetch, depends, url }) => {
+export const load: PageServerLoad = async ({ fetch, depends, url, request }) => {
 	depends('app:dashboard');
 
 	const range = url.searchParams.get('range') || 'day';
+	const cookieHeader = request.headers.get('cookie') || undefined;
 
 	const loadDashboard = async (): Promise<DashboardResponse> => {
 		try {
-			const api = createApi(fetch);
+			const api = createApi(fetch, cookieHeader);
 			return await api.get<DashboardResponse>(`/page/dashboard?range=${range}`);
 		} catch (e) {
 			console.error('Error loading dashboard page data:', e);
