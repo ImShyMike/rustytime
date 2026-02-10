@@ -8,10 +8,12 @@
 	};
 </script>
 
-<span
-	class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {ADMIN_LEVEL_MAP[
-		admin_level
-	][1]} items-center h-6"
->
-	{ADMIN_LEVEL_MAP[admin_level][0] || 'User'}
-</span>
+{#if admin_level > 0}
+	<span
+		class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {ADMIN_LEVEL_MAP[
+			admin_level
+		][1]} items-center h-6"
+	>
+		{ADMIN_LEVEL_MAP[admin_level][0] || 'User'}
+	</span>
+{/if}
