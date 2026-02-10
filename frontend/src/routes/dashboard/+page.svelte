@@ -8,7 +8,7 @@
 	import { createDeferredData } from '$lib/utils/deferred-data.svelte';
 	import { setupVisibilityRefresh } from '$lib/utils/refresh';
 	import { Container, PageScaffold, SectionTitle, StatCard, ToggleGroup, EmptyState } from '$lib';
-	import { safeGraphData, safeText } from '$lib/utils/text';
+	import { noUnknownText, safeGraphData, safeText } from '$lib/utils/text';
 	import BarChart from '$lib/charts/BarChart.svelte';
 	import PieChart from '$lib/charts/PieChart.svelte';
 	import DashboardSkeleton from './DashboardSkeleton.svelte';
@@ -89,7 +89,7 @@
 				/>
 				<StatCard
 					title="Top Project"
-					value={safeText(deferred.data?.projects?.[0]?.name) || 'None'}
+					value={noUnknownText(deferred.data?.projects?.[0]?.name) || 'None'}
 					valueClass="text-xl font-semibold text-ctp-text"
 				/>
 				<StatCard

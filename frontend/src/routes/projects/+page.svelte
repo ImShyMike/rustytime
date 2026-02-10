@@ -234,7 +234,7 @@
 				{#if lastUpdatedProject}
 					<StatCard
 						title="Last updated project"
-						value={safeText(lastUpdatedProject.name)}
+						value={noUnknownText(lastUpdatedProject.name)}
 						subvalue={lastUpdatedProjectLabel}
 					/>
 				{/if}
