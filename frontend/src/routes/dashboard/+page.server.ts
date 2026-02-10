@@ -17,7 +17,10 @@ export const load: PageServerLoad = async ({ fetch, depends, url, request }) => 
 			console.error('Error loading dashboard page data:', e);
 			const err = e as ApiError;
 			if (err.status === 401 || err.status === 403) {
-				throw redirect(302, '/?auth_error=unauthorized');
+				throw redirect(
+					302,
+					`/?auth_error=unauthorized&redirect=${Buffer.from(url.pathname + url.search).toString('base64url')}`
+				);
 			}
 			throw error(err.status || 500, err.message);
 		}

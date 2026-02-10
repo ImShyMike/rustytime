@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 	import {
 		Container,
 		PageScaffold,
@@ -36,7 +37,7 @@
 		data: PageData;
 	}
 
-	const hash = $state(page.url.hash);
+	const tabParam = $state(page.url.searchParams.get('tab') ?? '');
 
 	let { data }: Props = $props();
 
@@ -122,13 +123,19 @@
 
 	let selectedTab = $state<'setup' | 'projects' | 'migration'>('setup');
 	$effect(() => {
-		const tabId = hash.slice(1) as 'setup' | 'projects' | 'migration';
+		const tabId = tabParam as 'setup' | 'projects' | 'migration';
 		if (tabId && tabs.some((tab) => tab.id === tabId)) {
 			selectedTab = tabId;
-		} else if (!hash) {
+		} else if (!tabParam) {
 			selectedTab = 'setup';
 		}
 	});
+
+	function handleTabChange(nextTab: 'setup' | 'projects' | 'migration') {
+		const nextUrl = new URL(page.url);
+		nextUrl.searchParams.set('tab', nextTab);
+		goto(nextUrl, { replaceState: false, keepFocus: true, noScroll: true });
+	}
 
 	let config: string = $state('');
 	let os = $state<'linux' | 'macos' | 'windows'>('windows');
@@ -311,7 +318,7 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 {#if settingsData}
 	<PageScaffold title="Settings">
 		<!-- Top selector -->
-		<TabsPanel {tabs} bind:selected={selectedTab} className="mb-4" />
+		<TabsPanel {tabs} bind:selected={selectedTab} onchange={handleTabChange} className="mb-4" />
 
 		{#if selectedTab === 'setup'}
 			<!-- Preferences -->

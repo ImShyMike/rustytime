@@ -3,7 +3,7 @@ import { createApi, ApiError } from '$lib/api/api';
 import { redirect, error } from '@sveltejs/kit';
 import type { ProjectsResponse } from '$lib/types/projects';
 
-export const load: PageServerLoad = async ({ fetch, depends, request }) => {
+export const load: PageServerLoad = async ({ fetch, depends, request, url }) => {
 	depends('app:projects');
 
 	const cookieHeader = request.headers.get('cookie') || undefined;
@@ -16,7 +16,10 @@ export const load: PageServerLoad = async ({ fetch, depends, request }) => {
 			console.error('Error loading projects page data:', e);
 			const err = e as ApiError;
 			if (err.status === 401 || err.status === 403) {
-				throw redirect(302, '/?auth_error=unauthorized');
+				throw redirect(
+					302,
+					`/?auth_error=unauthorized&redirect=${Buffer.from(url.pathname + url.search).toString('base64url')}`
+				);
 			}
 			throw error(err.status || 500, err.message);
 		}

@@ -54,6 +54,16 @@ pub fn create_app_router(
         .route("/docs/private/api.json", axum_get(openapi_docs))
         // public routes
         .route("/", axum_get(home_page))
+        .nest(
+            "/page",
+            ApiRouter::new()
+                .api_route("/leaderboard", get_with(leaderboard_page, |op| {
+                    op.id("leaderboard_page")
+                        .summary("Leaderboard Page")
+                        .description("Data for the leaderboard page.")
+                        .tag("Pages")
+                })),
+        )
         // auth routes
         .merge(
             ApiRouter::new().nest(
@@ -110,14 +120,6 @@ pub fn create_app_router(
                             op.id("settings_page")
                                 .summary("User Settings Page")
                                 .description("Data for the settings page.")
-                                .tag("Pages")
-                                .security_requirement("Authenticated")
-                        }))
-
-                        .api_route("/leaderboard", get_with(leaderboard_page, |op| {
-                            op.id("leaderboard_page")
-                                .summary("Leaderboard Page")
-                                .description("Data for the leaderboard page.")
                                 .tag("Pages")
                                 .security_requirement("Authenticated")
                         })),

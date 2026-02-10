@@ -160,25 +160,27 @@
 					</NavLink>
 				{/if}
 
-				<NavLink
-					href="/dashboard"
-					active={page.url.pathname === '/dashboard'}
-					{collapsed}
-					onclick={() => setTimeout(closeMobileSidebar, 100)}
-				>
-					{#snippet icon()}<LucideGauge class="w-6 h-6" />{/snippet}
-					Dashboard
-				</NavLink>
+				{#if $auth.isAuthenticated && $auth.user}
+					<NavLink
+						href="/dashboard"
+						active={page.url.pathname === '/dashboard'}
+						{collapsed}
+						onclick={() => setTimeout(closeMobileSidebar, 100)}
+					>
+						{#snippet icon()}<LucideGauge class="w-6 h-6" />{/snippet}
+						Dashboard
+					</NavLink>
 
-				<NavLink
-					href="/projects"
-					active={page.url.pathname === '/projects'}
-					{collapsed}
-					onclick={() => setTimeout(closeMobileSidebar, 100)}
-				>
-					{#snippet icon()}<LucideLayoutDashboard class="w-6 h-6" />{/snippet}
-					Projects
-				</NavLink>
+					<NavLink
+						href="/projects"
+						active={page.url.pathname === '/projects'}
+						{collapsed}
+						onclick={() => setTimeout(closeMobileSidebar, 100)}
+					>
+						{#snippet icon()}<LucideLayoutDashboard class="w-6 h-6" />{/snippet}
+						Projects
+					</NavLink>
+				{/if}
 
 				<NavLink
 					href="/leaderboard"
