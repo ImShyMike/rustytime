@@ -6,7 +6,7 @@ use crate::models::heartbeat::{NewHeartbeat, SourceType};
 use crate::models::user::User;
 use chrono::Utc;
 use ipnetwork::{IpNetwork, Ipv4Network};
-use rand::Rng;
+use rand::{Rng, RngExt};
 use rand::prelude::IndexedRandom;
 use std::net::Ipv4Addr;
 use tracing::{info, warn};
