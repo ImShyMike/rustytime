@@ -60,7 +60,7 @@
 	let activeTheme = $derived(browser ? ($theme as Theme) : 'dark');
 
 	const getDerivedData = (d: DashboardResponse) => ({
-		topProjects: safeGraphData(d?.projects?.slice(0, 8) ?? []),
+		topProjects: safeGraphData(d?.projects?.slice(0, 8).reverse() ?? []),
 		topLanguages: safeGraphData(d?.languages?.slice(0, 8) ?? []),
 		topEditors: safeGraphData(d?.editors?.slice(0, 8) ?? []),
 		topOperatingSystems: safeGraphData(d?.operating_systems?.slice(0, 8) ?? [])
@@ -111,7 +111,7 @@
 				<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 					<!-- Projects (Horizontal Bar Chart) -->
 					<div>
-						<SectionTitle>Projects</SectionTitle>
+						<SectionTitle size="sm">Projects</SectionTitle>
 						{#if topProjects.length > 0}
 							<BarChart data={topProjects} theme={activeTheme} horizontal class="h-87.5" />
 						{:else}
