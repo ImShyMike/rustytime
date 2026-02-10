@@ -7,7 +7,7 @@
 		{ value: 'day', label: 'Today', disabled: true },
 		{ value: 'week', label: 'This Week', disabled: true },
 		{ value: 'month', label: 'This Month', disabled: true },
-		{ value: 'year', label: 'All Time', disabled: true }
+		{ value: 'all', label: 'All Time', disabled: true }
 	];
 
 	const range = page.url.searchParams.get('range') || 'day';
