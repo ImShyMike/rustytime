@@ -10,6 +10,7 @@
 	import LucideGithub from '~icons/lucide/github';
 	import { safeText, noUnknownText } from '$lib/utils/text';
 	import ProfileSkeleton from './ProfileSkeleton.svelte';
+	import UserTag from '$lib/components/ui/UserTag.svelte';
 
 	interface Props {
 		data: PageData;
@@ -21,8 +22,8 @@
 
 	onMount(() => {
 		requestAnimationFrame(() => {
-			if (deferred.data?.username && page.params.slug !== deferred.data.username) {
-				replaceState(`/@${deferred.data.username}`, {});
+			if (deferred.data?.user.username && page.params.slug !== deferred.data.user.username) {
+				replaceState(`/@${deferred.data.user.username}`, {});
 			}
 		});
 	});
@@ -44,22 +45,26 @@
 	<ProfileSkeleton />
 {:else if deferred.data}
 	{@const profileData = deferred.data}
-	<PageScaffold title="@{profileData.username}" showLastUpdated={false}>
+	<PageScaffold title="@{profileData.user.username}" showLastUpdated={false}>
 		<svelte:fragment slot="heading">
 			<div class="flex items-center gap-4 mb-6">
 				<img
-					src={profileData.avatar_url}
-					alt={profileData.username}
+					src={profileData.user.avatar_url}
+					alt={profileData.user.username}
 					class="h-16 w-16 rounded-full border-2 border-ctp-surface0"
 				/>
+				
 				<div>
-					<h1 class="text-2xl font-bold text-ctp-text">{profileData.username}</h1>
+					<div class="flex items-center gap-2">
+						<h1 class="text-2xl font-bold text-ctp-text">{profileData.user.username}</h1>
+						<UserTag admin_level={profileData.user.admin_level ?? 0} />
+					</div>
 					<a
-						href="https://github.com/{profileData.username}"
+						href="https://github.com/{profileData.user.username}"
 						class="text-sm text-ctp-subtext0 hover:text-ctp-blue flex items-center gap-1"
 						target="_blank"
 						data-umami-event="github-profile-link"
-						data-umami-event-name={profileData.username}
+						data-umami-event-name={profileData.user.username}
 						rel="noopener noreferrer external"
 					>
 						<LucideGithub class="h-3.5 w-3.5" />

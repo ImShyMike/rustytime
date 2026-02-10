@@ -5,6 +5,9 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::handlers::page::profile::{
+    ProfileUser, UserProfile, UserProfileProject, UserProfileTime,
+};
 use crate::models::heartbeat::{DurationInput, Heartbeat};
 use crate::models::project::Project;
 use crate::schema::users::{self};
@@ -196,8 +199,11 @@ impl User {
             .collect();
 
         Ok(UserProfile {
-            username: user.name,
-            avatar_url: user.avatar_url,
+            user: ProfileUser {
+                username: user.name,
+                avatar_url: user.avatar_url,
+                admin_level: user.admin_level,
+            },
             projects: profile_projects,
             time: UserProfileTime {
                 today: today_seconds,
@@ -206,23 +212,4 @@ impl User {
             },
         })
     }
-}
-
-pub struct UserProfileTime {
-    pub today: i64,
-    pub week: i64,
-    pub all_time: i64,
-}
-
-pub struct UserProfileProject {
-    pub name: String,
-    pub project_url: Option<String>,
-    pub total_seconds: i64,
-}
-
-pub struct UserProfile {
-    pub username: String,
-    pub avatar_url: String,
-    pub projects: Vec<UserProfileProject>,
-    pub time: UserProfileTime,
 }

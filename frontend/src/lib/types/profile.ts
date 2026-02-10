@@ -10,9 +10,14 @@ export type Project = {
 	total_seconds: number;
 };
 
-export type ProfileResponse = {
+export type ProfileUser = {
 	username: string;
 	avatar_url: string;
+	admin_level: number;
+};
+
+export type ProfileResponse = {
+	user: ProfileUser;
 	projects: Project[];
 	time: TimeInfo;
 };

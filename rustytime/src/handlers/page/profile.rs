@@ -13,32 +13,38 @@ use schemars::JsonSchema;
 use serde::Serialize;
 
 #[derive(Serialize, JsonSchema, Clone)]
-pub struct TimeInfo {
+pub struct UserProfileTime {
     pub today: i64,
     pub week: i64,
     pub all_time: i64,
 }
 
 #[derive(Serialize, JsonSchema, Clone)]
-pub struct Project {
+pub struct UserProfileProject {
     pub name: String,
     pub project_url: Option<String>,
     pub total_seconds: i64,
 }
 
 #[derive(Serialize, JsonSchema, Clone)]
-pub struct ProfileResponse {
+pub struct ProfileUser {
     pub username: String,
     pub avatar_url: String,
-    pub projects: Vec<Project>,
-    pub time: TimeInfo,
+    pub admin_level: i16,
+}
+
+#[derive(Serialize, JsonSchema, Clone)]
+pub struct UserProfile {
+    pub user: ProfileUser,
+    pub projects: Vec<UserProfileProject>,
+    pub time: UserProfileTime,
 }
 
 pub async fn profile_handler(
     State(app_state): State<AppState>,
     Path(username): Path<String>,
     NoApi(DbConnection(mut conn)): NoApi<DbConnection>,
-) -> Result<Json<ProfileResponse>, Response> {
+) -> Result<Json<UserProfile>, Response> {
     let username = username.chars().take(100).collect::<String>();
 
     // check cache first
@@ -54,19 +60,22 @@ pub async fn profile_handler(
     );
 
     // convert to response format
-    let response = ProfileResponse {
-        username: user_info.username,
-        avatar_url: user_info.avatar_url,
+    let response = UserProfile {
+        user: ProfileUser {
+            username: user_info.user.username,
+            avatar_url: user_info.user.avatar_url,
+            admin_level: user_info.user.admin_level,
+        },
         projects: user_info
             .projects
             .into_iter()
-            .map(|p| Project {
+            .map(|p| UserProfileProject {
                 name: p.name,
                 project_url: p.project_url,
                 total_seconds: p.total_seconds,
             })
             .collect(),
-        time: TimeInfo {
+        time: UserProfileTime {
             today: user_info.time.today,
             week: user_info.time.week,
             all_time: user_info.time.all_time,

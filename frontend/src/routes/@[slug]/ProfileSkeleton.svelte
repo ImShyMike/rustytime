@@ -8,7 +8,10 @@
 		<div class="flex items-center gap-4 mb-6">
 			<Skeleton className="h-16 w-16 rounded-full" />
 			<div class="flex flex-col gap-2">
-				<Skeleton className="w-36 h-7" />
+				<div class="flex items-center gap-2">
+					<Skeleton className="w-36 h-7" />
+					<Skeleton className="w-16 h-6 rounded-full" />
+				</div>
 				<Skeleton className="w-20 h-4" />
 			</div>
 		</div>
