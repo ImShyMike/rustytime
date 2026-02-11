@@ -5,8 +5,7 @@
 	import { PUBLIC_SITE_URL } from '$env/static/public';
 	import { ProgressBar } from '@prgm/sveltekit-progress-bar';
 
-	const props = $props();
-	let { children, data } = props;
+	let { children } = $props();
 
 	const canonicalUrl = $derived(`${PUBLIC_SITE_URL}${page.url.pathname}${page.url.search}`);
 </script>
@@ -28,7 +27,7 @@
 	</div>
 
 	<div class="side-bar relative w-0 md:w-auto md:shrink-0 h-full">
-		<SideBar serverAuth={data?.auth} />
+		<SideBar />
 	</div>
 
 	<main class="page-content flex-1 overflow-auto h-full flex flex-col">

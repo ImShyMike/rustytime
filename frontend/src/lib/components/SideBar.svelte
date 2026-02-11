@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
-	import { auth, type User } from '$lib/stores/auth';
+	import { auth } from '$lib/stores/auth';
 	import { initializeTheme, theme, toggleTheme } from '$lib/stores/theme';
 	import LucideLogIn from '~icons/lucide/log-in';
 	import LucideHouse from '~icons/lucide/house';
@@ -28,19 +28,9 @@
 	import Avatar from './ui/Avatar.svelte';
 	import { createApi } from '$lib/api/api';
 
-	interface Props {
-		serverAuth?: {
-			isAuthenticated: boolean;
-			user: User | null;
-			impersonation: App.ImpersonationInfo | null;
-		};
-	}
-
-	let { serverAuth }: Props = $props();
-
-	const isAuthenticated = $derived(serverAuth?.isAuthenticated ?? false);
-	const user = $derived(serverAuth?.user ?? null);
-	const impersonation = $derived(serverAuth?.impersonation ?? null);
+	const isAuthenticated = $derived(page.data.auth?.isAuthenticated ?? false);
+	const user = $derived(page.data.auth?.user ?? null);
+	const impersonation = $derived(page.data.auth?.impersonation ?? null);
 
 	let collapsed: boolean = $state(false);
 	let buttonMode: boolean = $state(false);
