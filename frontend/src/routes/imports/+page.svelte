@@ -8,6 +8,7 @@
 	import LucideLoader2 from '~icons/lucide/loader-2';
 	import LucideCheck from '~icons/lucide/check';
 	import LucideX from '~icons/lucide/x';
+	import { resolve } from '$app/paths';
 
 	interface Props {
 		data: PageData;
@@ -112,11 +113,8 @@
 										class="text-sm font-medium {job.user_id === page.data.auth?.user?.id
 											? 'text-blue'
 											: 'text-text'}"
-										href={job.user_name ? `https://github.com/${job.user_name}` : undefined}
-										target="_blank"
-										data-umami-event="github-profile-link"
-										data-umami-event-name={job.user_name}
-										rel="noopener noreferrer external">{job.user_name || 'Unknown'}</a
+										href={job.user_name ? resolve(`/@[slug]`, { slug: job.user_name }) : ''}
+										>{job.user_name || 'Unknown'}</a
 									>
 								</div>
 							</td>
