@@ -16,7 +16,7 @@
 		Button,
 		Pagination
 	} from '$lib';
-	import { auth } from '$lib/stores/auth';
+	import { page } from '$app/state';
 	import { impersonateUser, changeAdminLevel } from '$lib/api/admin';
 	import { createApi } from '$lib/api/api';
 	import DateBarChart from '$lib/charts/DateBarChart.svelte';
@@ -30,6 +30,10 @@
 
 	let adminData = $derived(data);
 	let lastUpdatedAt = $state(new Date());
+
+	const serverAuth = $derived(page.data.auth);
+	const currentUser = $derived(serverAuth?.user ?? null);
+	const impersonation = $derived(serverAuth?.impersonation ?? null);
 
 	const api = createApi(fetch);
 
@@ -151,7 +155,7 @@
 										<img src={user.avatar_url} alt="Avatar" class="h-8 w-8 rounded-full mr-3" />
 									{/if}
 									<a
-										class="text-sm font-medium {user.id === $auth.user?.id
+										class="text-sm font-medium {user.id === currentUser?.id
 											? 'text-blue'
 											: 'text-text'}"
 										href={resolve(`/@[slug]`, { slug: user.name })}>{user.name || 'Unknown'}</a
@@ -179,19 +183,19 @@
 								</td>
 							{/if}
 							<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1">
-								{#if $auth.user?.admin_level !== undefined && user.admin_level >= $auth.user.admin_level && (!$auth.impersonation || user.id !== $auth.impersonation.admin_id)}
+								{#if currentUser?.admin_level !== undefined && user.admin_level >= currentUser.admin_level && (!impersonation || user.id !== impersonation.admin_id)}
 									<span class="text-xs uppercase tracking-wide text-ctp-subtext1/80">Nothing</span>
 								{:else}
 									<div class="flex items-center gap-2">
 										<Button size="sm" onClick={() => impersonateUser(api, user.id)}>
-											{#if $auth.impersonation && user.id === $auth.impersonation.admin_id}
+											{#if impersonation && user.id === impersonation.admin_id}
 												Go back
 											{:else}
 												Impersonate
 											{/if}
 										</Button>
 
-										{#if $auth.user?.admin_level === undefined || ($auth.user.admin_level ?? 0) > (user.admin_level ?? 0) + 1}
+										{#if currentUser?.admin_level === undefined || (currentUser.admin_level ?? 0) > (user.admin_level ?? 0) + 1}
 											<Button
 												size="sm"
 												variant="confirm"
@@ -201,7 +205,7 @@
 											>
 												Promote
 											</Button>
-										{:else if (user.admin_level ?? 0) > 0 && ($auth.user?.admin_level === undefined || ($auth.user.admin_level ?? 0) > (user.admin_level ?? 0))}
+										{:else if (user.admin_level ?? 0) > 0 && (currentUser?.admin_level === undefined || (currentUser.admin_level ?? 0) > (user.admin_level ?? 0))}
 											<Button
 												variant="danger"
 												size="sm"

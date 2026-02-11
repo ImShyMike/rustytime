@@ -1,25 +1,14 @@
 <script lang="ts">
 	import '../app.css';
 	import { page } from '$app/state';
-	import { auth } from '$lib/stores/auth';
 	import { AuthErrorWarning, Meta, SideBar } from '$lib';
 	import { PUBLIC_SITE_URL } from '$env/static/public';
 	import { ProgressBar } from '@prgm/sveltekit-progress-bar';
-	import { onMount } from 'svelte';
 
 	const props = $props();
 	let { children, data } = props;
 
 	const canonicalUrl = $derived(`${PUBLIC_SITE_URL}${page.url.pathname}${page.url.search}`);
-
-	auth.hydrate(data?.auth);
-
-	// Fallback if not authenticated
-	onMount(() => {
-		if (!data?.auth?.isAuthenticated) {
-			auth.verify();
-		}
-	});
 </script>
 
 <Meta

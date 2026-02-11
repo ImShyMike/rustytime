@@ -4,7 +4,7 @@
 	import { Container, PageScaffold, SectionTitle, DataTable, Pagination, EmptyState } from '$lib';
 	import { setupVisibilityRefresh } from '$lib/utils/refresh';
 	import { formatDuration } from '$lib/utils/time';
-	import { auth } from '$lib/stores/auth';
+	import { page } from '$app/state';
 	import LucideLoader2 from '~icons/lucide/loader-2';
 	import LucideCheck from '~icons/lucide/check';
 	import LucideX from '~icons/lucide/x';
@@ -109,7 +109,7 @@
 										<img src={job.user_avatar_url} alt="Avatar" class="h-8 w-8 rounded-full mr-3" />
 									{/if}
 									<a
-										class="text-sm font-medium {job.user_id === $auth.user?.id
+										class="text-sm font-medium {job.user_id === page.data.auth?.user?.id
 											? 'text-blue'
 											: 'text-text'}"
 										href={job.user_name ? `https://github.com/${job.user_name}` : undefined}

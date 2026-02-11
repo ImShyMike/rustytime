@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Modal, Button, TextInput } from '$lib';
 	import type { Project } from '$lib/types/projects';
-	import { auth } from '$lib/stores/auth';
+	import { page } from '$app/state';
 	import { createApi, ApiError } from '$lib/api/api';
 	import { updateProject } from '$lib/api/project';
 
@@ -16,7 +16,7 @@
 	const originalProjectUrl = props.project.project_url ?? '';
 	let projectUrl = $state(originalProjectUrl);
 	let isOpen = $state(true);
-	let username = $state($auth.user?.name ?? 'user');
+	let username = $state(page.data.auth?.user?.name ?? 'user');
 	let isSaving = $state(false);
 	let errorMessage = $state<string | null>(null);
 

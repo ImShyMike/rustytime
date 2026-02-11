@@ -38,13 +38,9 @@
 
 	let { serverAuth }: Props = $props();
 
-	const isAuthenticated = $derived(
-		$auth.isLoading ? (serverAuth?.isAuthenticated ?? false) : $auth.isAuthenticated
-	);
-	const user = $derived($auth.isLoading ? (serverAuth?.user ?? null) : $auth.user);
-	const impersonation = $derived(
-		$auth.isLoading ? (serverAuth?.impersonation ?? null) : $auth.impersonation
-	);
+	const isAuthenticated = $derived(serverAuth?.isAuthenticated ?? false);
+	const user = $derived(serverAuth?.user ?? null);
+	const impersonation = $derived(serverAuth?.impersonation ?? null);
 
 	let collapsed: boolean = $state(false);
 	let buttonMode: boolean = $state(false);

@@ -9,8 +9,6 @@
 	import LucideWifiOff from '~icons/lucide/wifi-off';
 	import LucideX from '~icons/lucide/x';
 
-	export let showRetryButton = true;
-
 	function getErrorDisplayMessage(error: AuthError): string {
 		switch (error.type) {
 			case 'unauthorized':
@@ -114,18 +112,11 @@
 					{/if}
 					<div class="flex items-center justify-between">
 						{#if $auth.error.type === 'unauthorized'}
-							<Button size="sm" onClick={auth.login} disabled={$auth.isLoading}>Log in</Button>
-						{:else}
-							{#if $auth.error}
-								<p class="text-xs opacity-70">
-									{$auth.error.timestamp.toLocaleTimeString()}
-								</p>
-							{/if}
-							{#if showRetryButton}
-								<Button size="sm" onClick={() => auth.verify()} disabled={$auth.isLoading}>
-									{$auth.isLoading ? 'Retrying...' : 'Retry'}
-								</Button>
-							{/if}
+							<Button size="sm" onClick={auth.login}>Log in</Button>
+						{:else if $auth.error}
+							<p class="text-xs opacity-70">
+								{$auth.error.timestamp.toLocaleTimeString()}
+							</p>
 						{/if}
 					</div>
 				</div>

@@ -5,7 +5,7 @@
 	import type { Leaderboard } from '$lib/types/leaderboard';
 	import { setupVisibilityRefresh } from '$lib/utils/refresh';
 	import { formatDuration } from '$lib/utils/time';
-	import { auth } from '$lib/stores/auth';
+	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 
 	interface Props {
@@ -99,7 +99,7 @@
 								/>
 								<a
 									class="font-medium overflow-hidden text-ellipsis whitespace-nowrap {entry.user_id ===
-									$auth.user?.id
+									page.data.auth?.user?.id
 										? 'text-ctp-blue'
 										: 'text-ctp-text'}"
 									href={resolve(`/@[slug]`, { slug: entry.user_name })}
