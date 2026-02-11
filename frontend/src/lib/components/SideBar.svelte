@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
-	import { auth } from '$lib/stores/auth';
+	import { auth, type User } from '$lib/stores/auth';
 	import { initializeTheme, theme, toggleTheme } from '$lib/stores/theme';
 	import LucideLogIn from '~icons/lucide/log-in';
 	import LucideHouse from '~icons/lucide/house';
@@ -27,6 +27,20 @@
 	import { impersonateUser } from '$lib/api/admin';
 	import Avatar from './ui/Avatar.svelte';
 	import { createApi } from '$lib/api/api';
+
+	interface Props {
+		serverAuth?: {
+			isAuthenticated: boolean;
+			user: User | null;
+			impersonation: App.ImpersonationInfo | null;
+		};
+	}
+
+	let { serverAuth }: Props = $props();
+
+	const isAuthenticated = $derived(serverAuth?.isAuthenticated ?? $auth.isAuthenticated);
+	const user = $derived(serverAuth?.user ?? $auth.user);
+	const impersonation = $derived(serverAuth?.impersonation ?? $auth.impersonation);
 
 	let collapsed: boolean = $state(false);
 	let buttonMode: boolean = $state(false);
@@ -126,22 +140,22 @@
 		class="bg-ctp-base text-ctp-text h-full p-4 border-r border-ctp-surface0 transition-all duration-300 relative flex flex-col justify-start"
 	>
 		<div
-			class="flex items-center gap-4 transition-all duration-300 {$auth.user
+			class="flex items-center gap-4 transition-all duration-300 {user
 				? collapsed
 					? 'justify-center mb-4'
 					: 'justify-start mb-6'
 				: ''}"
 		>
-			{#if $auth.user}
-				{#if $auth.user.avatar_url}
-					<Avatar url={$auth.user.avatar_url} size={collapsed ? 48 : 64} />
+			{#if user}
+				{#if user.avatar_url}
+					<Avatar url={user.avatar_url} size={collapsed ? 48 : 64} />
 				{/if}
 				<div class={collapsed ? 'hidden' : ''}>
 					<div class="flex flex-row items-center gap-1 align-middle">
-						<UserTag admin_level={$auth.user.admin_level} />
+						<UserTag admin_level={user.admin_level} />
 					</div>
-					<h2 class="{getNameSizeClass($auth.user.name)} text-ctp-subtext1 font-bold">
-						{$auth.user.name || 'User'}
+					<h2 class="{getNameSizeClass(user.name)} text-ctp-subtext1 font-bold">
+						{user.name || 'User'}
 					</h2>
 				</div>
 			{/if}
@@ -149,7 +163,7 @@
 
 		<div class="flex flex-col justify-between transition-all duration-300 mt-0">
 			<nav class="space-y-2 flex flex-col transition-all duration-300">
-				{#if !$auth.isAuthenticated || !$auth.user}
+				{#if !isAuthenticated || !user}
 					<NavLink
 						href="/"
 						active={page.url.pathname === '/'}
@@ -161,7 +175,7 @@
 					</NavLink>
 				{/if}
 
-				{#if $auth.isAuthenticated && $auth.user}
+				{#if isAuthenticated && user}
 					<NavLink
 						href="/dashboard"
 						active={page.url.pathname === '/dashboard'}
@@ -183,8 +197,8 @@
 					</NavLink>
 
 					<NavLink
-						href={`/@${$auth.user.name}`}
-						active={page.url.pathname === `/@${$auth.user.name}`}
+						href={`/@${user.name}`}
+						active={page.url.pathname === `/@${user.name}`}
 						{collapsed}
 						onclick={() => setTimeout(closeMobileSidebar, 100)}
 					>
@@ -203,7 +217,7 @@
 					Leaderboard
 				</NavLink>
 
-				{#if $auth.user?.admin_level && $auth.user.admin_level >= 1}
+				{#if user?.admin_level && user.admin_level >= 1}
 					<NavLink
 						href="/admin"
 						active={page.url.pathname === '/admin'}
@@ -216,7 +230,7 @@
 					</NavLink>
 				{/if}
 
-				{#if $auth.user?.admin_level && $auth.user.admin_level >= 2}
+				{#if user?.admin_level && user.admin_level >= 2}
 					<NavLink
 						href="/imports"
 						active={page.url.pathname === '/imports'}
@@ -229,7 +243,7 @@
 					</NavLink>
 				{/if}
 
-				{#if $auth.isAuthenticated && $auth.user}
+				{#if isAuthenticated && user}
 					<NavLink
 						href="/settings"
 						active={page.url.pathname === '/settings'}
@@ -246,7 +260,7 @@
 					Docs
 				</NavLink>
 
-				{#if $auth.isAuthenticated && $auth.user}
+				{#if isAuthenticated && user}
 					<NavButton
 						{collapsed}
 						onclick={() => {
@@ -312,16 +326,16 @@
 			{/if}
 		</div>
 
-		{#if $auth.impersonation && $auth.user}
+		{#if impersonation && user}
 			<div
 				class="mt-4 rounded-md border border-ctp-yellow/40 bg-ctp-yellow/10 px-3 py-3 text-xs text-ctp-subtext0 transition-all duration-300"
 			>
 				{#if !collapsed}
 					<p class="mb-1 text-sm font-semibold text-ctp-text">
-						Impersonating: {$auth.user.name || 'User'}
+						Impersonating: {user.name || 'User'}
 					</p>
 					<p class="mb-3 text-xs">
-						From: {$auth.impersonation.admin_name || 'Admin'}
+						From: {impersonation.admin_name || 'Admin'}
 					</p>
 				{/if}
 				<NavButton
@@ -330,7 +344,7 @@
 					className="w-full justify-center font-semibold text-sm"
 					onclick={() => {
 						setTimeout(closeMobileSidebar, 100);
-						impersonateUser(api, $auth.impersonation!.admin_id);
+						impersonateUser(api, impersonation!.admin_id);
 					}}
 				>
 					{#snippet icon()}<LucideUserMinus class="h-5 w-5" />{/snippet}

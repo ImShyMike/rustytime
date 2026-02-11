@@ -39,7 +39,7 @@
 	</div>
 
 	<div class="side-bar relative w-0 md:w-auto md:shrink-0 h-full">
-		<SideBar />
+		<SideBar serverAuth={data?.auth} />
 	</div>
 
 	<main class="page-content flex-1 overflow-auto h-full flex flex-col">
