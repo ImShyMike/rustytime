@@ -29,10 +29,11 @@ export const load: ServerLoad = async ({ fetch, cookies, locals }) => {
 
 	if (sessionId) {
 		try {
-			const response = await fetch(
-				`${BACKEND_API_URL}/auth/github/verify?session_id=${encodeURIComponent(sessionId)}`,
-				{ credentials: 'include' }
-			);
+			const response = await fetch(`${BACKEND_API_URL}/auth/github/verify`, {
+				headers: {
+					Cookie: `rustytime_session=${sessionId}`
+				}
+			});
 
 			if (response.ok) {
 				const data = (await response.json()) as RawVerifyResponse;
