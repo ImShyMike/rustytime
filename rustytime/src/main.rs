@@ -72,7 +72,7 @@ fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                     "development".into()
                 }),
                 traces_sample_rate: 0.1,
-                send_default_pii: true,
+                send_default_pii: false,
                 ..Default::default()
             },
         ))

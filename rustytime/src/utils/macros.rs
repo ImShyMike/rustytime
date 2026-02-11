@@ -29,3 +29,9 @@ macro_rules! db_transaction {
             .map_err(|e: $crate::utils::transaction::TxError| e.into_response())?
     }};
 }
+
+/// Macro to run a database transaction with raw diesel errors
+#[macro_export]
+macro_rules! db_transaction_result {
+    ($conn:expr, $body:expr) => {{ $conn.build_transaction().run($body) }};
+}

@@ -15,8 +15,12 @@ use serde::{Deserialize, Serialize};
 use std::env;
 use tower_cookies::Cookies;
 
-use crate::models::session::Session;
+use crate::db_query;
+use crate::db_transaction;
+use crate::models::session::{NewSession, Session};
+use crate::tx_bail;
 use crate::utils::session::SessionManager;
+use crate::utils::transaction::{TxError, TxOptionExt, TxResultExt};
 use crate::{models::user::User, utils::env::is_production_env};
 use crate::{state::AppState, utils::extractors::DbConnection};
 use axum::Json;
@@ -38,14 +42,6 @@ pub struct GitHubUser {
 #[derive(Serialize, JsonSchema)]
 pub struct AuthUrlResponse {
     pub auth_url: String,
-}
-
-#[derive(Serialize, JsonSchema)]
-pub struct CallbackUserResponse {
-    pub id: i32,
-    pub github_id: u64,
-    pub name: String,
-    pub avatar_url: String,
 }
 
 #[derive(Serialize, JsonSchema)]
@@ -118,14 +114,14 @@ pub async fn login(
     // check if in production for cookie security settings
     let is_production = is_production_env();
 
-    let mut cookie = tower_cookies::Cookie::build(("rustytime_oauth_state", csrf_token_secret))
+    let cookie = tower_cookies::Cookie::build(("rustytime_oauth_state", csrf_token_secret))
         .path("/")
+        .expires(time::OffsetDateTime::now_utc() + time::Duration::minutes(10))
         .http_only(true)
         .secure(is_production) // only secure in production
         .same_site(tower_cookies::cookie::SameSite::Lax)
         .build();
 
-    cookie.set_expires(time::OffsetDateTime::now_utc() + time::Duration::minutes(10));
     cookies.add(cookie);
 
     Json(AuthUrlResponse {
@@ -154,9 +150,10 @@ pub async fn callback(
 
     // remove the oauth state cookie after checking
     let remove_state_cookie = tower_cookies::Cookie::build(("rustytime_oauth_state", ""))
+        .expires(time::OffsetDateTime::UNIX_EPOCH)
         .path("/")
         .build();
-    cookies.remove(remove_state_cookie);
+    cookies.add(remove_state_cookie);
 
     if !state_valid {
         return Ok(Redirect::to(&format!(
@@ -203,103 +200,90 @@ pub async fn callback(
         }
     };
 
-    let (user, session) = match conn.transaction::<_, diesel::result::Error, _>(|conn| {
+    let session = db_transaction!(conn, |conn| {
         // create or update user in database
         let user = User::create_or_update(
             conn,
             user_info.id as i64,
             &user_info.login,
             &user_info.avatar_url,
-        )?;
+        )
+        .db_err("Failed to create or update user")
+        .map_err(|_| {
+            error!("Database error during user creation");
+            TxError::Response(Box::new(
+                Redirect::to(&format!("{}/?error=database", frontend_url)).into_response(),
+            ))
+        })?;
 
-        // create or update session for authentication
-        let session = Session::create_or_update(conn, user.id, access_token, user_info.id as i64)?;
-
-        Ok((user, session))
-    }) {
-        Ok(result) => result,
-        Err(err) => {
-            return Ok({
-                error!("Database error during user/session creation: {}", err);
-                Redirect::to(&format!("{}/?error=database", frontend_url))
-            });
-        }
-    };
+        // create new session for authentication
+        let new_session = NewSession {
+            user_id: user.id,
+            github_access_token: access_token.to_string(),
+            github_user_id: user_info.id as i64,
+            impersonated_by: None,
+        };
+        Session::create(conn, &new_session)
+            .db_err("Failed to create session")
+            .map_err(|_| {
+                error!("Database error during session creation");
+                TxError::Response(Box::new(
+                    Redirect::to(&format!("{}/?error=database", frontend_url)).into_response(),
+                ))
+            })
+    });
 
     // set session cookie
-    let session_cookie = SessionManager::create_session_cookie(session.id);
+    let session_cookie = SessionManager::create_session_cookie(session.id, session.expires_at);
     cookies.add(session_cookie);
 
-    // create JSON response
-    let user_data = CallbackUserResponse {
-        id: user.id,
-        github_id: user_info.id,
-        name: user_info.login,
-        avatar_url: user_info.avatar_url,
-    };
-
-    let user_string = serde_json::to_string(&user_data).unwrap_or_default();
-    let user_encoded = urlencoding::encode(&user_string);
-
-    Ok(Redirect::to(&format!(
-        "{}/?session_id={}&user={}",
-        frontend_url, session.id, user_encoded
-    )))
+    Ok(Redirect::to(&frontend_url))
 }
 
 /// Handler to verify a session token
 pub async fn verify_session(
     State(app_state): State<AppState>,
-    Query(params): Query<serde_json::Value>,
     NoApi(DbConnection(mut conn)): NoApi<DbConnection>,
     cookies: NoApi<Cookies>,
 ) -> Result<Json<VerifySessionResponse>, Response> {
     let cookies = cookies.0;
-    let session_id = params
-        .get("session_id")
-        .and_then(|v| v.as_str())
-        .and_then(|s| uuid::Uuid::parse_str(s).ok())
-        .or_else(|| {
-            cookies
-                .get("rustytime_session")
-                .and_then(|cookie| uuid::Uuid::parse_str(cookie.value()).ok())
-        })
-        .ok_or_else(|| {
-            (StatusCode::BAD_REQUEST, "Missing or invalid session_id").into_response()
-        })?;
+    let session_id = SessionManager::get_session_from_cookies(&cookies).ok_or_else(|| {
+        (StatusCode::BAD_REQUEST, "Missing or invalid session_id").into_response()
+    })?;
 
     match SessionManager::validate_session(&app_state.db_pool, session_id).await {
         Ok(Some(session_data)) => {
-            // get user details
-            let user = crate::schema::users::table
-                .find(session_data.user_id)
-                .first::<User>(&mut conn)
-                .map_err(|err| {
-                    eprintln!("Database error fetching user: {}", err);
-                    (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
-                })?;
-
-            let impersonation = if let Some(admin_id) = session_data.impersonated_by {
-                match crate::schema::users::table
-                    .find(admin_id)
-                    .first::<User>(&mut conn)
+            let (user, impersonation) = db_transaction!(conn, |conn| {
+                // get user details
+                let user = crate::schema::users::table
+                    .find(session_data.user_id)
+                    .first::<User>(conn)
                     .optional()
-                {
-                    Ok(Some(admin)) => Some(ImpersonationResponse {
+                    .db_err("Failed to fetch user")?
+                    .or_not_found("User not found")?;
+
+                let impersonation = if let Some(admin_id) = session_data.impersonated_by {
+                    let admin = crate::schema::users::table
+                        .find(admin_id)
+                        .first::<User>(conn)
+                        .optional()
+                        .db_err("Failed to fetch impersonating admin")?;
+
+                    let Some(admin) = admin else {
+                        tx_bail!(StatusCode::NOT_FOUND, "Impersonating admin not found");
+                    };
+
+                    Some(ImpersonationResponse {
                         admin_id: admin.id,
                         admin_name: admin.name,
                         admin_avatar_url: admin.avatar_url,
-                    }),
-                    Ok(None) => None,
-                    Err(err) => {
-                        eprintln!("Database error fetching impersonating admin: {}", err);
-                        return Err((StatusCode::INTERNAL_SERVER_ERROR, "Internal server error")
-                            .into_response());
-                    }
-                }
-            } else {
-                None
-            };
+                    })
+                } else {
+                    None
+                };
+
+                Ok((user, impersonation))
+            });
 
             Ok(Json(VerifySessionResponse {
                 valid: true,
@@ -337,14 +321,7 @@ pub async fn logout(
     let cookies = cookies.0;
     // get session from cookie
     if let Some(session_id) = SessionManager::get_session_from_cookies(&cookies) {
-        diesel::delete(
-            crate::schema::sessions::table.filter(crate::schema::sessions::id.eq(session_id)),
-        )
-        .execute(&mut conn)
-        .map_err(|err| {
-            eprintln!("Database error deleting session: {}", err);
-            (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
-        })?;
+        db_query!(SessionManager::delete_session(&mut conn, session_id));
     }
 
     // remove session cookie

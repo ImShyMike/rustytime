@@ -53,7 +53,7 @@
 					alt={profileData.user.username}
 					class="h-16 w-16 rounded-full border-2 border-ctp-surface0"
 				/>
-				
+
 				<div>
 					<div class="flex items-center gap-2">
 						<h1 class="text-2xl font-bold text-ctp-text">{profileData.user.username}</h1>

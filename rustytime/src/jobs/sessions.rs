@@ -8,9 +8,8 @@ use apalis_cron::{CronStream, Tick};
 use cron::Schedule;
 use tokio::signal::ctrl_c;
 
-use diesel::Connection;
-
 use crate::db::connection::DbPool;
+use crate::db_transaction_result;
 use crate::models::session::Session;
 
 const SESSION_RETENTION_DAYS: i64 = 30;
@@ -24,10 +23,11 @@ fn cleanup_expired_sessions(pool: &DbPool) -> Result<(), diesel::result::Error> 
         )
     })?;
 
-    conn.transaction(|conn| {
-        let deleted = Session::delete_expired(conn, SESSION_RETENTION_DAYS)?;
+    db_transaction_result!(conn, |conn| {
+        let scrubbed = Session::scrub_expired(conn)?;
+        let deleted = Session::delete_stale(conn, SESSION_RETENTION_DAYS)?;
 
-        tracing::debug!(deleted, "Cleaned up old leaderboard entries");
+        tracing::debug!(scrubbed, deleted, "Session cleanup complete");
 
         Ok(())
     })
@@ -35,7 +35,7 @@ fn cleanup_expired_sessions(pool: &DbPool) -> Result<(), diesel::result::Error> 
 
 async fn run_cleanup(_tick: Tick, pool: Data<DbPool>) {
     if let Err(e) = cleanup_expired_sessions(&pool) {
-        tracing::error!(error = ?e, "Failed to cleanup old leaderboard entries");
+        tracing::error!(error = ?e, "Failed to run session cleanup");
     }
 }
 

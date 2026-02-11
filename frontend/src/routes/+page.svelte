@@ -15,29 +15,24 @@
 		}
 	});
 
+	// redirect after login if needed
+	$effect(() => {
+		if (!browser || !$auth.isAuthenticated) {
+			return;
+		}
+
+		const saved = sessionStorage.getItem('rustytime_redirect');
+		if (saved) {
+			sessionStorage.removeItem('rustytime_redirect');
+			window.location.href = saved;
+		}
+	});
+
 	let redirectPath: string | null = null;
 
 	function handleUrlParams(urlParams: URLSearchParams) {
-		const sessionId = urlParams.get('session_id');
-		const userData = urlParams.get('user');
 		const authError = urlParams.get('auth_error');
 		const redirectParam = urlParams.get('redirect');
-
-		// Handle OAuth callback
-		if (sessionId || userData) {
-			const saved = sessionStorage.getItem('rustytime_redirect');
-			sessionStorage.removeItem('rustytime_redirect');
-
-			const newUrl = new URL(window.location.href);
-			newUrl.searchParams.delete('session_id');
-			newUrl.searchParams.delete('user');
-			window.history.replaceState({}, document.title, newUrl.pathname);
-
-			if (saved) {
-				window.location.href = saved;
-				return;
-			}
-		}
 
 		// Handle auth error from server redirects
 		if (authError === 'unauthorized') {

@@ -18,6 +18,10 @@ pub async fn change_user_admin_level(
         return Err((StatusCode::FORBIDDEN, "No permission").into_response());
     }
 
+    if new_level < 0 {
+        return Err((StatusCode::BAD_REQUEST, "Invalid admin level").into_response());
+    }
+
     db_transaction!(conn, |conn| {
         let target_user = User::get_by_id(conn, user_id)
             .db_err("Failed to fetch target user")?

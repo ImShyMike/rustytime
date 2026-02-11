@@ -10,9 +10,9 @@ use cron::Schedule;
 use tokio::signal::ctrl_c;
 
 use axum_prometheus::metrics;
-use diesel::Connection;
 
 use crate::db::connection::DbPool;
+use crate::db_transaction_result;
 use crate::models::heartbeat::Heartbeat;
 use crate::models::leaderboard::{Leaderboard, NewLeaderboard};
 use crate::utils::time::get_week_start;
@@ -166,7 +166,7 @@ fn cleanup_old_entries(pool: &DbPool) -> Result<(), diesel::result::Error> {
     let cutoff_daily = today - chrono::Duration::days(DAILY_RETENTION_DAYS);
     let cutoff_weekly = today - chrono::Duration::weeks(WEEKLY_RETENTION_WEEKS);
 
-    conn.transaction(|conn| {
+    db_transaction_result!(conn, |conn| {
         let daily_deleted = Leaderboard::delete_old_daily(conn, cutoff_daily)?;
         let weekly_deleted = Leaderboard::delete_old_weekly(conn, cutoff_weekly)?;
 

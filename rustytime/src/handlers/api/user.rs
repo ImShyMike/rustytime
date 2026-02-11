@@ -2,7 +2,7 @@ use aide::NoApi;
 use axum::Json;
 use axum::extract::ConnectInfo;
 use axum::extract::{Path, State};
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, StatusCode, Uri};
 use axum::response::{IntoResponse, Response};
 use chrono::Utc;
 use diesel::prelude::*;
@@ -13,6 +13,7 @@ use std::net::IpAddr;
 use std::net::SocketAddr;
 
 use crate::db::connection::DbPool;
+use crate::db_transaction_result;
 use crate::models::heartbeat::Heartbeat;
 use crate::models::heartbeat::*;
 use crate::models::project::get_or_create_project_id;
@@ -64,8 +65,8 @@ async fn process_heartbeat_request(
     app_state: &AppState,
     id: String,
     client_ip: IpAddr,
-    headers: axum::http::HeaderMap,
-    uri: axum::http::Uri,
+    headers: HeaderMap,
+    uri: Uri,
     heartbeat_input: HeartbeatInput,
 ) -> Result<Response, Response> {
     if id != "current" {
@@ -155,8 +156,8 @@ pub async fn create_heartbeats(
     State(app_state): State<AppState>,
     Path(id): Path<String>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
-    headers: axum::http::HeaderMap,
-    uri: axum::http::Uri,
+    headers: HeaderMap,
+    uri: Uri,
     Json(heartbeat_input): Json<HeartbeatInput>,
 ) -> Result<Response, Response> {
     let client_ip = extract_client_ip_from_headers(&headers, addr);
@@ -168,33 +169,27 @@ pub async fn get_statusbar_today(
     State(app_state): State<AppState>,
     NoApi(DbConnection(mut conn)): NoApi<DbConnection>,
     Path(id): Path<String>,
-    headers: axum::http::HeaderMap,
-    uri: axum::http::Uri,
+    headers: HeaderMap,
+    uri: Uri,
 ) -> Result<Json<StatusBarResponse>, Response> {
-    let (user_id, timezone) = if id != "current" {
-        // not implemented
-        match id.parse::<i32>() {
-            Ok(id) => (id, None),
-            Err(_) => return Err((StatusCode::BAD_REQUEST, "Bad request").into_response()),
-        }
-    } else {
-        let api_key = get_valid_api_key(&headers, &uri).await;
-        let api_key = match api_key {
-            Some(key) => key,
-            None => return Err((StatusCode::BAD_REQUEST, "Bad request").into_response()),
-        };
+    if id != "current" {
+        return Err((StatusCode::BAD_REQUEST, "Bad request").into_response());
+    }
 
-        let user_result = get_user_from_api_key(&app_state.db_pool, &api_key).await;
-        let user = match user_result {
-            Some(user) => user,
-            None => return Err((StatusCode::BAD_REQUEST, "Bad request").into_response()),
-        };
+    let api_key = get_valid_api_key(&headers, &uri).await;
+    let api_key = match api_key {
+        Some(key) => key,
+        None => return Err((StatusCode::BAD_REQUEST, "Bad request").into_response()),
+    };
 
-        (user.id, Some(user.timezone))
+    let user_result = get_user_from_api_key(&app_state.db_pool, &api_key).await;
+    let user = match user_result {
+        Some(user) => user,
+        None => return Err((StatusCode::BAD_REQUEST, "Bad request").into_response()),
     };
 
     // calculate today's date range in user's timezone
-    let user_tz = parse_timezone(timezone.as_deref().unwrap_or("UTC"));
+    let user_tz = parse_timezone(user.timezone.as_str());
     let today = get_today_in_timezone(user_tz);
     let start_of_day = get_day_start_utc(today, user_tz);
     let end_of_day = get_day_end_utc(today, user_tz);
@@ -202,7 +197,7 @@ pub async fn get_statusbar_today(
     match Heartbeat::get_user_duration_seconds(
         &mut conn,
         DurationInput {
-            user_id: Some(user_id),
+            user_id: Some(user.id),
             start_date: Some(start_of_day),
             end_date: Some(end_of_day),
             project: None,
@@ -228,7 +223,7 @@ pub async fn get_statusbar_today(
                         date: today.format("%Y-%m-%d").to_string(),
                         start: start_of_day.to_rfc3339(),
                         end: end_of_day.to_rfc3339(),
-                        timezone: timezone.unwrap_or_else(|| "UTC".to_string()),
+                        timezone: user.timezone,
                     },
                 },
             }))
@@ -270,7 +265,7 @@ async fn store_heartbeats_in_db_internal(
     tokio::task::spawn_blocking(move || {
         let mut connection = pool.get().expect("Failed to get DB connection from pool");
 
-        connection.transaction(|conn| {
+        db_transaction_result!(connection, |conn| {
             let mut heartbeat_keys = if include_responses {
                 Some(Vec::with_capacity(new_heartbeats.len()))
             } else {

@@ -3,7 +3,8 @@ use super::*;
 #[test]
 fn create_session_cookie_sets_secure_attributes_in_production() {
     let session_id = Uuid::new_v4();
-    let cookie = SessionManager::create_session_cookie(session_id);
+    let expires_at = Utc::now() + chrono::Duration::days(7);
+    let cookie = SessionManager::create_session_cookie(session_id, expires_at);
     if is_production_env() {
         assert!(cookie.secure().unwrap_or(false));
         assert_eq!(cookie.same_site().unwrap_or(SameSite::Lax), SameSite::Lax);
@@ -15,35 +16,40 @@ fn create_session_cookie_sets_secure_attributes_in_production() {
 #[test]
 fn create_session_cookie_has_correct_name() {
     let session_id = Uuid::new_v4();
-    let cookie = SessionManager::create_session_cookie(session_id);
+    let expires_at = Utc::now() + chrono::Duration::days(7);
+    let cookie = SessionManager::create_session_cookie(session_id, expires_at);
     assert_eq!(cookie.name(), SESSION_COOKIE_NAME);
 }
 
 #[test]
 fn create_session_cookie_has_correct_path() {
     let session_id = Uuid::new_v4();
-    let cookie = SessionManager::create_session_cookie(session_id);
+    let expires_at = Utc::now() + chrono::Duration::days(7);
+    let cookie = SessionManager::create_session_cookie(session_id, expires_at);
     assert_eq!(cookie.path(), Some("/"));
 }
 
 #[test]
 fn create_session_cookie_is_http_only() {
     let session_id = Uuid::new_v4();
-    let cookie = SessionManager::create_session_cookie(session_id);
+    let expires_at = Utc::now() + chrono::Duration::days(7);
+    let cookie = SessionManager::create_session_cookie(session_id, expires_at);
     assert!(cookie.http_only().unwrap_or(false));
 }
 
 #[test]
 fn create_session_cookie_value_matches_session_id() {
     let session_id = Uuid::new_v4();
-    let cookie = SessionManager::create_session_cookie(session_id);
+    let expires_at = Utc::now() + chrono::Duration::days(7);
+    let cookie = SessionManager::create_session_cookie(session_id, expires_at);
     assert_eq!(cookie.value(), session_id.to_string());
 }
 
 #[test]
 fn create_session_cookie_same_site_is_lax() {
     let session_id = Uuid::new_v4();
-    let cookie = SessionManager::create_session_cookie(session_id);
+    let expires_at = Utc::now() + chrono::Duration::days(7);
+    let cookie = SessionManager::create_session_cookie(session_id, expires_at);
     assert_eq!(cookie.same_site(), Some(SameSite::Lax));
 }
 

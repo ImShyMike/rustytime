@@ -1,17 +1,16 @@
 use chrono::{DateTime, Utc};
 use diesel::dsl::now;
 use diesel::prelude::*;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::models::user::User;
 use crate::schema::sessions;
 use crate::schema::sessions::dsl;
 
-pub const SESSION_EXPIRY_DAYS: i64 = 7;
-
-#[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
+#[derive(Queryable, Selectable, Debug, Clone)]
 #[diesel(table_name = sessions)]
+#[allow(dead_code)]
 pub struct Session {
     pub id: Uuid,
     pub user_id: i32,
@@ -43,52 +42,10 @@ impl Session {
             .optional()
     }
 
-    pub fn find_by_github_user_id(
-        conn: &mut PgConnection,
-        gh_user_id: i64,
-    ) -> QueryResult<Option<Session>> {
-        dsl::sessions
-            .filter(dsl::github_user_id.eq(gh_user_id))
-            .filter(dsl::expires_at.gt(now))
-            .filter(dsl::impersonated_by.is_null())
-            .first::<Session>(conn)
-            .optional()
-    }
-
     pub fn create(conn: &mut PgConnection, new_session: &NewSession) -> QueryResult<Session> {
         diesel::insert_into(sessions::table)
             .values(new_session)
             .get_result(conn)
-    }
-
-    pub fn create_or_update(
-        conn: &mut PgConnection,
-        user_id: i32,
-        access_token: &str,
-        gh_user_id: i64,
-    ) -> QueryResult<Session> {
-        conn.transaction::<_, diesel::result::Error, _>(|conn| {
-            // check if a session already exists for this user
-            if let Some(existing_session) = Self::find_by_github_user_id(conn, gh_user_id)? {
-                // update the existing session with new access token
-                diesel::update(sessions::table.find(existing_session.id))
-                    .set((
-                        dsl::github_access_token.eq(access_token),
-                        dsl::expires_at
-                            .eq(Utc::now() + chrono::Duration::days(SESSION_EXPIRY_DAYS)),
-                    ))
-                    .get_result(conn)
-            } else {
-                // create new session
-                let new_session = NewSession {
-                    user_id,
-                    github_access_token: access_token.to_string(),
-                    github_user_id: gh_user_id,
-                    impersonated_by: None,
-                };
-                Self::create(conn, &new_session)
-            }
-        })
     }
 
     #[allow(dead_code)]
@@ -97,8 +54,17 @@ impl Session {
         diesel::delete(sessions::table.filter(dsl::user_id.eq(user_id))).execute(conn)
     }
 
-    #[inline(always)]
-    pub fn delete_expired(conn: &mut PgConnection, retention_days: i64) -> QueryResult<usize> {
+    pub fn scrub_expired(conn: &mut PgConnection) -> QueryResult<usize> {
+        diesel::update(
+            sessions::table
+                .filter(dsl::expires_at.lt(diesel::dsl::now))
+                .filter(dsl::github_access_token.ne("")),
+        )
+        .set(dsl::github_access_token.eq(""))
+        .execute(conn)
+    }
+
+    pub fn delete_stale(conn: &mut PgConnection, retention_days: i64) -> QueryResult<usize> {
         diesel::delete(
             sessions::table
                 .filter(dsl::expires_at.lt(Utc::now() - chrono::Duration::days(retention_days))),
@@ -112,13 +78,18 @@ impl Session {
         target_user: &User,
         acting_admin_id: i32,
     ) -> QueryResult<Session> {
-        diesel::update(sessions::table.find(session_id))
-            .set((
-                dsl::user_id.eq(target_user.id),
-                dsl::github_user_id.eq(target_user.github_id),
-                dsl::impersonated_by.eq(Some(acting_admin_id)),
-            ))
-            .get_result(conn)
+        diesel::update(
+            sessions::table
+                .filter(dsl::id.eq(session_id))
+                .filter(dsl::user_id.eq(acting_admin_id))
+                .filter(dsl::impersonated_by.is_null()),
+        )
+        .set((
+            dsl::user_id.eq(target_user.id),
+            dsl::github_user_id.eq(target_user.github_id),
+            dsl::impersonated_by.eq(Some(acting_admin_id)),
+        ))
+        .get_result(conn)
     }
 
     pub fn clear_impersonation(
@@ -126,12 +97,16 @@ impl Session {
         session_id: Uuid,
         admin_user: &User,
     ) -> QueryResult<Session> {
-        diesel::update(sessions::table.find(session_id))
-            .set((
-                dsl::user_id.eq(admin_user.id),
-                dsl::github_user_id.eq(admin_user.github_id),
-                dsl::impersonated_by.eq::<Option<i32>>(None),
-            ))
-            .get_result(conn)
+        diesel::update(
+            sessions::table
+                .filter(dsl::id.eq(session_id))
+                .filter(dsl::impersonated_by.eq(admin_user.id)),
+        )
+        .set((
+            dsl::user_id.eq(admin_user.id),
+            dsl::github_user_id.eq(admin_user.github_id),
+            dsl::impersonated_by.eq::<Option<i32>>(None),
+        ))
+        .get_result(conn)
     }
 }

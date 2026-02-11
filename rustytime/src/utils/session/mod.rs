@@ -2,7 +2,7 @@ use crate::db::connection::DbPool;
 use crate::models::session::Session;
 use crate::models::user::User;
 use crate::utils::env::is_production_env;
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use tower_cookies::cookie::SameSite;
@@ -12,8 +12,6 @@ use uuid::Uuid;
 use crate::schema::{sessions, users};
 
 pub const SESSION_COOKIE_NAME: &str = "rustytime_session";
-pub const SESSION_DURATION_DAYS: i64 = 30;
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SessionData {
     pub id: Uuid,
@@ -41,15 +39,13 @@ pub struct ImpersonationContext {
 impl SessionManager {
     /// Create a new session cookie
     #[inline(always)]
-    pub fn create_session_cookie(session_id: Uuid) -> Cookie<'static> {
-        let expires = Utc::now() + Duration::days(SESSION_DURATION_DAYS);
-
+    pub fn create_session_cookie(session_id: Uuid, expires_at: DateTime<Utc>) -> Cookie<'static> {
         // check if in production
         let is_production = is_production_env();
 
         let mut cookie_builder = Cookie::build((SESSION_COOKIE_NAME, session_id.to_string()))
             .path("/")
-            .expires(time::OffsetDateTime::from_unix_timestamp(expires.timestamp()).unwrap())
+            .expires(time::OffsetDateTime::from_unix_timestamp(expires_at.timestamp()).unwrap())
             .http_only(true)
             .same_site(SameSite::Lax);
 
@@ -99,6 +95,11 @@ impl SessionManager {
             expires_at: s.expires_at,
             impersonated_by: s.impersonated_by,
         }))
+    }
+
+    #[inline(always)]
+    pub fn delete_session(conn: &mut PgConnection, session_id: Uuid) -> QueryResult<usize> {
+        diesel::delete(sessions::table.filter(sessions::id.eq(session_id))).execute(conn)
     }
 
     /// Remove the session cookie

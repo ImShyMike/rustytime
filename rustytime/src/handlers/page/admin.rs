@@ -202,7 +202,8 @@ pub async fn impersonate_user(
         }
     });
 
-    let session_cookie = SessionManager::create_session_cookie(updated_session.id);
+    let session_cookie =
+        SessionManager::create_session_cookie(updated_session.id, updated_session.expires_at);
     cookies.add(session_cookie);
 
     Ok(StatusCode::OK)
