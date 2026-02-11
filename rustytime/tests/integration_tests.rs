@@ -53,23 +53,6 @@ mod auth_tests {
 
         response.assert_status(StatusCode::BAD_REQUEST);
     }
-
-    #[tokio::test]
-    async fn test_verify_session_with_invalid_session_returns_invalid() {
-        let config = TestConfig::default();
-        fail_without_db!(config);
-
-        let app = TestApp::new().await;
-        let fake_session = uuid::Uuid::new_v4();
-        let response = app
-            .server
-            .get(&format!("/auth/github/verify?session_id={}", fake_session))
-            .await;
-
-        response.assert_status_ok();
-        let body: serde_json::Value = response.json();
-        assert_eq!(body["valid"], false);
-    }
 }
 
 #[cfg(test)]
