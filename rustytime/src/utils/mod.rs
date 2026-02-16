@@ -3,6 +3,7 @@ pub mod cache;
 pub mod env;
 pub mod extractors;
 pub mod http;
+pub mod instrumented;
 pub mod macros;
 pub mod metrics;
 pub mod middleware;

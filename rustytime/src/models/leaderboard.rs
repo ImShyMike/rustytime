@@ -4,6 +4,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::schema::leaderboards;
+use crate::utils::instrumented;
 
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
 #[diesel(table_name = leaderboards)]
@@ -43,11 +44,13 @@ impl Leaderboard {
         period_type: &str,
         period_date: NaiveDate,
     ) -> QueryResult<Vec<Leaderboard>> {
-        leaderboards::table
-            .filter(leaderboards::period_type.eq(period_type))
-            .filter(leaderboards::period_date.eq(period_date))
-            .order(leaderboards::rank.asc())
-            .load::<Leaderboard>(conn)
+        instrumented::load("Leaderboard::get_by_period", || {
+            leaderboards::table
+                .filter(leaderboards::period_type.eq(period_type))
+                .filter(leaderboards::period_date.eq(period_date))
+                .order(leaderboards::rank.asc())
+                .load::<Leaderboard>(conn)
+        })
     }
 
     pub fn upsert_batch(
@@ -58,40 +61,46 @@ impl Leaderboard {
             return Ok(0);
         }
 
-        diesel::insert_into(leaderboards::table)
-            .values(&entries)
-            .on_conflict((
-                leaderboards::user_id,
-                leaderboards::period_type,
-                leaderboards::period_date,
-            ))
-            .do_update()
-            .set((
-                leaderboards::total_seconds
-                    .eq(diesel::upsert::excluded(leaderboards::total_seconds)),
-                leaderboards::rank.eq(diesel::upsert::excluded(leaderboards::rank)),
-            ))
-            .execute(conn)
+        instrumented::execute("Leaderboard::upsert_batch", || {
+            diesel::insert_into(leaderboards::table)
+                .values(&entries)
+                .on_conflict((
+                    leaderboards::user_id,
+                    leaderboards::period_type,
+                    leaderboards::period_date,
+                ))
+                .do_update()
+                .set((
+                    leaderboards::total_seconds
+                        .eq(diesel::upsert::excluded(leaderboards::total_seconds)),
+                    leaderboards::rank.eq(diesel::upsert::excluded(leaderboards::rank)),
+                ))
+                .execute(conn)
+        })
     }
 
     pub fn delete_old_daily(conn: &mut PgConnection, cutoff_date: NaiveDate) -> QueryResult<usize> {
-        diesel::delete(
-            leaderboards::table
-                .filter(leaderboards::period_type.eq("daily"))
-                .filter(leaderboards::period_date.lt(cutoff_date)),
-        )
-        .execute(conn)
+        instrumented::execute("Leaderboard::delete_old_daily", || {
+            diesel::delete(
+                leaderboards::table
+                    .filter(leaderboards::period_type.eq("daily"))
+                    .filter(leaderboards::period_date.lt(cutoff_date)),
+            )
+            .execute(conn)
+        })
     }
 
     pub fn delete_old_weekly(
         conn: &mut PgConnection,
         cutoff_date: NaiveDate,
     ) -> QueryResult<usize> {
-        diesel::delete(
-            leaderboards::table
-                .filter(leaderboards::period_type.eq("weekly"))
-                .filter(leaderboards::period_date.lt(cutoff_date)),
-        )
-        .execute(conn)
+        instrumented::execute("Leaderboard::delete_old_weekly", || {
+            diesel::delete(
+                leaderboards::table
+                    .filter(leaderboards::period_type.eq("weekly"))
+                    .filter(leaderboards::period_date.lt(cutoff_date)),
+            )
+            .execute(conn)
+        })
     }
 }

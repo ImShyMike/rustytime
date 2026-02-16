@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::schema::import_jobs;
 use crate::schema::users;
+use crate::utils::instrumented;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
@@ -82,33 +83,39 @@ impl ImportJob {
             status: ImportJobStatus::Running.as_str().to_string(),
         };
 
-        diesel::insert_into(import_jobs::table)
-            .values(&new_job)
-            .returning(ImportJob::as_returning())
-            .get_result(conn)
+        instrumented::first("ImportJob::create", || {
+            diesel::insert_into(import_jobs::table)
+                .values(&new_job)
+                .returning(ImportJob::as_returning())
+                .get_result(conn)
+        })
     }
 
     pub fn get_latest_for_user(
         conn: &mut PgConnection,
         user_id: i32,
     ) -> QueryResult<Option<ImportJob>> {
-        import_jobs::table
-            .filter(import_jobs::user_id.eq(user_id))
-            .order(import_jobs::created_at.desc())
-            .first::<ImportJob>(conn)
-            .optional()
+        instrumented::first("ImportJob::get_latest_for_user", || {
+            import_jobs::table
+                .filter(import_jobs::user_id.eq(user_id))
+                .order(import_jobs::created_at.desc())
+                .first::<ImportJob>(conn)
+        })
+        .optional()
     }
 
     pub fn get_active_for_user(
         conn: &mut PgConnection,
         user_id: i32,
     ) -> QueryResult<Option<ImportJob>> {
-        import_jobs::table
-            .filter(import_jobs::user_id.eq(user_id))
-            .filter(import_jobs::status.eq(ImportJobStatus::Running.as_str()))
-            .order(import_jobs::created_at.desc())
-            .first::<ImportJob>(conn)
-            .optional()
+        instrumented::first("ImportJob::get_active_for_user", || {
+            import_jobs::table
+                .filter(import_jobs::user_id.eq(user_id))
+                .filter(import_jobs::status.eq(ImportJobStatus::Running.as_str()))
+                .order(import_jobs::created_at.desc())
+                .first::<ImportJob>(conn)
+        })
+        .optional()
     }
 
     pub fn get_all_with_users(
@@ -116,35 +123,40 @@ impl ImportJob {
         limit: i64,
         offset: i64,
     ) -> QueryResult<Vec<ImportJobWithUser>> {
-        let results = import_jobs::table
-            .inner_join(
-                crate::schema::users::table.on(crate::schema::users::id.eq(import_jobs::user_id)),
-            )
-            .select((
-                import_jobs::id,
-                import_jobs::user_id,
-                users::name.nullable(),
-                users::avatar_url.nullable(),
-                import_jobs::status,
-                import_jobs::imported_count,
-                import_jobs::processed_count,
-                import_jobs::request_count,
-                import_jobs::start_date,
-                import_jobs::time_taken,
-                import_jobs::error_message,
-                import_jobs::created_at,
-                import_jobs::updated_at,
-            ))
-            .order(import_jobs::created_at.desc())
-            .limit(limit)
-            .offset(offset)
-            .load::<ImportJobWithUser>(conn)?;
+        let results = instrumented::load("ImportJob::get_all_with_users", || {
+            import_jobs::table
+                .inner_join(
+                    crate::schema::users::table
+                        .on(crate::schema::users::id.eq(import_jobs::user_id)),
+                )
+                .select((
+                    import_jobs::id,
+                    import_jobs::user_id,
+                    users::name.nullable(),
+                    users::avatar_url.nullable(),
+                    import_jobs::status,
+                    import_jobs::imported_count,
+                    import_jobs::processed_count,
+                    import_jobs::request_count,
+                    import_jobs::start_date,
+                    import_jobs::time_taken,
+                    import_jobs::error_message,
+                    import_jobs::created_at,
+                    import_jobs::updated_at,
+                ))
+                .order(import_jobs::created_at.desc())
+                .limit(limit)
+                .offset(offset)
+                .load::<ImportJobWithUser>(conn)
+        })?;
 
         Ok(results)
     }
 
     pub fn count_all(conn: &mut PgConnection) -> QueryResult<i64> {
-        import_jobs::table.count().get_result(conn)
+        instrumented::first("ImportJob::count_all", || {
+            import_jobs::table.count().get_result(conn)
+        })
     }
 
     pub fn complete(
@@ -156,24 +168,28 @@ impl ImportJob {
         start_date: String,
         time_taken: f64,
     ) -> QueryResult<usize> {
-        diesel::update(import_jobs::table.find(id))
-            .set((
-                import_jobs::status.eq(ImportJobStatus::Completed.as_str()),
-                import_jobs::imported_count.eq(Some(imported_count)),
-                import_jobs::processed_count.eq(Some(processed_count)),
-                import_jobs::request_count.eq(Some(request_count)),
-                import_jobs::start_date.eq(Some(start_date)),
-                import_jobs::time_taken.eq(Some(time_taken)),
-            ))
-            .execute(conn)
+        instrumented::execute("ImportJob::complete", || {
+            diesel::update(import_jobs::table.find(id))
+                .set((
+                    import_jobs::status.eq(ImportJobStatus::Completed.as_str()),
+                    import_jobs::imported_count.eq(Some(imported_count)),
+                    import_jobs::processed_count.eq(Some(processed_count)),
+                    import_jobs::request_count.eq(Some(request_count)),
+                    import_jobs::start_date.eq(Some(start_date)),
+                    import_jobs::time_taken.eq(Some(time_taken)),
+                ))
+                .execute(conn)
+        })
     }
 
     pub fn fail(conn: &mut PgConnection, id: i64, error_message: &str) -> QueryResult<usize> {
-        diesel::update(import_jobs::table.find(id))
-            .set((
-                import_jobs::status.eq(ImportJobStatus::Failed.as_str()),
-                import_jobs::error_message.eq(Some(error_message)),
-            ))
-            .execute(conn)
+        instrumented::execute("ImportJob::fail", || {
+            diesel::update(import_jobs::table.find(id))
+                .set((
+                    import_jobs::status.eq(ImportJobStatus::Failed.as_str()),
+                    import_jobs::error_message.eq(Some(error_message)),
+                ))
+                .execute(conn)
+        })
     }
 }

@@ -5,6 +5,7 @@ use crate::schema::users;
 use crate::state::AppState;
 use crate::utils::cache::{CachedLeaderboard, LeaderboardCacheKey};
 use crate::utils::extractors::DbConnection;
+use crate::utils::instrumented;
 use crate::utils::time::get_week_start;
 use aide::NoApi;
 use axum::{
@@ -89,10 +90,12 @@ pub async fn leaderboard_page(
             all_user_ids.sort_unstable();
             all_user_ids.dedup();
 
-            let all_users: Vec<User> = users::table
-                .filter(users::id.eq_any(&all_user_ids))
-                .load::<User>(&mut conn)
-                .unwrap_or_default();
+            let all_users: Vec<User> = instrumented::load("Leaderboard::fetch_users", || {
+                users::table
+                    .filter(users::id.eq_any(&all_user_ids))
+                    .load::<User>(&mut conn)
+            })
+            .unwrap_or_default();
 
             let daily_users: Vec<User> = all_users
                 .iter()

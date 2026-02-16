@@ -10,6 +10,7 @@ use tower_cookies::{Cookie, Cookies};
 use uuid::Uuid;
 
 use crate::schema::{sessions, users};
+use crate::utils::instrumented;
 
 pub const SESSION_COOKIE_NAME: &str = "rustytime_session";
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -82,11 +83,13 @@ impl SessionManager {
             .get()
             .map_err(|_| diesel::result::Error::BrokenTransactionManager)?;
 
-        let session = sessions::table
-            .find(session_id)
-            .filter(sessions::expires_at.gt(diesel::dsl::now))
-            .first::<Session>(&mut conn)
-            .optional()?;
+        let session = instrumented::first("Session::validate", || {
+            sessions::table
+                .find(session_id)
+                .filter(sessions::expires_at.gt(diesel::dsl::now))
+                .first::<Session>(&mut conn)
+        })
+        .optional()?;
 
         Ok(session.map(|s| SessionData {
             id: s.id,
@@ -99,7 +102,9 @@ impl SessionManager {
 
     #[inline(always)]
     pub fn delete_session(conn: &mut PgConnection, session_id: Uuid) -> QueryResult<usize> {
-        diesel::delete(sessions::table.filter(sessions::id.eq(session_id))).execute(conn)
+        instrumented::execute("Session::delete", || {
+            diesel::delete(sessions::table.filter(sessions::id.eq(session_id))).execute(conn)
+        })
     }
 
     /// Remove the session cookie
@@ -143,20 +148,22 @@ impl SessionManager {
             .get()
             .map_err(|_| diesel::result::Error::BrokenTransactionManager)?;
 
-        let user = users::table
-            .find(session_data.user_id)
-            .first::<User>(&mut conn)
-            .optional()?;
+        let user = instrumented::first("Session::resolve_user", || {
+            users::table
+                .find(session_data.user_id)
+                .first::<User>(&mut conn)
+        })
+        .optional()?;
 
         let Some(user) = user else {
             return Ok(None);
         };
 
         let impersonator = if let Some(admin_id) = session_data.impersonated_by {
-            users::table
-                .find(admin_id)
-                .first::<User>(&mut conn)
-                .optional()?
+            instrumented::first("Session::resolve_impersonator", || {
+                users::table.find(admin_id).first::<User>(&mut conn)
+            })
+            .optional()?
         } else {
             None
         };

@@ -11,6 +11,7 @@ use crate::handlers::page::profile::{
 use crate::models::heartbeat::{DurationInput, Heartbeat};
 use crate::models::project::Project;
 use crate::schema::users::{self};
+use crate::utils::instrumented;
 use crate::utils::time::{
     get_day_start_utc, get_month_start_date, get_week_start_date, parse_timezone,
 };
@@ -57,20 +58,27 @@ pub struct NewUser {
 
 impl User {
     pub fn find_by_github_id(conn: &mut PgConnection, github_id: i64) -> QueryResult<Option<User>> {
-        users::table
-            .filter(users::github_id.eq(github_id))
-            .first::<User>(conn)
-            .optional()
+        instrumented::first("User::find_by_github_id", || {
+            users::table
+                .filter(users::github_id.eq(github_id))
+                .first::<User>(conn)
+        })
+        .optional()
     }
 
     pub fn get_by_id(conn: &mut PgConnection, user_id: i32) -> QueryResult<Option<User>> {
-        users::table.find(user_id).first::<User>(conn).optional()
+        instrumented::first("User::get_by_id", || {
+            users::table.find(user_id).first::<User>(conn)
+        })
+        .optional()
     }
 
     pub fn create(conn: &mut PgConnection, new_user: &NewUser) -> QueryResult<User> {
-        diesel::insert_into(users::table)
-            .values(new_user)
-            .get_result(conn)
+        instrumented::first("User::create", || {
+            diesel::insert_into(users::table)
+                .values(new_user)
+                .get_result(conn)
+        })
     }
 
     pub fn create_or_update(
@@ -84,9 +92,11 @@ impl User {
             if let Some(existing_user) = Self::find_by_github_id(conn, github_id)? {
                 // update user info if it has changed
                 if existing_user.avatar_url != avatar_url || existing_user.name != username {
-                    diesel::update(users::table.find(existing_user.id))
-                        .set((users::avatar_url.eq(avatar_url), users::name.eq(username)))
-                        .get_result(conn)
+                    instrumented::first("User::update_info", || {
+                        diesel::update(users::table.find(existing_user.id))
+                            .set((users::avatar_url.eq(avatar_url), users::name.eq(username)))
+                            .get_result(conn)
+                    })
                 } else {
                     Ok(existing_user)
                 }
@@ -120,22 +130,28 @@ impl User {
         limit: i64,
         offset: i64,
     ) -> QueryResult<Vec<User>> {
-        users::table
-            .order(users::admin_level.desc())
-            .then_order_by(users::id.asc())
-            .limit(limit)
-            .offset(offset)
-            .load::<User>(conn)
+        instrumented::load("User::list_users_paginated", || {
+            users::table
+                .order(users::admin_level.desc())
+                .then_order_by(users::id.asc())
+                .limit(limit)
+                .offset(offset)
+                .load::<User>(conn)
+        })
     }
 
     pub fn count_total_users(conn: &mut PgConnection, only_real: bool) -> QueryResult<i64> {
         if only_real {
-            users::table
-                .count()
-                .filter(users::github_id.gt(0))
-                .get_result(conn)
+            instrumented::first("User::count_total_users_real", || {
+                users::table
+                    .count()
+                    .filter(users::github_id.gt(0))
+                    .get_result(conn)
+            })
         } else {
-            users::table.count().get_result(conn)
+            instrumented::first("User::count_total_users", || {
+                users::table.count().get_result(conn)
+            })
         }
     }
 
@@ -144,9 +160,11 @@ impl User {
         user_id: i32,
         new_level: i16,
     ) -> QueryResult<usize> {
-        diesel::update(users::table.find(user_id))
-            .set(users::admin_level.eq(new_level))
-            .execute(conn)
+        instrumented::execute("User::set_admin_level", || {
+            diesel::update(users::table.find(user_id))
+                .set(users::admin_level.eq(new_level))
+                .execute(conn)
+        })
     }
 
     pub fn set_timezone(
@@ -154,15 +172,19 @@ impl User {
         user_id: i32,
         timezone: &str,
     ) -> QueryResult<User> {
-        diesel::update(users::table.find(user_id))
-            .set(users::timezone.eq(timezone))
-            .get_result(conn)
+        instrumented::first("User::set_timezone", || {
+            diesel::update(users::table.find(user_id))
+                .set(users::timezone.eq(timezone))
+                .get_result(conn)
+        })
     }
 
     pub fn get_user_profile(conn: &mut PgConnection, username: &str) -> QueryResult<UserProfile> {
-        let user = users::table
-            .filter(users::name.ilike(username))
-            .first::<User>(conn)?;
+        let user = instrumented::first("User::get_user_profile", || {
+            users::table
+                .filter(users::name.ilike(username))
+                .first::<User>(conn)
+        })?;
 
         let tz: Tz = parse_timezone(&user.timezone);
         let now = Utc::now();

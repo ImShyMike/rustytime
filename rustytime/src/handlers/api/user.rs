@@ -22,6 +22,7 @@ use crate::state::AppState;
 use crate::utils::auth::{get_user_from_api_key, get_user_id_from_api_key, get_valid_api_key};
 use crate::utils::extractors::DbConnection;
 use crate::utils::http::extract_client_ip_from_headers;
+use crate::utils::instrumented;
 use crate::utils::time::{
     TimeFormat, get_day_end_utc, get_day_start_utc, get_today_in_timezone, human_readable_duration,
     parse_timezone,
@@ -297,11 +298,13 @@ async fn store_heartbeats_in_db_internal(
 
             let mut inserted_total = 0usize;
             for chunk in deduplicated.chunks(HEARTBEAT_INSERT_BATCH_SIZE) {
-                inserted_total += diesel::insert_into(heartbeats::table)
-                    .values(chunk)
-                    .on_conflict((heartbeats::user_id, heartbeats::time))
-                    .do_nothing()
-                    .execute(conn)?;
+                inserted_total += instrumented::execute("Heartbeat::batch_insert", || {
+                    diesel::insert_into(heartbeats::table)
+                        .values(chunk)
+                        .on_conflict((heartbeats::user_id, heartbeats::time))
+                        .do_nothing()
+                        .execute(conn)
+                })?;
             }
 
             let responses = if include_responses {
@@ -310,10 +313,12 @@ async fn store_heartbeats_in_db_internal(
                 let mut heartbeat_cache: HashMap<(i32, chrono::DateTime<Utc>), Heartbeat> =
                     HashMap::new();
                 for (uid, t) in unique_keys {
-                    let hb = heartbeats::table
-                        .filter(heartbeats::user_id.eq(uid))
-                        .filter(heartbeats::time.eq(t))
-                        .first::<Heartbeat>(conn)?;
+                    let hb = instrumented::first("Heartbeat::fetch_after_insert", || {
+                        heartbeats::table
+                            .filter(heartbeats::user_id.eq(uid))
+                            .filter(heartbeats::time.eq(t))
+                            .first::<Heartbeat>(conn)
+                    })?;
                     heartbeat_cache.insert((uid, t), hb);
                 }
 

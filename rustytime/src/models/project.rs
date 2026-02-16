@@ -10,6 +10,7 @@ use moka::sync::Cache;
 use once_cell::sync::Lazy;
 
 use crate::schema::projects;
+use crate::utils::instrumented;
 
 static PROJECT_CACHE: Lazy<Arc<Cache<HeartbeatProjectCacheKey, i32>>> = Lazy::new(|| {
     Arc::new(
@@ -113,20 +114,22 @@ pub fn get_or_create_project_id(
         repo_url: repo_url_param,
     };
 
-    let inserted_id: i32 = insert_into(projects)
-        .values(&new_project)
-        .on_conflict((user_id, name))
-        .do_update()
-        .set(updated_at.eq(diesel::dsl::now))
-        .returning(id)
-        .get_result(conn)
-        .or_else(|_| {
-            projects
-                .filter(user_id.eq(user_id_param))
-                .filter(name.eq(project_name))
-                .select(id)
-                .first(conn)
-        })?;
+    let inserted_id: i32 = instrumented::first("Project::get_or_create", || {
+        insert_into(projects)
+            .values(&new_project)
+            .on_conflict((user_id, name))
+            .do_update()
+            .set(updated_at.eq(diesel::dsl::now))
+            .returning(id)
+            .get_result(conn)
+            .or_else(|_| {
+                projects
+                    .filter(user_id.eq(user_id_param))
+                    .filter(name.eq(project_name))
+                    .select(id)
+                    .first(conn)
+            })
+    })?;
 
     PROJECT_CACHE.insert(cache_key, inserted_id);
 
@@ -140,10 +143,12 @@ impl Project {
     ) -> QueryResult<Vec<Project>> {
         use crate::schema::projects::dsl::*;
 
-        projects
-            .filter(user_id.eq(user_id_param))
-            .order(name.asc())
-            .load::<Project>(conn)
+        instrumented::load("Project::list_user_projects", || {
+            projects
+                .filter(user_id.eq(user_id_param))
+                .order(name.asc())
+                .load::<Project>(conn)
+        })
     }
 
     pub fn set_project_url(
@@ -154,13 +159,15 @@ impl Project {
     ) -> QueryResult<()> {
         use crate::schema::projects::dsl::*;
 
-        diesel::update(
-            projects
-                .filter(id.eq(project_id_param))
-                .filter(user_id.eq(user_id_param)),
-        )
-        .set(project_url.eq(new_project_url))
-        .execute(conn)?;
+        instrumented::execute("Project::set_project_url", || {
+            diesel::update(
+                projects
+                    .filter(id.eq(project_id_param))
+                    .filter(user_id.eq(user_id_param)),
+            )
+            .set(project_url.eq(new_project_url))
+            .execute(conn)
+        })?;
 
         Ok(())
     }
@@ -169,13 +176,18 @@ impl Project {
         conn: &mut PgConnection,
         user_id_param: i32,
     ) -> QueryResult<Vec<(Project, i64)>> {
-        let rows: Vec<ProjectWithTimeRow> = diesel::sql_query(
-            "SELECT id, user_id, name, repo_url, created_at, updated_at, total_seconds, hidden, project_url \
-             FROM list_projects_with_time($1, $2)",
-        )
-        .bind::<Int4, _>(user_id_param)
-        .bind::<Int4, _>(TIMEOUT_SECONDS)
-        .load(conn)?;
+        let rows: Vec<ProjectWithTimeRow> = instrumented::load(
+            "Project::list_projects_with_time",
+            || {
+                diesel::sql_query(
+                "SELECT id, user_id, name, repo_url, created_at, updated_at, total_seconds, hidden, project_url \
+                 FROM list_projects_with_time($1, $2)",
+            )
+            .bind::<Int4, _>(user_id_param)
+            .bind::<Int4, _>(TIMEOUT_SECONDS)
+            .load(conn)
+            },
+        )?;
 
         Ok(rows
             .into_iter()
@@ -204,16 +216,18 @@ impl Project {
         end_time: chrono::DateTime<chrono::Utc>,
         limit: i32,
     ) -> QueryResult<Vec<TopProjectRow>> {
-        diesel::sql_query(
-            "SELECT name, project_url, total_seconds \
-             FROM top_projects_by_range($1, $2, $3, $4, $5)",
-        )
-        .bind::<Int4, _>(user_id_param)
-        .bind::<Int4, _>(TIMEOUT_SECONDS)
-        .bind::<Timestamptz, _>(start_time)
-        .bind::<Timestamptz, _>(end_time)
-        .bind::<Int4, _>(limit)
-        .load(conn)
+        instrumented::load("Project::top_projects_by_range", || {
+            diesel::sql_query(
+                "SELECT name, project_url, total_seconds \
+                 FROM top_projects_by_range($1, $2, $3, $4, $5)",
+            )
+            .bind::<Int4, _>(user_id_param)
+            .bind::<Int4, _>(TIMEOUT_SECONDS)
+            .bind::<Timestamptz, _>(start_time)
+            .bind::<Timestamptz, _>(end_time)
+            .bind::<Int4, _>(limit)
+            .load(conn)
+        })
     }
 
     pub fn set_hidden(
@@ -224,13 +238,15 @@ impl Project {
     ) -> QueryResult<()> {
         use crate::schema::projects::dsl::*;
 
-        diesel::update(
-            projects
-                .filter(id.eq(project_id_param))
-                .filter(user_id.eq(user_id_param)),
-        )
-        .set(hidden.eq(new_hidden))
-        .execute(conn)?;
+        instrumented::execute("Project::set_hidden", || {
+            diesel::update(
+                projects
+                    .filter(id.eq(project_id_param))
+                    .filter(user_id.eq(user_id_param)),
+            )
+            .set(hidden.eq(new_hidden))
+            .execute(conn)
+        })?;
 
         Ok(())
     }

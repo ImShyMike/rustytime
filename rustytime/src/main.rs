@@ -143,6 +143,9 @@ async fn async_main(is_production: bool) -> Result<(), Box<dyn std::error::Error
     let pyroscope_agent =
         utils::tracing::init_pyroscope_agent(&service_name, git_sha, is_production);
 
+    // enable SQL query instrumentation for profiling
+    db::instrumentation::init_query_instrumentation();
+
     // create database connection pool
     let pool = create_pool();
 

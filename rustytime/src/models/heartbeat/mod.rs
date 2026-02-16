@@ -12,6 +12,7 @@ use std::fmt;
 
 use crate::schema::heartbeats::{self};
 use crate::utils::http::parse_user_agent;
+use crate::utils::instrumented;
 use crate::utils::time::{
     TimeFormat, get_day_start_utc, get_month_start_date, get_week_start_date,
     human_readable_duration, parse_timezone,
@@ -753,27 +754,33 @@ impl From<Heartbeat> for BulkResponseItem {
 
 impl Heartbeat {
     pub fn total_heartbeat_count_estimate(conn: &mut PgConnection) -> QueryResult<i64> {
-        diesel::sql_query("SELECT * FROM approximate_row_count('heartbeats') AS count")
-            .get_result::<CountRow>(conn)
-            .map(|res| res.count)
+        instrumented::first("Heartbeat::count_estimate", || {
+            diesel::sql_query("SELECT * FROM approximate_row_count('heartbeats') AS count")
+                .get_result::<CountRow>(conn)
+        })
+        .map(|res| res.count)
     }
 
     pub fn count_heartbeats_last_24h(conn: &mut PgConnection) -> QueryResult<i64> {
         let twenty_four_hours_ago = chrono::Utc::now() - chrono::Duration::hours(24);
 
-        heartbeats::table
-            .filter(heartbeats::time.gt(twenty_four_hours_ago))
-            .count()
-            .get_result(conn)
+        instrumented::first("Heartbeat::count_last_24h", || {
+            heartbeats::table
+                .filter(heartbeats::time.gt(twenty_four_hours_ago))
+                .count()
+                .get_result(conn)
+        })
     }
 
     pub fn count_heartbeats_last_hour(conn: &mut PgConnection) -> QueryResult<i64> {
         let one_hour_ago = chrono::Utc::now() - chrono::Duration::hours(1);
 
-        heartbeats::table
-            .filter(heartbeats::time.gt(one_hour_ago))
-            .count()
-            .get_result(conn)
+        instrumented::first("Heartbeat::count_last_hour", || {
+            heartbeats::table
+                .filter(heartbeats::time.gt(one_hour_ago))
+                .count()
+                .get_result(conn)
+        })
     }
 
     pub fn get_daily_activity_last_week(
@@ -784,17 +791,19 @@ impl Heartbeat {
         let start_today = now.date_naive().and_hms_opt(0, 0, 0).unwrap();
         let seven_days_ago = start_today - chrono::Duration::days(7);
 
-        heartbeats::table
-            .filter(heartbeats::time.ge(seven_days_ago))
-            .select((sql::<Date>("DATE(time)"), sql::<BigInt>("COUNT(*)")))
-            .group_by(sql::<Date>("DATE(time)"))
-            .order_by(sql::<Date>("DATE(time)"))
-            .load::<(chrono::NaiveDate, i64)>(conn)
-            .map(|rows| {
-                rows.into_iter()
-                    .map(|(date, count)| DailyActivity { date, count })
-                    .collect()
-            })
+        instrumented::load("Heartbeat::daily_activity_last_week", || {
+            heartbeats::table
+                .filter(heartbeats::time.ge(seven_days_ago))
+                .select((sql::<Date>("DATE(time)"), sql::<BigInt>("COUNT(*)")))
+                .group_by(sql::<Date>("DATE(time)"))
+                .order_by(sql::<Date>("DATE(time)"))
+                .load::<(chrono::NaiveDate, i64)>(conn)
+        })
+        .map(|rows| {
+            rows.into_iter()
+                .map(|(date, count)| DailyActivity { date, count })
+                .collect()
+        })
     }
 
     /// Calculate total duration in seconds using database function
@@ -802,17 +811,19 @@ impl Heartbeat {
         conn: &mut PgConnection,
         duration_input: DurationInput,
     ) -> QueryResult<i64> {
-        diesel::select(calculate_user_duration(
-            duration_input.user_id,
-            duration_input.start_date,
-            duration_input.end_date,
-            duration_input.project.as_deref(),
-            duration_input.language.as_deref(),
-            duration_input.entity.as_deref(),
-            duration_input.type_filter.as_deref(),
-            TIMEOUT_SECONDS,
-        ))
-        .get_result(conn)
+        instrumented::first("Heartbeat::user_duration", || {
+            diesel::select(calculate_user_duration(
+                duration_input.user_id,
+                duration_input.start_date,
+                duration_input.end_date,
+                duration_input.project.as_deref(),
+                duration_input.language.as_deref(),
+                duration_input.entity.as_deref(),
+                duration_input.type_filter.as_deref(),
+                TIMEOUT_SECONDS,
+            ))
+            .get_result(conn)
+        })
     }
 
     /// Calculate total durations for all users between start_time and end_time
@@ -821,22 +832,26 @@ impl Heartbeat {
         start_time: DateTime<Utc>,
         end_time: DateTime<Utc>,
     ) -> QueryResult<Vec<UserDurationRow>> {
-        diesel::sql_query(
-            "SELECT user_id, total_seconds \
-             FROM calculate_all_user_durations($1, $2, $3)",
-        )
-        .bind::<Timestamptz, _>(start_time)
-        .bind::<Timestamptz, _>(end_time)
-        .bind::<Int4, _>(TIMEOUT_SECONDS)
-        .load::<UserDurationRow>(conn)
+        instrumented::load("Heartbeat::all_user_durations", || {
+            diesel::sql_query(
+                "SELECT user_id, total_seconds \
+                 FROM calculate_all_user_durations($1, $2, $3)",
+            )
+            .bind::<Timestamptz, _>(start_time)
+            .bind::<Timestamptz, _>(end_time)
+            .bind::<Int4, _>(TIMEOUT_SECONDS)
+            .load::<UserDurationRow>(conn)
+        })
     }
 
     /// Get the count of heartbeats for a user
     pub fn get_user_heartbeat_count(conn: &mut PgConnection, user_id: i32) -> QueryResult<i64> {
-        heartbeats::table
-            .filter(heartbeats::user_id.eq(user_id))
-            .count()
-            .get_result(conn)
+        instrumented::first("Heartbeat::user_count", || {
+            heartbeats::table
+                .filter(heartbeats::user_id.eq(user_id))
+                .count()
+                .get_result(conn)
+        })
     }
 
     /// Get the count of heartbeats for a user in a specific time range
@@ -850,11 +865,13 @@ impl Heartbeat {
         let now = Utc::now();
 
         match Self::start_boundary_utc(range, tz, now) {
-            Some(start) => heartbeats::table
-                .filter(heartbeats::user_id.eq(user_id))
-                .filter(heartbeats::time.ge(start))
-                .count()
-                .get_result(conn),
+            Some(start) => instrumented::first("Heartbeat::user_count_by_range", || {
+                heartbeats::table
+                    .filter(heartbeats::user_id.eq(user_id))
+                    .filter(heartbeats::time.ge(start))
+                    .count()
+                    .get_result(conn)
+            }),
             None => Self::get_user_heartbeat_count(conn, user_id),
         }
     }
@@ -909,24 +926,28 @@ impl Heartbeat {
 
         let filtered_rows: Vec<DashboardMetricRow> = match Self::start_boundary_utc(range, tz, now)
         {
-            Some(start_time) => diesel::sql_query(
-                "SELECT metric_type, name, total_seconds, total_time \
-                     FROM calculate_dashboard_stats_by_range($1, $2, $3, $4)",
-            )
-            .bind::<Int4, _>(user_id)
-            .bind::<Timestamptz, _>(start_time)
-            .bind::<Int4, _>(TIMEOUT_SECONDS)
-            .bind::<Int4, _>(10)
-            .load(conn)?,
-            None => diesel::sql_query(
-                "SELECT metric_type, name, total_seconds, total_time \
-                     FROM calculate_dashboard_stats($1, $2, $3) \
-                     WHERE total_seconds > 0 OR metric_type = 'total_time'",
-            )
-            .bind::<Int4, _>(user_id)
-            .bind::<Int4, _>(TIMEOUT_SECONDS)
-            .bind::<Int4, _>(10)
-            .load(conn)?,
+            Some(start_time) => instrumented::load("Heartbeat::dashboard_stats_by_range", || {
+                diesel::sql_query(
+                    "SELECT metric_type, name, total_seconds, total_time \
+                         FROM calculate_dashboard_stats_by_range($1, $2, $3, $4)",
+                )
+                .bind::<Int4, _>(user_id)
+                .bind::<Timestamptz, _>(start_time)
+                .bind::<Int4, _>(TIMEOUT_SECONDS)
+                .bind::<Int4, _>(10)
+                .load(conn)
+            })?,
+            None => instrumented::load("Heartbeat::dashboard_stats_all", || {
+                diesel::sql_query(
+                    "SELECT metric_type, name, total_seconds, total_time \
+                         FROM calculate_dashboard_stats($1, $2, $3) \
+                         WHERE total_seconds > 0 OR metric_type = 'total_time'",
+                )
+                .bind::<Int4, _>(user_id)
+                .bind::<Int4, _>(TIMEOUT_SECONDS)
+                .bind::<Int4, _>(10)
+                .load(conn)
+            })?,
         };
 
         let mut total_time: i64 = 0;
