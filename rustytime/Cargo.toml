@@ -50,7 +50,7 @@ tracing = { version = "0.1.44", default-features = false }
 tracing-subscriber = { version = "0.3.22", features = ["fmt", "env-filter"], default-features = false }
 dotenvy = { version = "0.15.7", default-features = false }
 serde = { version = "1.0.228", features = ["derive"], default-features = false }
-uuid = { version = "1.20.0", features = ["serde", "v4"], default-features = false }
+uuid = { version = "1.21.0", features = ["serde", "v4"], default-features = false }
 chrono = { version = "0.4.43", default-features = false }
 chrono-tz = { version = "0.10.4", default-features = false }
 serde_json = { version = "1.0.149", default-features = false }
@@ -81,10 +81,10 @@ pyroscope = { version = "0.5.8", default-features = false }
 pyroscope_pprofrs = { version = "0.2.10", default-features = false }
 opentelemetry-appender-tracing = { version = "0.31.1", default-features = false }
 apalis-postgres = { version = "1.0.0-rc.3", features = ["async-std", "time"] }
-apalis = { version = "1.0.0-rc.3", features = ["tracing", "catch-panic", "prometheus"] }
+apalis = { version = "1.0.0-rc.4", features = ["tracing", "catch-panic", "prometheus"] }
 apalis-cron = { version = "1.0.0-rc.3", features = ["cron"], default-features = false }
 cron = { version = "0.15.0", default-features = false }
-futures = { version = "0.3.31", default-features = false }
+futures = { version = "0.3.32", default-features = false }
 sqlx = { version = "0.8.6", default-features = false }
 moka = { version = "0.12.13", features = ["sync"], default-features = false }
 sentry = { version = "0.46.2", default-features = false, features = ["rustls", "tower", "tracing", "backtrace", "contexts", "panic", "transport"] }
