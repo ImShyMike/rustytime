@@ -51,17 +51,17 @@
 				<img
 					src={profileData.user.avatar_url}
 					alt={profileData.user.username}
-					class="h-16 w-16 rounded-full border-2 border-ctp-surface0"
+					class="h-16 w-16 rounded-full border-2 border-surface0"
 				/>
 
 				<div>
 					<div class="flex items-center gap-2">
-						<h1 class="text-2xl font-bold text-ctp-text">{profileData.user.username}</h1>
+						<h1 class="text-2xl font-bold text-text">{profileData.user.username}</h1>
 						<UserTag admin_level={profileData.user.admin_level ?? 0} />
 					</div>
 					<a
 						href="https://github.com/{profileData.user.username}"
-						class="text-sm text-ctp-subtext0 hover:text-ctp-blue flex items-center gap-1"
+						class="text-sm text-subtext0 hover:text-blue flex items-center gap-1"
 						target="_blank"
 						data-umami-event="github-profile-link"
 						data-umami-event-name={profileData.user.username}
@@ -89,18 +89,18 @@
 			<div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
 				{#each profileData.projects as project (project.name)}
 					<Container className="flex flex-col gap-2">
-						<SectionTitle level="h2" size="md" className="text-ctp-text">
+						<SectionTitle level="h2" size="md" className="text-text">
 							{noUnknownText(project.name)}
 						</SectionTitle>
 
-						<span class="font-semibold text-xl text-ctp-lavender">
+						<span class="font-semibold text-xl text-lavender">
 							{formatDuration(project.total_seconds, false)}
 						</span>
 
 						{#if project.project_url}
 							<a
 								href={project.project_url}
-								class="flex items-center gap-1 text-sm font-medium text-ctp-blue hover:text-ctp-blue-400"
+								class="flex items-center gap-1 text-sm font-medium text-blue hover:text-ctp-blue-400"
 								target="_blank"
 								rel="noopener noreferrer external"
 							>

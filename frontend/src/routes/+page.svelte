@@ -58,16 +58,16 @@
 	}
 </script>
 
-<div class="bg-mantle">
+<div class="bg-crust">
 	<!-- Header -->
 	<header class="text-center mb-4 mt-[5vh] sm:mt-[10vh]">
 		<Logo
-			className="w-32 h-32 mx-auto mb-4 text-ctp-subtext0 dark:text-ctp-lavender-300 drop-shadow-[0_10px_30px_rgba(108,111,133,0.5)] dark:drop-shadow-[0_10px_30px_rgba(198,160,246,0.35)] transition-colors"
+			className="w-32 h-32 mx-auto mb-4 text-subtext0 dark:text-ctp-lavender-300 drop-shadow-[0_10px_30px_rgba(108,111,133,0.5)] dark:drop-shadow-[0_10px_30px_rgba(198,160,246,0.35)] transition-colors"
 		/>
 		<div class="flex text-text items-center justify-center gap-3 mb-4">
 			<h1 class="text-5xl font-bold">rustytime</h1>
 		</div>
-		<p class="text-xl text-ctp-subtext1 dark:text-subtext0 px-1">
+		<p class="text-xl text-subtext1 dark:text-subtext0 px-1">
 			Blazingly fast time tracking for developers.
 		</p>
 	</header>
@@ -96,7 +96,7 @@
 					<div class="flex flex-col items-center space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4">
 						<a
 							href={resolve('/dashboard')}
-							class="inline-block bg-ctp-mauve-400 hover:bg-ctp-mauve-500 text-ctp-base font-semibold py-3 px-6 rounded-lg"
+							class="inline-block bg-ctp-mauve-400 hover:bg-ctp-mauve-500 text-base font-semibold py-3 px-6 rounded-lg"
 						>
 							Go to Dashboard
 						</a>
@@ -104,7 +104,7 @@
 						{#if user.admin_level >= 1}
 							<a
 								href={resolve('/admin')}
-								class="inline-block bg-ctp-red-400 hover:bg-ctp-red-500 text-ctp-base font-semibold py-3 px-6 rounded-lg"
+								class="inline-block bg-ctp-red-400 hover:bg-ctp-red-500 text-base font-semibold py-3 px-6 rounded-lg"
 							>
 								Admin Panel
 							</a>
@@ -114,7 +114,7 @@
 					<Button
 						variant="ghost"
 						onClick={auth.logout}
-						className="text-ctp-text/70 hover:text-ctp-text/50 underline"
+						className="text-text/70 hover:text-text/50 underline"
 					>
 						Logout
 					</Button>

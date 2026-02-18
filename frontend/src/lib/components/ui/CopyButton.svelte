@@ -36,9 +36,9 @@
 	type="button"
 	onclick={handleCopy}
 	aria-label="Copy to clipboard"
-	class="cursor-pointer text-ctp-base text-sm rounded transition-all duration-200 flex items-center gap-2 hover:scale-105 active:scale-100 {copied
-		? 'bg-ctp-green hover:bg-ctp-green/90'
-		: 'bg-ctp-blue/70 hover:bg-ctp-blue'} {sizeClasses[size]} {className}"
+	class="cursor-pointer text-base text-sm rounded transition-all duration-200 flex items-center gap-2 hover:scale-105 active:scale-100 {copied
+		? 'bg-green hover:bg-green/90'
+		: 'bg-blue/70 hover:bg-blue'} {sizeClasses[size]} {className}"
 >
 	{#if copied}
 		<LucideCopyCheck class={iconSizeClasses[size]} />

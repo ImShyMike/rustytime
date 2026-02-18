@@ -40,12 +40,12 @@
 </script>
 
 <label
-	class="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-ctp-surface1 bg-ctp-base/60 px-3 py-2 text-sm text-ctp-text shadow-sm transition-colors focus-within:border-ctp-blue focus-within:bg-ctp-base focus-within:ring-1 focus-within:ring-ctp-blue/40 {className}"
+	class="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-surface1 bg-mantle/60 px-3 py-2 text-sm text-text shadow-sm transition-colors focus-within:border-blue focus-within:bg-mantle focus-within:ring-1 focus-within:ring-blue/40 {className}"
 >
-	<LucideSearch class="h-4 w-4 shrink-0 text-ctp-overlay1" aria-hidden="true" />
+	<LucideSearch class="h-4 w-4 shrink-0 text-overlay1" aria-hidden="true" />
 	<input
 		type="search"
-		class="w-full bg-transparent text-sm text-ctp-text placeholder:text-ctp-overlay1 focus:outline-none"
+		class="w-full bg-transparent text-sm text-text placeholder:text-overlay1 focus:outline-none"
 		{placeholder}
 		{value}
 		oninput={handleInput}
@@ -55,7 +55,7 @@
 		<button
 			type="button"
 			onclick={handleClear}
-			class="shrink-0 cursor-pointer text-ctp-overlay1 hover:text-ctp-text"
+			class="shrink-0 cursor-pointer text-overlay1 hover:text-text"
 			aria-label="Clear search"
 		>
 			<LucideX class="h-4 w-4" />

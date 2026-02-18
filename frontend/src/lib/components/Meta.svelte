@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { theme } from '$lib/stores/theme';
+
 	const props = $props<{
 		name?: string;
 		title?: string;
@@ -20,7 +22,7 @@
 	const title = props.title ?? name;
 	const description = props.description ?? null;
 	const image = props.image ?? null;
-	const color = props.color ?? '#b4befe';
+	const color = $derived(props.color ?? ($theme === 'dark' ? '#b4befe' : '#7287fd'));
 	const manifest = props.manifest ?? '/manifest.webmanifest';
 	const locale = props.locale ?? 'en_US';
 	const twitterSite = props.twitterSite ?? '@rustytime';

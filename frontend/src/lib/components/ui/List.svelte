@@ -10,11 +10,8 @@
 	let { className = '', divided = true, children }: Props = $props();
 </script>
 
-<div
-	class="rounded-lg border border-ctp-surface0 bg-ctp-mantle overflow-hidden {className}"
-	role="list"
->
-	<div class={divided ? 'divide-y divide-ctp-surface0' : ''}>
+<div class="rounded-lg border border-surface0 bg-crust overflow-hidden {className}" role="list">
+	<div class={divided ? 'divide-y divide-surface0' : ''}>
 		{@render children?.()}
 	</div>
 </div>

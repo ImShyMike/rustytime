@@ -147,8 +147,8 @@
 				<SectionTitle className="mb-4">Users</SectionTitle>
 				<DataTable {columns} tableClassName="min-w-lg">
 					{#each adminData.all_users as user (user.id)}
-						<tr class="border-b border-ctp-surface0 last:border-0 hover:bg-ctp-surface0/50">
-							<td class="pl-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1">{user.id}</td>
+						<tr class="border-b border-surface0 last:border-0 hover:bg-base/50">
+							<td class="pl-6 py-4 whitespace-nowrap text-sm text-subtext1">{user.id}</td>
 							<td class="px-6 py-4 whitespace-nowrap">
 								<div class="flex items-center">
 									{#if user.avatar_url}
@@ -165,11 +165,11 @@
 							<td class="px-6 py-4 whitespace-nowrap">
 								<UserTag admin_level={user.admin_level} />
 							</td>
-							<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1"
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-subtext1"
 								>{new Date(user.created_at).toLocaleString('en-US', { timeZone: 'UTC' })}</td
 							>
 							{#if showApiKey}
-								<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1 font-mono">
+								<td class="px-6 py-4 whitespace-nowrap text-sm text-subtext1 font-mono">
 									{#if user.api_key}
 										<Button
 											variant="ghost"
@@ -182,9 +182,9 @@
 									{/if}
 								</td>
 							{/if}
-							<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1">
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-subtext1">
 								{#if currentUser?.admin_level !== undefined && user.admin_level >= currentUser.admin_level && (!impersonation || user.id !== impersonation.admin_id)}
-									<span class="text-xs uppercase tracking-wide text-ctp-subtext1/80">Nothing</span>
+									<span class="text-xs uppercase tracking-wide text-subtext1/80">Nothing</span>
 								{:else}
 									<div class="flex items-center gap-2">
 										<Button size="sm" onClick={() => impersonateUser(api, user.id)}>

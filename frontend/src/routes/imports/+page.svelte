@@ -102,8 +102,8 @@
 				<DataTable {columns} tableClassName="min-w-lg">
 					{#each importsData.imports as job (job.id)}
 						{@const StatusIcon = getStatusIcon(job.status)}
-						<tr class="border-b border-ctp-surface0 last:border-0 hover:bg-ctp-surface0/50">
-							<td class="pl-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1">{job.id}</td>
+						<tr class="border-b border-surface0 last:border-0 hover:bg-base/50">
+							<td class="pl-6 py-4 whitespace-nowrap text-sm text-subtext1">{job.id}</td>
 							<td class="px-6 py-4 whitespace-nowrap">
 								<div class="flex items-center">
 									{#if job.user_avatar_url}
@@ -128,22 +128,22 @@
 									>
 								</div>
 							</td>
-							<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1">
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-subtext1">
 								{job.imported_count?.toLocaleString() ?? '-'}
 							</td>
-							<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1">
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-subtext1">
 								{job.processed_count?.toLocaleString() ?? '-'}
 							</td>
-							<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1">
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-subtext1">
 								{job.request_count?.toLocaleString() ?? '-'}
 							</td>
-							<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1">
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-subtext1">
 								{job.time_taken ? formatDuration(job.time_taken) : '-'}
 							</td>
-							<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1">
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-subtext1">
 								{formatStartDate(job.start_date)}
 							</td>
-							<td class="px-6 py-4 whitespace-nowrap text-sm text-ctp-subtext1"
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-subtext1"
 								>{formatDate(job.created_at)}</td
 							>
 						</tr>

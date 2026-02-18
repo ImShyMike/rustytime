@@ -31,8 +31,8 @@
 			type="button"
 			class="cursor-pointer flex-1 px-3 py-1 rounded text-sm font-medium transition-colors {selected ===
 			option.value
-				? 'bg-ctp-lavender/90 text-ctp-crust'
-				: 'bg-ctp-surface0/70 border border-ctp-surface1 text-ctp-text hover:bg-ctp-surface0'} {option.disabled
+				? 'bg-lavender/90 text-crust'
+				: 'bg-base/70 border border-surface1 text-text hover:bg-base'} {option.disabled
 				? 'cursor-not-allowed opacity-50'
 				: ''}"
 			disabled={option.disabled}

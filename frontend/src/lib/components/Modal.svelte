@@ -63,17 +63,17 @@
 
 		<!-- Modal -->
 		<div
-			class="relative w-full max-w-md bg-ctp-base border border-ctp-surface0/40 rounded-xl shadow p-0"
+			class="relative w-full max-w-md bg-mantle border border-surface0/40 rounded-xl shadow p-0"
 			transition:fly={{ y: 20, duration: 300, easing: quintOut }}
 		>
 			<!-- Header -->
-			<div class="flex items-center justify-between p-4 border-b border-ctp-surface0">
-				<h2 id="modal-title" class="text-lg font-semibold text-ctp-text">
+			<div class="flex items-center justify-between p-4 border-b border-surface0">
+				<h2 id="modal-title" class="text-lg font-semibold text-text">
 					{title}
 				</h2>
 				<button
 					onclick={handleClose}
-					class="cursor-pointer text-ctp-subtext0 hover:text-ctp-text"
+					class="cursor-pointer text-subtext0 hover:text-text"
 					aria-label="Close modal"
 				>
 					<LucideX class="h-6 w-6" />
@@ -87,7 +87,7 @@
 
 			<!-- Footer -->
 			{#if footer}
-				<div class="p-4 border-t border-ctp-surface0">
+				<div class="p-4 border-t border-surface0">
 					{@render footer()}
 				</div>
 			{/if}

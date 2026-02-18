@@ -13,9 +13,7 @@
 </script>
 
 <div
-	class="flex items-center gap-3 px-4 py-3 {hoverable
-		? 'hover:bg-ctp-surface0/20'
-		: ''} {className}"
+	class="flex items-center gap-3 px-4 py-3 {hoverable ? 'hover:bg-base/20' : ''} {className}"
 	role="listitem"
 >
 	{#if leading}

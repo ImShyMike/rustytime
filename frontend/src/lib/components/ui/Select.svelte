@@ -39,12 +39,12 @@
 </script>
 
 {#if label}
-	<label class="flex flex-col gap-1 text-sm text-ctp-subtext0">
-		<span class="text-xs uppercase tracking-wide text-ctp-overlay1">{label}</span>
+	<label class="flex flex-col gap-1 text-sm text-subtext0">
+		<span class="text-xs uppercase tracking-wide text-overlay1">{label}</span>
 		<div class="relative">
 			<select
 				{id}
-				class="w-full rounded-lg border border-ctp-surface1 bg-ctp-base pl-3 pr-10 py-2 text-sm text-ctp-text transition-colors focus:border-ctp-blue focus:outline-none focus:ring-1 focus:ring-ctp-blue/40 disabled:cursor-not-allowed disabled:opacity-50 appearance-none {className}"
+				class="w-full rounded-lg border border-surface1 bg-mantle pl-3 pr-10 py-2 text-sm text-text transition-colors focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue/40 disabled:cursor-not-allowed disabled:opacity-50 appearance-none {className}"
 				value={value ?? ''}
 				{disabled}
 				onchange={handleChange}
@@ -57,7 +57,7 @@
 				{/each}
 			</select>
 			<LucideChevronDown
-				class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ctp-subtext0 pointer-events-none"
+				class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-subtext0 pointer-events-none"
 			/>
 		</div>
 	</label>
@@ -65,7 +65,7 @@
 	<div class="relative">
 		<select
 			{id}
-			class="w-full rounded-lg border border-ctp-surface1 bg-ctp-base pl-3 pr-10 py-2 text-sm text-ctp-text transition-colors focus:border-ctp-blue focus:outline-none focus:ring-1 focus:ring-ctp-blue/40 disabled:cursor-not-allowed disabled:opacity-50 appearance-none {className}"
+			class="w-full rounded-lg border border-surface1 bg-mantle pl-3 pr-10 py-2 text-sm text-text transition-colors focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue/40 disabled:cursor-not-allowed disabled:opacity-50 appearance-none {className}"
 			value={value ?? ''}
 			{disabled}
 			onchange={handleChange}
@@ -78,7 +78,7 @@
 			{/each}
 		</select>
 		<LucideChevronDown
-			class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ctp-subtext0 pointer-events-none"
+			class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-subtext0 pointer-events-none"
 		/>
 	</div>
 {/if}

@@ -5,9 +5,9 @@
 	export let value: string | number | null = null;
 	export let subvalue: string | number | null = null;
 	export let className = '';
-	export let titleClass = 'text-xs font-semibold uppercase tracking-wide text-ctp-overlay0';
-	export let valueClass = 'text-3xl font-bold text-ctp-text mt-auto';
-	export let subvalueClass = 'text-xs font-semibold uppercase tracking-wide text-ctp-overlay0';
+	export let titleClass = 'text-xs font-semibold uppercase tracking-wide text-overlay0';
+	export let valueClass = 'text-3xl font-bold text-text mt-auto';
+	export let subvalueClass = 'text-xs font-semibold uppercase tracking-wide text-overlay0';
 </script>
 
 <Container className={`flex flex-col ${className}`.trim()}>

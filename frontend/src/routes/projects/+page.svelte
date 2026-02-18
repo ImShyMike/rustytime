@@ -243,8 +243,8 @@
 			<!-- Filters and search -->
 			<Container className="flex flex-col mb-4 gap-4">
 				<div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-					<label class="flex flex-col gap-1 text-sm text-ctp-subtext0 flex-1">
-						<span class="text-xs uppercase tracking-wide text-ctp-overlay1">Search</span>
+					<label class="flex flex-col gap-1 text-sm text-subtext0 flex-1">
+						<span class="text-xs uppercase tracking-wide text-overlay1">Search</span>
 						<SearchInput
 							bind:value={searchQuery}
 							placeholder="Search by name or URL"
@@ -257,7 +257,7 @@
 					<div class="flex flex-col sm:flex-row items-stretch sm:items-end gap-4">
 						{#if hiddenCount > 0}
 							<div class="flex flex-col gap-1 flex-1">
-								<span class="text-xs uppercase tracking-wide text-ctp-overlay1">Visibility</span>
+								<span class="text-xs uppercase tracking-wide text-overlay1">Visibility</span>
 								<Button
 									variant="secondary"
 									size="md"
@@ -298,13 +298,11 @@
 						<Container className="flex h-full flex-col gap-2 {project.hidden ? 'opacity-50' : ''}">
 							<div class="flex items-start justify-between gap-3">
 								<div class="flex items-center gap-3">
-									<SectionTitle level="h2" size="md" className="text-ctp-text"
+									<SectionTitle level="h2" size="md" className="text-text"
 										>{noUnknownText(project.name)}</SectionTitle
 									>
 									{#if project.hidden}
-										<span class="text-xs px-2 py-0.5 rounded bg-ctp-surface0 text-ctp-subtext0"
-											>Hidden</span
-										>
+										<span class="text-xs px-2 py-0.5 rounded bg-base text-subtext0">Hidden</span>
 									{/if}
 								</div>
 
@@ -334,15 +332,15 @@
 								</div>
 							</div>
 
-							<div class="flex flex-col justify-between h-full gap-3 text-sm text-ctp-subtext1">
-								<span class="font-semibold text-xl text-ctp-lavender"
+							<div class="flex flex-col justify-between h-full gap-3 text-sm text-subtext1">
+								<span class="font-semibold text-xl text-lavender"
 									>{project.human_readable_total}</span
 								>
 
 								{#if project.project_url}
 									<a
 										href={project.project_url}
-										class="group flex items-center gap-1 text-sm font-medium text-ctp-blue hover:text-ctp-blue-400"
+										class="group flex items-center gap-1 text-sm font-medium text-blue hover:text-ctp-blue-400"
 										target="_blank"
 										rel="noopener noreferrer external"
 									>
@@ -356,12 +354,12 @@
 								{/if}
 
 								<div class="flex flex-col">
-									<span class="text-sm font-semibold text-ctp-subtext0"
+									<span class="text-sm font-semibold text-subtext0"
 										>{project.createdAtFormatted}</span
 									>
 									{#if project.lastUpdated}
 										<span
-											class="text-xs text-ctp-overlay1"
+											class="text-xs text-overlay1"
 											title={project.lastUpdatedExact ?? undefined}
 										>
 											Last updated <RelativeTime

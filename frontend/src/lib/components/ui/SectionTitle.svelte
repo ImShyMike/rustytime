@@ -12,7 +12,7 @@
 		lg: 'text-2xl'
 	};
 
-	$: computedClass = `${sizeClasses[size]} font-semibold text-ctp-text ${className}`.trim();
+	$: computedClass = `${sizeClasses[size]} font-semibold text-text ${className}`.trim();
 </script>
 
 <svelte:element this={level} class={computedClass}>

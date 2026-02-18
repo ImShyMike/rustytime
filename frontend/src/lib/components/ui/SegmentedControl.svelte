@@ -25,15 +25,13 @@
 	}
 </script>
 
-<div class="inline-flex rounded-md bg-ctp-surface0/40 p-1 border border-ctp-surface1 {className}">
+<div class="inline-flex rounded-md bg-base/40 p-1 border border-surface1 {className}">
 	{#each options as option (option.value)}
 		<button
 			type="button"
 			class="cursor-pointer px-3 py-1 text-sm rounded transition-colors {selected === option.value
-				? 'bg-ctp-blue/80 text-ctp-base'
-				: 'text-ctp-text hover:bg-ctp-surface0/60'} {option.disabled
-				? 'cursor-not-allowed opacity-50'
-				: ''}"
+				? 'bg-blue/80 text-base'
+				: 'text-text hover:bg-base/60'} {option.disabled ? 'cursor-not-allowed opacity-50' : ''}"
 			disabled={option.disabled}
 			onclick={() => handleSelect(option.value)}
 		>

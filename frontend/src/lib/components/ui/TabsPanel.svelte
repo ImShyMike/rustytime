@@ -20,18 +20,14 @@
 	}
 </script>
 
-<div
-	class="flex gap-1 border-b bg-ctp-surface0/50 rounded-xl p-1 border border-ctp-surface1 {className}"
->
+<div class="flex gap-1 border-b bg-base/50 rounded-xl p-1 border border-surface1 {className}">
 	{#each tabs as tab (tab.id)}
 		<button
 			type="button"
 			class="grow cursor-pointer px-4 py-2 rounded-md font-medium transition-colors {selected ===
 			tab.id
-				? 'bg-ctp-blue/75 text-ctp-crust'
-				: 'text-ctp-subtext0 hover:text-ctp-text'} {tab.disabled
-				? 'cursor-not-allowed opacity-50'
-				: ''}"
+				? 'bg-blue/75 text-crust'
+				: 'text-subtext0 hover:text-text'} {tab.disabled ? 'cursor-not-allowed opacity-50' : ''}"
 			disabled={tab.disabled}
 			onclick={() => handleSelect(tab.id)}
 		>

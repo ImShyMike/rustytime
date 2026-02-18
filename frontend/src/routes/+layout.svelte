@@ -19,9 +19,9 @@
 	imageAlt="rustytime logo"
 />
 
-<ProgressBar class="text-ctp-lavender" />
+<ProgressBar class="text-lavender" />
 
-<div class="app-container flex h-screen bg-mantle">
+<div class="app-container flex h-screen bg-crust">
 	<div class="error-warning-container fixed top-0 left-0 right-0 z-50">
 		<AuthErrorWarning />
 	</div>

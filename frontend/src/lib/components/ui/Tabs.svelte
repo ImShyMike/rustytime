@@ -20,15 +20,13 @@
 	}
 </script>
 
-<div class="flex gap-2 border-b border-ctp-base {className}">
+<div class="flex gap-2 border-b border-base {className}">
 	{#each tabs as tab (tab.id)}
 		<button
 			type="button"
 			class="cursor-pointer px-4 py-2 font-medium transition-colors {selected === tab.id
-				? 'border-b-2 border-ctp-blue text-ctp-blue'
-				: 'text-ctp-subtext0 hover:text-ctp-text'} {tab.disabled
-				? 'cursor-not-allowed opacity-50'
-				: ''}"
+				? 'border-b-2 border-blue text-blue'
+				: 'text-subtext0 hover:text-text'} {tab.disabled ? 'cursor-not-allowed opacity-50' : ''}"
 			disabled={tab.disabled}
 			onclick={() => handleSelect(tab.id)}
 		>

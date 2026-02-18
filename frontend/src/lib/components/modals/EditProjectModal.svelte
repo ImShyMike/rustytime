@@ -76,8 +76,8 @@
 		/>
 
 		{#if errorMessage}
-			<div class="rounded-md bg-ctp-red/10 border border-ctp-red/30 px-4 py-3">
-				<p class="text-sm text-ctp-red">{errorMessage}</p>
+			<div class="rounded-md bg-red/10 border border-red/30 px-4 py-3">
+				<p class="text-sm text-red">{errorMessage}</p>
 			</div>
 		{/if}
 	</div>

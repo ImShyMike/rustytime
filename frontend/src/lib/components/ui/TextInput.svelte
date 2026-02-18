@@ -41,9 +41,9 @@
 </script>
 
 {#if label}
-	<label class="flex flex-col gap-1 text-sm text-ctp-subtext0">
-		<span class="text-xs uppercase tracking-wide text-ctp-overlay1"
-			>{label}{#if required}<span class="text-ctp-red">*</span>{/if}</span
+	<label class="flex flex-col gap-1 text-sm text-subtext0">
+		<span class="text-xs uppercase tracking-wide text-overlay1"
+			>{label}{#if required}<span class="text-red">*</span>{/if}</span
 		>
 		<input
 			{id}
@@ -52,7 +52,7 @@
 			{value}
 			{disabled}
 			{required}
-			class="w-full rounded-lg border border-ctp-surface1 bg-ctp-base px-3 py-2 text-sm text-ctp-text transition-colors placeholder:text-ctp-overlay1 focus:border-ctp-blue focus:outline-none focus:ring-1 focus:ring-ctp-blue/40 disabled:cursor-not-allowed disabled:opacity-50 {className}"
+			class="w-full rounded-lg border border-surface1 bg-mantle px-3 py-2 text-sm text-text transition-colors placeholder:text-overlay1 focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue/40 disabled:cursor-not-allowed disabled:opacity-50 {className}"
 			oninput={handleInput}
 			onchange={handleChange}
 		/>
@@ -65,7 +65,7 @@
 		{value}
 		{disabled}
 		{required}
-		class="w-full rounded-lg border border-ctp-surface1 bg-ctp-base px-3 py-2 text-sm text-ctp-text transition-colors placeholder:text-ctp-overlay1 focus:border-ctp-blue focus:outline-none focus:ring-1 focus:ring-ctp-blue/40 disabled:cursor-not-allowed disabled:opacity-50 {className}"
+		class="w-full rounded-lg border border-surface1 bg-mantle px-3 py-2 text-sm text-text transition-colors placeholder:text-overlay1 focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue/40 disabled:cursor-not-allowed disabled:opacity-50 {className}"
 		oninput={handleInput}
 		onchange={handleChange}
 	/>

@@ -30,17 +30,17 @@
 	const resolvedHref = $derived(typeof href === 'string' ? href : resolve(...href));
 
 	const permissionClasses: Record<RequiredPermission, string> = {
-		default: '',
+		default: 'outline-surface0/75',
 		admin:
-			'outline-dashed bg-ctp-red/5 outline-1 outline-ctp-red focus-visible:ring-2 focus-visible:ring-ctp-red/60',
+			'outline-dashed bg-red/5 outline-1 outline-red focus-visible:ring-2 focus-visible:ring-red/60',
 		owner:
-			'outline-dashed bg-ctp-mauve/5 outline-1 outline-ctp-mauve focus-visible:ring-2 focus-visible:ring-ctp-mauve/60'
+			'outline-dashed bg-mauve/5 outline-1 outline-mauve focus-visible:ring-2 focus-visible:ring-mauve/60'
 	};
 
 	const baseClasses =
-		'w-full text-left cursor-pointer py-2 rounded-md items-center inline-flex transition-colors';
-	const activeClasses = 'bg-ctp-surface0/70 text-ctp-lavender';
-	const inactiveClasses = 'hover:bg-ctp-surface1/50';
+		'w-full text-left outline-0 cursor-pointer py-2 rounded-md items-center inline-flex transition-colors';
+	const activeClasses = 'bg-base outline-1 outline-surface0 text-lavender';
+	const inactiveClasses = 'hover:bg-surface0/50 hover:outline-1';
 </script>
 
 <!-- eslint-disable svelte/no-navigation-without-resolve -->

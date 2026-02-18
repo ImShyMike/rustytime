@@ -29,14 +29,14 @@
 	}
 </script>
 
-<div class="rounded-lg border border-ctp-surface0 bg-ctp-mantle {className}">
+<div class="rounded-lg border border-surface0 bg-crust {className}">
 	<div class="overflow-x-auto">
 		<table class="min-w-full w-full {tableClassName}">
-			<thead class="border-b border-ctp-surface0 bg-ctp-surface0">
+			<thead class="border-b border-surface0 bg-base">
 				<tr>
 					{#each columns as column, i (column.key)}
 						<th
-							class="px-6 py-3 text-xs font-medium uppercase text-ctp-subtext0 {getAlignClass(
+							class="px-6 py-3 text-xs font-medium uppercase text-subtext0 {getAlignClass(
 								column.align
 							)} {i === 0 ? 'pl-6' : ''} {column.className ?? ''}"
 						>

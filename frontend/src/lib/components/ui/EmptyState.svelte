@@ -14,15 +14,15 @@
 </script>
 
 <Container
-	className="flex flex-col items-center gap-4 border border-dashed border-ctp-surface0/80 py-12 text-center {className}"
+	className="flex flex-col items-center gap-4 border border-dashed border-surface0/80 py-12 text-center {className}"
 >
 	{#if icon}
 		{@render icon()}
 	{/if}
 	<div class="space-y-1">
-		<p class="text-lg font-semibold text-ctp-text">{title}</p>
+		<p class="text-lg font-semibold text-text">{title}</p>
 		{#if description}
-			<p class="text-ctp-subtext0">{description}</p>
+			<p class="text-subtext0">{description}</p>
 		{/if}
 	</div>
 	{#if children}

@@ -25,10 +25,9 @@
 	}: Props = $props();
 
 	const variantClasses: Record<Variant, string> = {
-		default:
-			'border border-ctp-surface1 text-ctp-subtext1 hover:text-ctp-text hover:bg-ctp-surface0/60',
-		ghost: 'text-ctp-subtext1 hover:text-ctp-text hover:bg-ctp-surface0/40',
-		danger: 'text-ctp-red hover:text-ctp-red/80 hover:bg-ctp-red/10'
+		default: 'border border-surface1 text-subtext1 hover:text-text hover:bg-base/60',
+		ghost: 'text-subtext1 hover:text-text hover:bg-base/40',
+		danger: 'text-red hover:text-red/80 hover:bg-red/10'
 	};
 
 	const sizeClasses: Record<Size, string> = {
@@ -41,7 +40,7 @@
 
 <button
 	type="button"
-	class="inline-flex cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ctp-blue/60 disabled:cursor-not-allowed disabled:opacity-50 {variantClasses[
+	class="inline-flex cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue/60 disabled:cursor-not-allowed disabled:opacity-50 {variantClasses[
 		variant
 	]} {sizeClasses[size]} {className}"
 	{disabled}

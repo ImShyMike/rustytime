@@ -30,6 +30,6 @@
 		loading="lazy"
 	/>
 	{#if !avatarLoaded}
-		<div class="absolute inset-0 bg-ctp-surface1 animate-pulse"></div>
+		<div class="absolute inset-0 bg-surface0 animate-pulse"></div>
 	{/if}
 </div>

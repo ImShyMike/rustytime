@@ -107,7 +107,7 @@
 		size="xl"
 		title="Open sidebar"
 		onclick={openMobileSidebar}
-		className="md:hidden fixed top-4 left-4 z-50 bg-ctp-base shadow-lg"
+		className="md:hidden fixed top-4 left-4 z-50 bg-mantle shadow-lg"
 	>
 		<LucideMenu class="w-7 h-7" />
 	</IconButton>
@@ -116,7 +116,7 @@
 {#if buttonMode && showMobileSidebar}
 	<button
 		type="button"
-		class="fixed inset-0 bg-ctp-surface0/60 backdrop-blur-sm z-40 md:hidden"
+		class="fixed inset-0 bg-base/60 backdrop-blur-sm z-40 md:hidden"
 		onclick={closeMobileSidebar}
 		aria-label="Close sidebar overlay"
 	></button>
@@ -127,7 +127,7 @@
 	style="width: {sidebarWidth};"
 >
 	<div
-		class="bg-ctp-base text-ctp-text h-full p-4 border-r border-ctp-surface0 transition-all duration-300 relative flex flex-col justify-start"
+		class="bg-mantle text-text h-full p-4 border-r border-surface0 transition-all duration-300 relative flex flex-col justify-start"
 	>
 		<div
 			class="flex items-center gap-4 transition-all duration-300 {user
@@ -144,7 +144,7 @@
 					<div class="flex flex-row items-center gap-1 align-middle">
 						<UserTag admin_level={user.admin_level} />
 					</div>
-					<h2 class="{getNameSizeClass(user.name)} text-ctp-subtext1 font-bold">
+					<h2 class="{getNameSizeClass(user.name)} text-subtext1 font-bold">
 						{user.name || 'User'}
 					</h2>
 				</div>
@@ -284,9 +284,9 @@
 				className="absolute {collapsed ? 'bottom-18' : 'bottom-5'} left-5"
 			>
 				{#if $theme === 'light'}
-					<LucideMoon class="w-8 h-8 text-ctp-subtext0" />
+					<LucideMoon class="w-8 h-8 text-subtext0" />
 				{:else}
-					<LucideSunMedium class="w-8 h-8 text-ctp-subtext0" />
+					<LucideSunMedium class="w-8 h-8 text-subtext0" />
 				{/if}
 			</IconButton>
 
@@ -298,7 +298,7 @@
 					onclick={closeMobileSidebar}
 					className="absolute top-5 right-5"
 				>
-					<LucideX class="w-8 h-8 text-ctp-subtext0" />
+					<LucideX class="w-8 h-8 text-subtext0" />
 				</IconButton>
 			{:else}
 				<IconButton
@@ -309,7 +309,7 @@
 					className="absolute bottom-5 {collapsed ? 'right-5' : 'right-5'}"
 				>
 					<LucideChevronsRight
-						class="w-8 h-8 text-ctp-subtext0 transition-transform duration-400"
+						class="w-8 h-8 text-subtext0 transition-transform duration-400"
 						style="transform: rotate({collapsed ? '0deg' : '-180deg'})"
 					/>
 				</IconButton>
@@ -318,10 +318,10 @@
 
 		{#if impersonation && user}
 			<div
-				class="mt-4 rounded-md border border-ctp-yellow/40 bg-ctp-yellow/10 px-3 py-3 text-xs text-ctp-subtext0 transition-all duration-300"
+				class="mt-4 rounded-md border border-yellow/40 bg-yellow/10 px-3 py-3 text-xs text-subtext0 transition-all duration-300"
 			>
 				{#if !collapsed}
-					<p class="mb-1 text-sm font-semibold text-ctp-text">
+					<p class="mb-1 text-sm font-semibold text-text">
 						Impersonating: {user.name || 'User'}
 					</p>
 					<p class="mb-3 text-xs">

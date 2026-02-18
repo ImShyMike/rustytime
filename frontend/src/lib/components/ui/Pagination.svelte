@@ -33,14 +33,14 @@
 
 {#if totalPages > 1}
 	<div class="flex items-center justify-between {className}">
-		<p class="text-sm text-ctp-subtext0">
+		<p class="text-sm text-subtext0">
 			Showing {showingStart} - {showingEnd} of {total}
 		</p>
 		<div class="flex items-center gap-2">
 			<Button onClick={goToPrevious} disabled={!hasPrevious} className="p-2">
 				<LucideChevronLeft class="h-4 w-4" />
 			</Button>
-			<span class="text-sm text-ctp-subtext0">
+			<span class="text-sm text-subtext0">
 				Page {currentPage} of {totalPages}
 			</span>
 			<Button onClick={goToNext} disabled={!hasNext} className="p-2">

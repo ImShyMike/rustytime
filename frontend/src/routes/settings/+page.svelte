@@ -325,7 +325,7 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 			<Container>
 				<SectionTitle level="h2" className="mb-3">Preferences</SectionTitle>
 				<div class="space-y-4">
-					<div class="bg-ctp-surface0/40 border border-ctp-surface1 rounded-lg p-4 space-y-3">
+					<div class="bg-base/40 border border-surface1 rounded-lg p-4 space-y-3">
 						<div class="flex flex-col sm:flex-row gap-3 items-end">
 							<div class="flex-1 w-full">
 								<Select
@@ -351,10 +351,10 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 							</Button>
 						</div>
 						{#if timezoneError}
-							<p class="text-sm text-ctp-red">{timezoneError}</p>
+							<p class="text-sm text-red">{timezoneError}</p>
 						{/if}
 						{#if timezoneSuccess}
-							<p class="text-sm text-ctp-green">Settings saved!</p>
+							<p class="text-sm text-green">Settings saved!</p>
 						{/if}
 					</div>
 				</div>
@@ -366,13 +366,13 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 				<div class="space-y-4">
 					<div class="flex flex-col gap-3">
 						<div class="flex flex-wrap items-center justify-between gap-3">
-							<label for="setup-content" class="text-sm font-medium text-ctp-text">
+							<label for="setup-content" class="text-sm font-medium text-text">
 								{#if setupVariant === 'unix'}
 									Run this command on macOS or Linux:
 								{:else if setupVariant === 'windows'}
 									Run this command in PowerShell:
 								{:else}
-									Copy this into your <code class="bg-ctp-surface1 p-1">~/.wakatime.cfg</code> file:
+									Copy this into your <code class="bg-surface0 p-1">~/.wakatime.cfg</code> file:
 								{/if}
 							</label>
 							<SegmentedControl options={setupVariantOptions} bind:selected={setupVariant} />
@@ -381,16 +381,16 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 							<div class="relative w-full">
 								<div
 									id="setup-content"
-									class="resize-none text-ctp-text block w-full pr-14 px-2 py-2 border border-ctp-surface1 rounded-md bg-ctp-surface0/40 text-sm font-mono"
+									class="resize-none text-text block w-full pr-14 px-2 py-2 border border-surface1 rounded-md bg-base/40 text-sm font-mono"
 								>
-									<p class="text-ctp-mauve">[<span class="text-ctp-text">settings</span>]</p>
-									<p class="text-ctp-blue">
-										api_url <span class="text-ctp-text">=</span>
-										<span class="text-ctp-green">"{PUBLIC_BACKEND_API_URL}/api/v1"</span>
+									<p class="text-mauve">[<span class="text-text">settings</span>]</p>
+									<p class="text-blue">
+										api_url <span class="text-text">=</span>
+										<span class="text-green">"{PUBLIC_BACKEND_API_URL}/api/v1"</span>
 									</p>
-									<p class="text-ctp-blue">
-										api_key <span class="text-ctp-text">=</span>
-										<span class="text-ctp-{settingsData.api_key ? 'yellow' : 'red'}"
+									<p class="text-blue">
+										api_key <span class="text-text">=</span>
+										<span class="text-{settingsData.api_key ? 'yellow' : 'red'}"
 											>{settingsData.api_key ?? 'REDACTED'}</span
 										>
 									</p>
@@ -408,7 +408,7 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 			<Container className="mt-4">
 				<SectionTitle level="h2" className="mb-3">Timesplit</SectionTitle>
 				<div class="space-y-4">
-					<p class="text-ctp-text">
+					<p class="text-text">
 						Want to use multiple WakaTime servers at once? Check out
 						<a
 							href="https://github.com/ImShyMike/timesplit"
@@ -416,7 +416,7 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 							rel="noopener noreferrer"
 							data-umami-event="timesplit-link"
 							data-umami-event-name="Timesplit"
-							class="text-ctp-blue underline hover:text-ctp-blue/80">Timesplit</a
+							class="text-blue underline hover:text-blue/80">Timesplit</a
 						>!
 						<br />
 						Or simply use the quick install command for your operating system below.
@@ -424,7 +424,7 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 					<!-- OS selector + install command -->
 					<div class="flex flex-col gap-3 mt-3">
 						<div class="flex flex-wrap items-center justify-between gap-3">
-							<label for="timesplit-command" class="text-sm font-medium text-ctp-text">
+							<label for="timesplit-command" class="text-sm font-medium text-text">
 								Quick install command for your OS:
 							</label>
 							<SegmentedControl options={osOptions} bind:selected={os} />
@@ -433,7 +433,7 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 						<CodeBlock code={installCommands[os]} />
 
 						{#if os === 'windows'}
-							<p class="mt-2 text-xs text-ctp-text/80">
+							<p class="mt-2 text-xs text-text/80">
 								Note: This command must be run from an elevated PowerShell window.
 							</p>
 						{/if}
@@ -444,15 +444,15 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 			<!-- Projects aliases -->
 			<Container>
 				<SectionTitle level="h2" className="mb-3">Project Aliases</SectionTitle>
-				<p class="text-ctp-text mb-4">
+				<p class="text-text mb-4">
 					Here you can add aliases for projects. For example, adding "myapp" with "myapp-backend" as
 					an alias will combine them into the "myapp" project.
 				</p>
 
 				{#if aliases && projects}
 					<!-- Add new alias form -->
-					<div class="bg-ctp-surface0/40 border border-ctp-surface1 rounded-lg p-4 mb-4">
-						<h3 class="text-sm font-semibold text-ctp-text mb-3">Add New Alias</h3>
+					<div class="bg-base/40 border border-surface1 rounded-lg p-4 mb-4">
+						<h3 class="text-sm font-semibold text-text mb-3">Add New Alias</h3>
 						<div class="flex flex-col sm:flex-row gap-3">
 							<div class="flex-1">
 								<Select
@@ -498,7 +498,7 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 										(p) => p.id === aliasEntry.project_id
 									)}
 									{#if mainProject}
-										<div class="bg-ctp-surface0/40 border border-surface1 rounded-lg p-3">
+										<div class="bg-base/40 border border-surface1 rounded-lg p-3">
 											<div class="flex items-center justify-between mb-2">
 												<h4 class="font-semibold text-text">{safeText(mainProject.name)}</h4>
 												<span class="text-xs text-subtext0"
@@ -514,7 +514,7 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 													)}
 													{#if aliasProject}
 														<div
-															class="flex items-center justify-between bg-surface1/40 border border-surface1 rounded px-3 py-2"
+															class="flex items-center justify-between bg-surface0/40 border border-surface1 rounded px-3 py-2"
 														>
 															<span class="text-sm text-text">{safeText(aliasProject.name)}</span>
 															<IconButton
@@ -545,16 +545,16 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 			<Container>
 				<SectionTitle level="h2" className="mb-3">Hackatime Import</SectionTitle>
 				<div class="space-y-4">
-					<p class="text-ctp-text">
+					<p class="text-text">
 						Import your existing Hackatime heartbeats directly into rustytime. Provide a <a
-							class="text-ctp-blue underline hover:text-ctp-blue/80"
+							class="text-blue underline hover:text-blue/80"
 							href="https://hackatime.hackclub.com/my/wakatime_setup"
 							target="_blank"
 							rel="noopener noreferrer external">Hackatime API key</a
 						> to begin importing. Your key is only used for this session and is not stored.
 					</p>
-					<div class="bg-ctp-surface0/40 border border-ctp-surface1 rounded-lg p-4 space-y-3">
-						<h3 class="text-sm font-semibold text-ctp-text mb-3">Hackatime API Key</h3>
+					<div class="bg-base/40 border border-surface1 rounded-lg p-4 space-y-3">
+						<h3 class="text-sm font-semibold text-text mb-3">Hackatime API Key</h3>
 						<div class="flex flex-col sm:flex-row gap-3 items-center">
 							<TextInput
 								id="hackatime-api-key"
@@ -578,12 +578,12 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 							</Button>
 						</div>
 						{#if importError}
-							<p class="text-sm text-ctp-red">{importError}</p>
+							<p class="text-sm text-red">{importError}</p>
 						{/if}
 					</div>
 
 					{#if isImportActive}
-						<div class="bg-ctp-surface0/40 border border-blue/50 rounded-lg p-4 space-y-3">
+						<div class="bg-base/40 border border-blue/50 rounded-lg p-4 space-y-3">
 							<div class="flex items-center gap-2">
 								<LucideLoader2 class="w-5 h-5 animate-spin text-blue" />
 								<h3 class="text-sm font-semibold text-text">
@@ -598,7 +598,7 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 					{/if}
 
 					{#if importStatus && importStatus.status === 'completed'}
-						<div class="bg-ctp-surface0/40 border border-green/50 rounded-lg p-4 space-y-4">
+						<div class="bg-base/40 border border-green/50 rounded-lg p-4 space-y-4">
 							<div class="flex items-center justify-between">
 								<h3 class="text-sm font-semibold text-green">Import Completed!</h3>
 								<p class="text-xs text-subtext0">
@@ -606,25 +606,25 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 								</p>
 							</div>
 							<div class="grid gap-3 sm:grid-cols-2">
-								<div class="rounded-md border border-surface1 bg-ctp-surface1/30 p-3">
+								<div class="rounded-md border border-surface1 bg-surface0/30 p-3">
 									<p class="text-xs text-subtext0 uppercase tracking-wide">Imported Heartbeats</p>
 									<p class="text-2xl font-semibold text-green">
 										{(importStatus.imported_count ?? 0).toLocaleString()}
 									</p>
 								</div>
-								<div class="rounded-md border border-surface1 bg-ctp-surface1/30 p-3">
+								<div class="rounded-md border border-surface1 bg-surface0/30 p-3">
 									<p class="text-xs text-subtext0 uppercase tracking-wide">Processed Heartbeats</p>
 									<p class="text-2xl font-semibold text-text">
 										{(importStatus.processed_count ?? 0).toLocaleString()}
 									</p>
 								</div>
-								<div class="rounded-md border border-surface1 bg-ctp-surface1/30 p-3">
+								<div class="rounded-md border border-surface1 bg-surface0/30 p-3">
 									<p class="text-xs text-subtext0 uppercase tracking-wide">API Requests</p>
 									<p class="text-2xl font-semibold text-text">
 										{(importStatus.request_count ?? 0).toLocaleString()}
 									</p>
 								</div>
-								<div class="rounded-md border border-surface1 bg-ctp-surface1/30 p-3">
+								<div class="rounded-md border border-surface1 bg-surface0/30 p-3">
 									<p class="text-xs text-subtext0 uppercase tracking-wide">Duration</p>
 									<p class="text-2xl font-semibold text-text">
 										{formatDuration(importStatus.time_taken ?? 0)}
@@ -635,7 +635,7 @@ api_key = ${settingsData.api_key ?? 'REDACTED'}`;
 					{/if}
 
 					{#if importStatus && importStatus.status === 'failed'}
-						<div class="bg-ctp-surface0/40 border border-red/50 rounded-lg p-4 space-y-3">
+						<div class="bg-base/40 border border-red/50 rounded-lg p-4 space-y-3">
 							<h3 class="text-sm font-semibold text-red">Import Failed</h3>
 							<p class="text-sm text-subtext0">
 								{importStatus.error_message || 'An unknown error occurred during the import.'}

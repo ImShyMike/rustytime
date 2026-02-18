@@ -11,7 +11,7 @@
 
 <footer class="w-full pb-2 px-6 text-sm">
 	<div
-		class="group flex flex-col sm:flex-row items-center justify-center sm:gap-3 text-ctp-text/35 transition-colors hover:text-ctp-subtext1 text-center"
+		class="group flex flex-col sm:flex-row items-center justify-center sm:gap-3 text-text/35 transition-colors hover:text-subtext1 text-center"
 	>
 		{#if lastUpdatedAt}
 			<span class="font-mono text-balance" title={lastUpdatedAt.toLocaleString()}>

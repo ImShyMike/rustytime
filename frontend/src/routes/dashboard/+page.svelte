@@ -85,24 +85,24 @@
 				<StatCard
 					title="Total Time"
 					value={deferred.data?.human_readable_total || 'None'}
-					valueClass="text-xl font-semibold text-ctp-text"
+					valueClass="text-xl font-semibold text-text"
 				/>
 				<StatCard
 					title="Top Project"
 					value={noUnknownText(deferred.data?.projects?.[0]?.name) || 'None'}
-					valueClass="text-xl font-semibold text-ctp-text"
+					valueClass="text-xl font-semibold text-text"
 				/>
 				<StatCard
 					title="Top Language"
 					value={safeText(deferred.data?.languages?.[0]?.name) || 'None'}
-					valueClass="text-xl font-semibold text-ctp-text"
+					valueClass="text-xl font-semibold text-text"
 				/>
 				<StatCard
 					title="Total Heartbeats"
 					value={deferred.data?.total_heartbeats
 						? deferred.data.total_heartbeats.toLocaleString()
 						: '0'}
-					valueClass="text-xl font-semibold text-ctp-text"
+					valueClass="text-xl font-semibold text-text"
 				/>
 			</div>
 
@@ -115,7 +115,7 @@
 						{#if topProjects.length > 0}
 							<BarChart data={topProjects} theme={activeTheme} horizontal class="h-87.5" />
 						{:else}
-							<p class="text-ctp-subtext0">No project data available</p>
+							<p class="text-subtext0">No project data available</p>
 						{/if}
 					</div>
 
@@ -125,7 +125,7 @@
 						{#if topLanguages.length > 0}
 							<PieChart data={topLanguages} theme={activeTheme} class="h-87.5" />
 						{:else}
-							<p class="text-ctp-subtext0">No language data available</p>
+							<p class="text-subtext0">No language data available</p>
 						{/if}
 					</div>
 
@@ -136,7 +136,7 @@
 							{#if topEditors.length > 0}
 								<PieChart data={topEditors} theme={activeTheme} class="h-87.5" />
 							{:else}
-								<p class="text-ctp-subtext0">No editor data available</p>
+								<p class="text-subtext0">No editor data available</p>
 							{/if}
 						</div>
 
@@ -146,7 +146,7 @@
 							{#if topOperatingSystems.length > 0}
 								<PieChart data={topOperatingSystems} theme={activeTheme} class="h-87.5" />
 							{:else}
-								<p class="text-ctp-subtext0">No operating system data available</p>
+								<p class="text-subtext0">No operating system data available</p>
 							{/if}
 						</div>
 					{/if}

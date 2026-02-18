@@ -10,8 +10,8 @@
 	export let items: ListItem[] = [];
 	export let className = '';
 	export let rowClass = 'flex items-center gap-2 justify-between';
-	export let labelClass = 'text-ctp-text flex-1 min-w-0';
-	export let valueClass = 'text-ctp-subtext1 font-mono text-right';
+	export let labelClass = 'text-text flex-1 min-w-0';
+	export let valueClass = 'text-subtext1 font-mono text-right';
 </script>
 
 {#if items.length > 0}
@@ -26,7 +26,7 @@
 {:else}
 	<div class={className}>
 		<slot name="empty">
-			<p class="text-ctp-subtext0">No data available</p>
+			<p class="text-subtext0">No data available</p>
 		</slot>
 	</div>
 {/if}

@@ -25,9 +25,9 @@
 		'w-full py-2 rounded-md cursor-pointer items-center inline-flex transition-colors';
 
 	const variantClasses: Record<Variant, string> = {
-		default: 'hover:bg-ctp-surface1/50',
-		primary: 'bg-ctp-mauve/50 outline outline-ctp-mauve hover:bg-ctp-mauve/65',
-		warning: 'bg-ctp-yellow text-ctp-base hover:bg-ctp-yellow/80'
+		default: 'hover:bg-surface0/50',
+		primary: 'bg-mauve/50 outline outline-mauve hover:bg-mauve/65',
+		warning: 'bg-yellow text-base hover:bg-yellow/80'
 	};
 </script>
 

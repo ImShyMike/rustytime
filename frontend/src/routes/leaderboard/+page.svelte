@@ -57,7 +57,7 @@
 			<Tabs {tabs} bind:selected={selectedTab} className="mb-4" />
 
 			<p
-				class="text-xs text-ctp-overlay1 pb-4"
+				class="text-xs text-overlay1 pb-4"
 				title={new Date(currentData.generated_at).toLocaleString()}
 			>
 				<span class="hidden md:inline">Updated&nbsp;</span><RelativeTime
@@ -69,23 +69,23 @@
 		<DataTable {columns} tableClassName="table-fixed">
 			{#if currentData.entries.length === 0}
 				<tr>
-					<td colspan="3" class="p-8 text-center text-ctp-subtext0"
+					<td colspan="3" class="p-8 text-center text-subtext0"
 						>No data available for this period</td
 					>
 				</tr>
 			{:else}
 				{#each currentData.entries as entry (entry.rank)}
-					<tr class="border-b last:border-0 border-ctp-surface0 hover:bg-ctp-surface0/20">
+					<tr class="border-b last:border-0 border-surface0 hover:bg-base/20">
 						<td class="w-12 pl-6 pr-0 py-4">
 							<div
 								class="flex h-8 w-8 items-center justify-center rounded-full font-bold {entry.rank ===
 								1
-									? 'bg-ctp-yellow text-ctp-base'
+									? 'bg-yellow text-base'
 									: entry.rank === 2
-										? 'bg-ctp-overlay0 text-ctp-text'
+										? 'bg-surface2 text-text'
 										: entry.rank === 3
-											? 'bg-ctp-peach text-ctp-base'
-											: 'text-ctp-subtext0'}"
+											? 'bg-peach text-base'
+											: 'text-subtext0'}"
 							>
 								{entry.rank}
 							</div>
@@ -95,20 +95,20 @@
 								<img
 									src={entry.avatar_url}
 									alt={entry.user_name}
-									class="h-8 w-8 rounded-full border border-ctp-surface0"
+									class="h-8 w-8 rounded-full border border-surface0"
 								/>
 								<a
 									class="font-medium overflow-hidden text-ellipsis whitespace-nowrap {entry.user_id ===
 									page.data.auth?.user?.id
-										? 'text-ctp-blue'
-										: 'text-ctp-text'}"
+										? 'text-blue'
+										: 'text-text'}"
 									href={resolve(`/@[slug]`, { slug: entry.user_name })}
 									>{entry.user_name || 'Unknown'}</a
 								>
 							</div>
 						</td>
 						<td
-							class="px-6 py-4 text-right font-mono text-lg text-ctp-text"
+							class="px-6 py-4 text-right font-mono text-lg text-text"
 							title={formatDuration(entry.total_seconds)}
 						>
 							{formatDuration(entry.total_seconds, false)}

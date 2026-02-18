@@ -25,18 +25,14 @@
 	}: Props = $props();
 
 	const variantClasses: Record<Variant, string> = {
-		primary:
-			'bg-ctp-blue/10 text-ctp-text hover:bg-ctp-surface0 border-ctp-surface0 focus-visible:ring-ctp-blue/60',
+		primary: 'bg-blue/10 text-text hover:bg-base border-surface0 focus-visible:ring-blue/60',
 		secondary:
-			'bg-ctp-surface0/10 text-ctp-text hover:bg-ctp-surface1 border-ctp-surface1 focus-visible:ring-ctp-surface1/60',
-		outline:
-			'bg-ctp-blue/10 text-ctp-blue hover:bg-ctp-blue/10 border-ctp-blue focus-visible:ring-ctp-blue/60',
+			'bg-base/10 text-text hover:bg-surface0 border-surface1 focus-visible:ring-surface1/60',
+		outline: 'bg-blue/10 text-blue hover:bg-blue/10 border-blue focus-visible:ring-blue/60',
 		ghost:
-			'bg-transparent text-ctp-text hover:bg-ctp-surface0/60 border-transparent focus-visible:ring-ctp-surface1/60',
-		confirm:
-			'bg-ctp-green/10 text-ctp-green hover:bg-ctp-green/10 border-ctp-green focus-visible:ring-ctp-green/60',
-		danger:
-			'bg-ctp-red/10 text-ctp-red hover:bg-ctp-red/10 border-ctp-red focus-visible:ring-ctp-red/60'
+			'bg-transparent text-text hover:bg-base/60 border-transparent focus-visible:ring-surface1/60',
+		confirm: 'bg-green/10 text-green hover:bg-green/10 border-green focus-visible:ring-green/60',
+		danger: 'bg-red/10 text-red hover:bg-red/10 border-red focus-visible:ring-red/60'
 	};
 
 	const sizeClasses: Record<Size, string> = {
@@ -46,7 +42,7 @@
 	};
 
 	const baseClasses =
-		'inline-flex items-center justify-center gap-2 rounded-lg border font-semibold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:border-ctp-surface1 disabled:bg-ctp-surface0/40 disabled:text-ctp-subtext1';
+		'inline-flex items-center justify-center gap-2 rounded-lg border font-semibold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:border-surface1 disabled:bg-base/40 disabled:text-subtext1';
 </script>
 
 <button
