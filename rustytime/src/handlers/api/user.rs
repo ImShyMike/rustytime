@@ -137,7 +137,9 @@ async fn process_heartbeat_request(
                         HeartbeatBulkApiResponse {
                             responses: stored_results
                                 .into_iter()
-                                .map(|heartbeat| BulkResponseItem(heartbeat, 201))
+                                .map(|heartbeat| {
+                                    BulkResponseItem(BulkResponseItemData { data: heartbeat }, 201)
+                                })
                                 .collect(),
                         },
                     ));

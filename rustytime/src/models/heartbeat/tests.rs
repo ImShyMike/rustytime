@@ -349,7 +349,7 @@ fn heartbeat_response_conversion_retains_entity_details() {
         source_type: None,
     };
     let response = HeartbeatResponse::from(heartbeat.clone());
-    assert_eq!(response.id, heartbeat.id);
+    assert_eq!(response.id, heartbeat.id.to_string());
 }
 
 // ============================================================================

@@ -444,7 +444,7 @@ pub enum HeartbeatApiResponseVariant {
 
 #[derive(Serialize, Debug, JsonSchema)]
 pub struct HeartbeatResponse {
-    pub id: i64,
+    pub id: String,
     pub entity: String,
     #[serde(rename = "type")]
     pub type_: String,
@@ -462,7 +462,12 @@ pub struct HeartbeatBulkApiResponse {
 }
 
 #[derive(Serialize, Debug, JsonSchema)]
-pub struct BulkResponseItem(pub HeartbeatResponse, pub u16);
+pub struct BulkResponseItemData {
+    pub data: HeartbeatResponse,
+}
+
+#[derive(Serialize, Debug, JsonSchema)]
+pub struct BulkResponseItem(pub BulkResponseItemData, pub u16);
 
 #[derive(Queryable, QueryableByName, Selectable, Serialize, Deserialize, Debug, Clone)]
 #[diesel(table_name = heartbeats)]
@@ -720,7 +725,7 @@ impl NewHeartbeat {
 impl From<Heartbeat> for HeartbeatResponse {
     fn from(heartbeat: Heartbeat) -> Self {
         Self {
-            id: heartbeat.id,
+            id: heartbeat.id.to_string(),
             entity: heartbeat.entity,
             type_: heartbeat.type_,
             time: datetime_to_f64(heartbeat.time),
@@ -731,7 +736,7 @@ impl From<Heartbeat> for HeartbeatResponse {
 impl From<(i64, NewHeartbeat)> for HeartbeatResponse {
     fn from((id, heartbeat): (i64, NewHeartbeat)) -> Self {
         Self {
-            id,
+            id: id.to_string(),
             entity: heartbeat.entity,
             type_: heartbeat.type_,
             time: datetime_to_f64(heartbeat.time),
@@ -742,7 +747,7 @@ impl From<(i64, NewHeartbeat)> for HeartbeatResponse {
 impl From<Heartbeat> for BulkResponseItem {
     fn from(heartbeat: Heartbeat) -> Self {
         let response = HeartbeatResponse::from(heartbeat);
-        BulkResponseItem(response, 201)
+        BulkResponseItem(BulkResponseItemData { data: response }, 201)
     }
 }
 
