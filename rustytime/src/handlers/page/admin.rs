@@ -88,7 +88,7 @@ pub async fn admin_dashboard(
         }
     };
 
-    let total_heartbeats = db_query!(Heartbeat::total_heartbeat_count_estimate(&mut conn));
+    let total_heartbeats = db_query!(Heartbeat::total_heartbeat_count(&mut conn));
     let total_users = db_query!(User::count_total_users(&mut conn, false));
     let heartbeats_last_hour = db_query!(Heartbeat::count_heartbeats_last_hour(&mut conn));
     let heartbeats_last_24h = db_query!(Heartbeat::count_heartbeats_last_24h(&mut conn));

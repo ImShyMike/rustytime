@@ -264,17 +264,14 @@ async fn store_heartbeats_in_db_internal(
     let pool = pool.clone();
 
     tokio::task::spawn_blocking(move || {
-        let mut connection = pool.get().expect("Failed to get DB connection from pool");
+        let mut conn = pool.get().expect("Failed to get DB connection from pool");
 
-        db_transaction_result!(connection, |conn| {
-            let mut heartbeat_keys = if include_responses {
-                Some(Vec::with_capacity(new_heartbeats.len()))
-            } else {
-                None
-            };
+        db_transaction_result!(conn, |conn| {
             let mut seen: HashMap<(i32, chrono::DateTime<Utc>), ()> =
                 HashMap::with_capacity(new_heartbeats.len());
-            let mut deduplicated = Vec::with_capacity(new_heartbeats.len());
+            let mut ordered_keys: Vec<(i32, chrono::DateTime<Utc>)> =
+                Vec::with_capacity(new_heartbeats.len());
+            let mut deduplicated: Vec<NewHeartbeat> = Vec::with_capacity(new_heartbeats.len());
 
             for mut heartbeat in new_heartbeats {
                 if heartbeat.project_id.is_none()
@@ -286,9 +283,7 @@ async fn store_heartbeats_in_db_internal(
                 }
 
                 let key = (heartbeat.user_id, heartbeat.time);
-                if let Some(keys) = heartbeat_keys.as_mut() {
-                    keys.push(key);
-                }
+                ordered_keys.push(key);
 
                 if let hash_map::Entry::Vacant(e) = seen.entry(key) {
                     e.insert(());
@@ -296,37 +291,55 @@ async fn store_heartbeats_in_db_internal(
                 }
             }
 
+            let mut inserted_map: HashMap<(i32, chrono::DateTime<Utc>), Heartbeat> = HashMap::new();
             let mut inserted_total = 0usize;
+
             for chunk in deduplicated.chunks(HEARTBEAT_INSERT_BATCH_SIZE) {
-                inserted_total += instrumented::execute("Heartbeat::batch_insert", || {
-                    diesel::insert_into(heartbeats::table)
-                        .values(chunk)
-                        .on_conflict((heartbeats::user_id, heartbeats::time))
-                        .do_nothing()
-                        .execute(conn)
-                })?;
+                let returned: Vec<Heartbeat> =
+                    instrumented::load("Heartbeat::batch_insert", || {
+                        diesel::insert_into(heartbeats::table)
+                            .values(chunk)
+                            .on_conflict((heartbeats::user_id, heartbeats::time))
+                            .do_nothing()
+                            .returning(heartbeats::all_columns)
+                            .load::<Heartbeat>(conn)
+                    })?;
+
+                inserted_total += returned.len();
+                for hb in returned {
+                    inserted_map.insert((hb.user_id, hb.time), hb);
+                }
             }
 
             let responses = if include_responses {
-                let unique_keys: Vec<_> = seen.keys().copied().collect();
+                let missing_keys: Vec<(i32, chrono::DateTime<Utc>)> = seen
+                    .keys()
+                    .filter(|k| !inserted_map.contains_key(*k))
+                    .copied()
+                    .collect();
 
-                let mut heartbeat_cache: HashMap<(i32, chrono::DateTime<Utc>), Heartbeat> =
-                    HashMap::new();
-                for (uid, t) in unique_keys {
-                    let hb = instrumented::first("Heartbeat::fetch_after_insert", || {
-                        heartbeats::table
-                            .filter(heartbeats::user_id.eq(uid))
-                            .filter(heartbeats::time.eq(t))
-                            .first::<Heartbeat>(conn)
-                    })?;
-                    heartbeat_cache.insert((uid, t), hb);
+                if !missing_keys.is_empty() {
+                    let user_ids: Vec<i32> = missing_keys.iter().map(|(uid, _)| *uid).collect();
+                    let times: Vec<chrono::DateTime<Utc>> =
+                        missing_keys.iter().map(|(_, t)| *t).collect();
+
+                    let fetched: Vec<Heartbeat> =
+                        instrumented::load("Heartbeat::fetch_existing", || {
+                            heartbeats::table
+                                .filter(heartbeats::user_id.eq_any(&user_ids))
+                                .filter(heartbeats::time.eq_any(&times))
+                                .load::<Heartbeat>(conn)
+                        })?;
+
+                    for hb in fetched {
+                        inserted_map.insert((hb.user_id, hb.time), hb);
+                    }
                 }
 
-                heartbeat_keys
-                    .unwrap()
+                ordered_keys
                     .into_iter()
                     .map(|key| {
-                        let hb = heartbeat_cache.get(&key).unwrap().clone();
+                        let hb = inserted_map.get(&key).unwrap().clone();
                         HeartbeatResponse::from(hb)
                     })
                     .collect()

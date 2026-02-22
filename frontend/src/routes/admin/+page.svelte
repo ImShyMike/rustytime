@@ -109,7 +109,7 @@
 			<div class="md:col-span-2 lg:col-span-1">
 				<StatCard
 					title="Total Heartbeats"
-					value={`~${adminData.total_heartbeats.toLocaleString()}`}
+					value={adminData.total_heartbeats.toLocaleString()}
 					valueClass="text-3xl font-bold text-ctp-green-600"
 				/>
 			</div>
