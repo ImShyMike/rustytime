@@ -1,5 +1,6 @@
 import type { UsageStat } from '$lib/types/dashboard';
-import type { EChartsOption } from 'echarts';
+import { color, type EChartsOption } from 'echarts';
+import { formatDuration } from '$lib/utils/time';
 
 const FALLBACK_COLORS: Record<'light' | 'dark', string[]> = {
 	dark: [
@@ -131,11 +132,20 @@ export function createBarChartOptions(
 		}
 	};
 
+	const maxValue = Math.max(...data.map((item) => item.total_seconds));
+	const barCount = data.length;
+	const targetIntervalCount = 6;
+	const rawInterval = maxValue / targetIntervalCount;
+	const intervalBase = 1800; // 30 minutes
+	const interval = Math.max(intervalBase, Math.ceil(rawInterval / intervalBase) * intervalBase);
 	const valueAxis = {
 		type: 'value' as const,
+		interval: interval,
+		max: Math.ceil(maxValue / interval) * interval,
 		axisLabel: {
+			show: true,
 			color: textColor,
-			formatter: (value: number) => `${Math.floor(value / 3600)}h`
+			formatter: (value: number) => formatDuration(value, false, true)
 		},
 		axisLine: {
 			lineStyle: {
@@ -184,7 +194,22 @@ export function createBarChartOptions(
 						color: resolvedColors[index % resolvedColors.length]
 					}
 				})),
-				barWidth: '60%'
+				barWidth: '60%',
+				label: {
+					show: true,
+					position: horizontal ? 'insideRight' : 'insideTop',
+					color: theme === 'dark' ? '#11111b' : '#dce0e8',
+					padding: [0, barCount < 4 ? 10 : 0, 0, 0],
+					formatter: (params) => {
+						const p = params as { dataIndex?: number };
+						const idx = p.dataIndex ?? 0;
+						// only show if value is >=20% of the max value
+						if (data[idx].total_seconds < 0.2 * maxValue) {
+							return '';
+						}
+						return data[idx]?.text ?? '';
+					}
+				}
 			}
 		]
 	};

@@ -35,8 +35,15 @@ export const formatRelativeTime = (from: Date, to = new Date()): string => {
 	return '';
 };
 
-export const formatDuration = (seconds: number, includeSeconds: boolean = true): string => {
+export const formatDuration = (
+	seconds: number,
+	includeSeconds: boolean = true,
+	zero: boolean = false
+): string => {
 	if (!Number.isFinite(seconds) || seconds <= 0) {
+		if (zero) {
+			return '0';
+		}
 		return '-';
 	}
 
