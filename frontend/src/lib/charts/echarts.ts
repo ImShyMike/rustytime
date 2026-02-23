@@ -1,5 +1,5 @@
 import type { UsageStat } from '$lib/types/dashboard';
-import { color, type EChartsOption } from 'echarts';
+import { type EChartsOption } from 'echarts';
 import { formatDuration } from '$lib/utils/time';
 
 const FALLBACK_COLORS: Record<'light' | 'dark', string[]> = {
