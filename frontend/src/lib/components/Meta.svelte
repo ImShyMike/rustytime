@@ -16,20 +16,19 @@
 		appleIcon?: string | null;
 		children?: () => unknown;
 	}>();
-	const renderChildren = props.children;
 
-	const name = props.name ?? 'rustytime';
-	const title = props.title ?? name;
-	const description = props.description ?? null;
-	const image = props.image ?? null;
+	const name = $derived(props.name ?? 'rustytime');
+	const title = $derived(props.title ?? name);
+	const description = $derived(props.description ?? null);
+	const image = $derived(props.image ?? null);
 	const color = $derived(props.color ?? ($theme === 'dark' ? '#b4befe' : '#7287fd'));
-	const manifest = props.manifest ?? '/manifest.webmanifest';
-	const locale = props.locale ?? 'en_US';
-	const twitterSite = props.twitterSite ?? '@rustytime';
-	const url = props.url ?? null;
-	const canonical = props.canonical ?? null;
-	const imageAlt = props.imageAlt ?? null;
-	const appleIcon = props.appleIcon ?? '/pwa/apple-icon-180.png';
+	const manifest = $derived(props.manifest ?? '/manifest.webmanifest');
+	const locale = $derived(props.locale ?? 'en_US');
+	const twitterSite = $derived(props.twitterSite ?? '@rustytime');
+	const url = $derived(props.url ?? null);
+	const canonical = $derived(props.canonical ?? null);
+	const imageAlt = $derived(props.imageAlt ?? null);
+	const appleIcon = $derived(props.appleIcon ?? '/pwa/apple-icon-180.png');
 
 	const makeTitle = (pageTitle: string, siteName: string) =>
 		pageTitle === siteName ? pageTitle : `${pageTitle} - ${siteName}`;
@@ -82,6 +81,6 @@
 	{/if}
 </svelte:head>
 
-{#if renderChildren}
-	{@render renderChildren()}
+{#if props.children}
+	{@render props.children()}
 {/if}

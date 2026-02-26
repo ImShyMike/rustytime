@@ -1,19 +1,24 @@
 <script lang="ts">
 	import { Modal, Button, TextInput } from '$lib';
 	import type { Project } from '$lib/types/projects';
+	import { untrack } from 'svelte';
 	import { page } from '$app/state';
 	import { createApi, ApiError } from '$lib/api/api';
 	import { updateProject } from '$lib/api/project';
 
-	const props = $props<{
+	let {
+		project,
+		onclose,
+		onsuccess
+	}: {
 		project: Project;
 		onclose?: () => void;
 		onsuccess?: (updatedProjectUrl: string | null) => void;
-	}>();
+	} = $props();
 
 	const api = createApi(fetch);
 
-	const originalProjectUrl = props.project.project_url ?? '';
+	let originalProjectUrl = untrack(() => project.project_url ?? '');
 	let projectUrl = $state(originalProjectUrl);
 	let isOpen = $state(true);
 	let username = $state(page.data.auth?.user?.name ?? 'user');
@@ -23,7 +28,7 @@
 	const hasChanges = $derived(projectUrl.trim() !== originalProjectUrl);
 
 	function closeModal() {
-		props.onclose?.();
+		onclose?.();
 	}
 
 	async function saveChanges() {
@@ -32,7 +37,7 @@
 		const newProjectUrl = projectUrl.trim();
 
 		if (!hasChanges) {
-			props.onclose?.();
+			onclose?.();
 			return;
 		}
 
@@ -40,12 +45,12 @@
 		errorMessage = null;
 
 		try {
-			await updateProject(api, props.project.id, { project_url: newProjectUrl });
+			await updateProject(api, project.id, { project_url: newProjectUrl });
 
-			props.project.project_url = newProjectUrl === '' ? null : newProjectUrl;
-			props.onsuccess?.(newProjectUrl === '' ? null : newProjectUrl);
+			project.project_url = newProjectUrl === '' ? null : newProjectUrl;
+			onsuccess?.(newProjectUrl === '' ? null : newProjectUrl);
 
-			props.onclose?.();
+			onclose?.();
 		} catch (error) {
 			if (error instanceof ApiError) {
 				if (error.status === 400) {
