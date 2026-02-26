@@ -100,10 +100,10 @@ cargo build --release        # Production build
 
 ```bash
 cd frontend
-npm run dev      # Start dev server
-npm run build    # Production build
-npm run check    # Type check
-npm run lint     # Lint code
+bun dev        # Start dev server
+bun run build  # Build
+bun check      # Type check
+bun lint       # Lint code
 ```
 
 ## Observability
