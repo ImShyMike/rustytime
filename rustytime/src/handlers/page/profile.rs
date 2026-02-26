@@ -54,10 +54,12 @@ pub async fn profile_handler(
     }
 
     // fetch user info and projects from DB
-    let user_info = db_query!(
+    let Some(user_info) = db_query!(
         User::get_user_profile(&mut conn, &username),
         "Failed to fetch user profile"
-    );
+    ) else {
+        return Err((StatusCode::NOT_FOUND, "User not found").into_response());
+    };
 
     // convert to response format
     let response = UserProfile {

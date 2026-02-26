@@ -179,12 +179,19 @@ impl User {
         })
     }
 
-    pub fn get_user_profile(conn: &mut PgConnection, username: &str) -> QueryResult<UserProfile> {
-        let user = instrumented::first("User::get_user_profile", || {
+    pub fn get_user_profile(
+        conn: &mut PgConnection,
+        username: &str,
+    ) -> QueryResult<Option<UserProfile>> {
+        let Some(user) = instrumented::first("User::get_user_profile", || {
             users::table
                 .filter(users::name.ilike(username))
                 .first::<User>(conn)
-        })?;
+        })
+        .optional()?
+        else {
+            return Ok(None);
+        };
 
         let tz: Tz = parse_timezone(&user.timezone);
         let now = Utc::now();
@@ -220,7 +227,7 @@ impl User {
             })
             .collect();
 
-        Ok(UserProfile {
+        Ok(Some(UserProfile {
             user: ProfileUser {
                 username: user.name,
                 avatar_url: user.avatar_url,
@@ -232,6 +239,6 @@ impl User {
                 week: week_seconds,
                 all_time: all_time_seconds,
             },
-        })
+        }))
     }
 }
