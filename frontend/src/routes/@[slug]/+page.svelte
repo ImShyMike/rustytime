@@ -43,6 +43,14 @@
 
 {#if deferred.showSkeleton}
 	<ProfileSkeleton />
+{:else if deferred.data === null}
+	<PageScaffold title="Not Found" showLastUpdated={false}>
+		<EmptyState
+			title="Profile not found"
+			description="The user you're looking for doesn't exist :("
+			className="mb-4"
+		/>
+	</PageScaffold>
 {:else if deferred.data}
 	{@const profileData = deferred.data}
 	<PageScaffold title="@{profileData.user.username}" showLastUpdated={false}>

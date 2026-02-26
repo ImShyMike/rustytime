@@ -1,4 +1,6 @@
 <script lang="ts">
+	import LucideArrowLeft from '~icons/lucide/arrow-left';
+
 	export let status: number = 500;
 	export let error: { message?: string } | null = null;
 
@@ -20,4 +22,12 @@
 			<p class="m-0 text-2xl font-bold text-lavender">{meaning}</p>
 		</div>
 	</header>
+
+	<button
+		on:click={() => window.history.back()}
+		class="inline-flex items-center gap-2 rounded-md bg-surface0/50 px-4 py-2 text-sm font-medium text-text hover:bg-surface0 cursor-pointer"
+	>
+		<LucideArrowLeft class="h-4 w-4" aria-hidden="true" />
+		<span>Go Back</span>
+	</button>
 </section>
