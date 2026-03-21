@@ -43,12 +43,12 @@ pub fn init_pyroscope_agent(
         "2.0.0",
         pprof_backend(PprofConfig { sample_rate }, BackendConfig::default()),
     )
-        .tags(vec![
-            ("env", if is_production { "prod" } else { "dev" }),
-            ("git_sha", git_sha),
-        ])
-        .build()
-        .and_then(|agent| agent.start())
+    .tags(vec![
+        ("env", if is_production { "prod" } else { "dev" }),
+        ("git_sha", git_sha),
+    ])
+    .build()
+    .and_then(|agent| agent.start())
     {
         Ok(agent) => {
             info!(sample_rate = sample_rate, "✅ Pyroscope profiler started");
