@@ -10,6 +10,9 @@
 		{ value: 'all', label: 'All Time', disabled: true }
 	];
 
+	const statSkeletonIds = [0, 1, 2, 3];
+	const chartSkeletonIds = [0, 1, 2, 3];
+
 	const range = page.url.searchParams.get('range') || 'day';
 </script>
 
@@ -21,7 +24,7 @@
 
 	<!-- Stat Cards Skeleton -->
 	<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-		{#each Array(4) as _}
+		{#each statSkeletonIds as id (id)}
 			<Container className="flex flex-col">
 				<Skeleton className="w-24 h-2 mb-2" />
 				<Skeleton className="w-32 h-7" />
@@ -32,7 +35,7 @@
 	<!-- Charts Skeleton -->
 	<Container className="mb-4">
 		<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-			{#each Array(4) as _}
+			{#each chartSkeletonIds as id (id)}
 				<div>
 					<SectionTitle size="sm" className="mb-4">
 						<Skeleton className="w-24 h-5 inline-block" />

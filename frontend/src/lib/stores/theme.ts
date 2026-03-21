@@ -64,8 +64,8 @@ export function initializeTheme() {
 		return;
 	}
 
-	let theme: Theme = 'light';
 	const stored = localStorage.getItem('theme');
+	let theme: Theme;
 
 	if (stored === 'dark' || stored === 'light') {
 		theme = stored;

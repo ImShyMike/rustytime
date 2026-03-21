@@ -1,4 +1,5 @@
 <script lang="ts">
+	/* eslint-disable svelte/no-navigation-without-resolve */
 	import RelativeTime from './ui/RelativeTime.svelte';
 
 	export let lastUpdatedAt: Date | null = null;
