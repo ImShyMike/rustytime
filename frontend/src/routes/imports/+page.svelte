@@ -109,13 +109,16 @@
 									{#if job.user_avatar_url}
 										<img src={job.user_avatar_url} alt="Avatar" class="h-8 w-8 rounded-full mr-3" />
 									{/if}
-									<a
-										class="text-sm font-medium {job.user_id === page.data.auth?.user?.id
-											? 'text-blue'
-											: 'text-text'}"
-										href={job.user_name ? resolve(`/@[slug]`, { slug: job.user_name }) : ''}
-										>{job.user_name || 'Unknown'}</a
-									>
+									{#if job.user_name}
+										<a
+											class="text-sm font-medium {job.user_id === page.data.auth?.user?.id
+												? 'text-blue'
+												: 'text-text'}"
+											href={resolve(`/@[slug]`, { slug: job.user_name })}>{job.user_name}</a
+										>
+									{:else}
+										<span class="text-sm font-medium text-subtext1">Unknown</span>
+									{/if}
 								</div>
 							</td>
 							<td class="px-6 py-4 whitespace-nowrap">

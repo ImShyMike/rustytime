@@ -2,6 +2,7 @@
 	import type { PageData } from './$types';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import {
 		Container,
 		PageScaffold,
@@ -132,9 +133,9 @@
 	});
 
 	function handleTabChange(nextTab: 'setup' | 'projects' | 'migration') {
-		const nextUrl = new URL(page.url);
-		nextUrl.searchParams.set('tab', nextTab);
-		goto(nextUrl, { replaceState: false, keepFocus: true, noScroll: true });
+		const target = `${resolve('/settings')}?tab=${encodeURIComponent(nextTab)}`;
+		// eslint-disable-next-line svelte/no-navigation-without-resolve
+		goto(target, { replaceState: false, keepFocus: true, noScroll: true });
 	}
 
 	let config: string = $state('');

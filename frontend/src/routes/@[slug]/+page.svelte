@@ -11,6 +11,7 @@
 	import { safeText, noUnknownText } from '$lib/utils/text';
 	import ProfileSkeleton from './ProfileSkeleton.svelte';
 	import UserTag from '$lib/components/ui/UserTag.svelte';
+	import { resolve } from '$app/paths';
 
 	interface Props {
 		data: PageData;
@@ -23,7 +24,7 @@
 	onMount(() => {
 		requestAnimationFrame(() => {
 			if (deferred.data?.user.username && page.params.slug !== deferred.data.user.username) {
-				replaceState(`/@${deferred.data.user.username}`, {});
+				replaceState(resolve('/@[slug]', { slug: deferred.data.user.username }), {});
 			}
 		});
 	});

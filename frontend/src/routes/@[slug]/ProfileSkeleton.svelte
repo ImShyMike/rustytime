@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { Container, PageScaffold, SectionTitle } from '$lib';
 	import Skeleton from '$lib/components/ui/Skeleton.svelte';
+
+	const timeStatSkeletonIds = [0, 1, 2];
+	const projectSkeletonIds = [0, 1, 2, 3, 4, 5];
 </script>
 
 <PageScaffold title="Profile" lastUpdatedAt={null} showLastUpdated={false}>
@@ -19,7 +22,7 @@
 
 	<!-- Time Stats Skeleton -->
 	<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-		{#each Array(3) as _}
+		{#each timeStatSkeletonIds as id (id)}
 			<Container className="flex flex-col">
 				<Skeleton className="w-24 h-2 mb-2" />
 				<Skeleton className="w-32 h-7" />
@@ -32,7 +35,7 @@
 		<Skeleton className="w-48 h-5 inline-block" />
 	</SectionTitle>
 	<div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-		{#each Array(6) as _}
+		{#each projectSkeletonIds as id (id)}
 			<Container className="flex flex-col gap-2">
 				<Skeleton className="w-32 h-5" />
 				<Skeleton className="w-20 h-7" />
