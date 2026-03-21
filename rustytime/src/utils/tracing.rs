@@ -7,8 +7,11 @@ use opentelemetry_sdk::{
     Resource,
     logs::{BatchLogProcessor, SdkLogger, SdkLoggerProvider},
 };
-use pyroscope::{PyroscopeAgent, pyroscope::PyroscopeAgentRunning};
-use pyroscope_pprofrs::{PprofConfig, pprof_backend};
+use pyroscope::{
+    PyroscopeAgent,
+    backend::{BackendConfig, PprofConfig, pprof_backend},
+    pyroscope::{PyroscopeAgentBuilder, PyroscopeAgentRunning},
+};
 use tracing::{error, info};
 
 type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
@@ -32,8 +35,14 @@ pub fn init_pyroscope_agent(
 
     let application = service_name.to_string();
 
-    match PyroscopeAgent::builder(server_url, application)
-        .backend(pprof_backend(PprofConfig::new().sample_rate(sample_rate)))
+    match PyroscopeAgentBuilder::new(
+        server_url,
+        application,
+        sample_rate,
+        "pyroscope-rs",
+        "2.0.0",
+        pprof_backend(PprofConfig { sample_rate }, BackendConfig::default()),
+    )
         .tags(vec![
             ("env", if is_production { "prod" } else { "dev" }),
             ("git_sha", git_sha),
