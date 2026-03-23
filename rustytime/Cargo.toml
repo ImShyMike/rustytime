@@ -85,11 +85,11 @@ apalis-cron = { version = "1.0.0-rc.6", features = ["cron"], default-features = 
 cron = { version = "0.15.0", default-features = false }
 futures = { version = "0.3.32", default-features = false }
 sqlx = { version = "0.8.6", default-features = false }
-moka = { version = "0.12.14", features = ["sync"], default-features = false }
+moka = { version = "0.12.15", features = ["sync"], default-features = false }
 sentry = { version = "0.47.0", default-features = false, features = ["rustls", "tower", "tracing", "backtrace", "contexts", "panic", "transport"] }
 
 [dev-dependencies]
 serde_urlencoded = { version = "0.7.1" }
-serde_qs = { version = "1.0.0" }
+serde_qs = { version = "1.1.0" }
 axum-test = { version = "19.1.1" }
 tower = { version = "0.5.3", features = ["util"] }
