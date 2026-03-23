@@ -145,7 +145,7 @@ try {
     }
 }
 
-if ($statusCode -eq 200 -or $statusCode -eq 202) {
+if ($statusCode -eq 200 -or $statusCode -eq 201) {
     Write-Host "Test heartbeat sent successfully!" -ForegroundColor Green
     Write-Host
     Write-Host "Installation complete!" -ForegroundColor Green
