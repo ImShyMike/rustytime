@@ -109,7 +109,7 @@ Write-Host "API Key: $maskedKey" -ForegroundColor DarkGray
 
 Write-Host
 Write-Host "Sending test heartbeat..." -ForegroundColor White
-$time = [Math]::Floor([decimal](Get-Date(Get-Date).ToUniversalTime()-uformat '%s'))
+$time = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
 $heartbeat = @{
     type = 'file'
     time = $time
