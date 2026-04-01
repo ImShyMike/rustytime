@@ -309,9 +309,7 @@ async fn store_heartbeats_in_db_internal(
 
             let responses = if include_responses {
                 keys.iter()
-                    .map(|key| {
-                        HeartbeatResponse::from(inserted_map[key].clone())
-                    })
+                    .map(|key| HeartbeatResponse::from(inserted_map[key].clone()))
                     .collect()
             } else {
                 Vec::new()
