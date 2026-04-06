@@ -44,13 +44,13 @@ integration = []
 axum =  { version = "0.8.8", features = ["json", "query", "http1", "http2", "tokio", "macros"], default-features = false }
 diesel = { version = "2.3.7", features = ["32-column-tables", "chrono", "postgres", "uuid", "r2d2", "network-address"], default-features = false }
 diesel_migrations = { version = "2.3.1", default-features = false }
-tokio = { version = "1.50.0", features = ["signal", "rt-multi-thread"], default-features = false }
+tokio = { version = "1.51.0", features = ["signal", "rt-multi-thread"], default-features = false }
 tower-http = { version = "0.6.7", features = ["limit", "timeout", "trace", "cors", "normalize-path", "compression-gzip", "decompression-gzip"], default-features = false }
 tracing = { version = "0.1.44", default-features = false }
 tracing-subscriber = { version = "0.3.23", features = ["fmt", "env-filter"], default-features = false }
 dotenvy = { version = "0.15.7", default-features = false }
 serde = { version = "1.0.228", features = ["derive"], default-features = false }
-uuid = { version = "1.22.0", features = ["serde", "v4"], default-features = false }
+uuid = { version = "1.23.0", features = ["serde", "v4"], default-features = false }
 chrono = { version = "0.4.44", default-features = false }
 chrono-tz = { version = "0.10.4", default-features = false }
 serde_json = { version = "1.0.149", default-features = false }
@@ -76,20 +76,20 @@ init-tracing-opentelemetry = { version = "0.36.1", features = ["metrics", "opent
 opentelemetry = { version = "0.31.0", default-features = false, features = ["logs", "metrics", "trace"] }
 opentelemetry-otlp = { version = "0.31.1", default-features = false, features = ["logs", "http-proto", "reqwest-blocking-client", "reqwest-rustls"] }
 opentelemetry_sdk = { version = "0.31.0", default-features = false, features = ["logs"] }
-indexmap = { version = "2.13.0", default-features = false }
+indexmap = { version = "2.13.1", default-features = false }
 pyroscope = { version = "2.0.0", default-features = false, features = ["backend-pprof-rs"] }
 opentelemetry-appender-tracing = { version = "0.31.1", default-features = false }
 apalis-postgres = { version = "1.0.0-rc.6", features = ["async-std", "time"] }
-apalis = { version = "1.0.0-rc.6", features = ["tracing", "catch-panic", "prometheus"] }
+apalis = { version = "1.0.0-rc.7", features = ["tracing", "catch-panic", "prometheus"] }
 apalis-cron = { version = "1.0.0-rc.6", features = ["cron"], default-features = false }
 cron = { version = "0.15.0", default-features = false }
 futures = { version = "0.3.32", default-features = false }
 sqlx = { version = "0.8.6", default-features = false }
-moka = { version = "0.12.14", features = ["sync"], default-features = false }
+moka = { version = "0.12.15", features = ["sync"], default-features = false }
 sentry = { version = "0.47.0", default-features = false, features = ["rustls", "tower", "tracing", "backtrace", "contexts", "panic", "transport"] }
 
 [dev-dependencies]
 serde_urlencoded = { version = "0.7.1" }
-serde_qs = { version = "1.0.0" }
+serde_qs = { version = "1.1.1" }
 axum-test = { version = "19.1.1" }
 tower = { version = "0.5.3", features = ["util"] }
