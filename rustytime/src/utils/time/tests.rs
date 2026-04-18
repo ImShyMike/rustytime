@@ -151,7 +151,7 @@ fn split_range_midpoint_large_range() {
 fn determine_range_month_start_after_cutoff() {
     let period_end = Utc.with_ymd_and_hms(2024, 3, 15, 0, 0, 0).unwrap();
     let cutoff = Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).unwrap();
-    let (range_start, month_start) = determine_range(period_end, cutoff);
+    let (range_start, month_start) = determine_range(period_end, cutoff, None);
     assert_eq!(
         month_start,
         Utc.with_ymd_and_hms(2024, 3, 1, 0, 0, 0).unwrap()
@@ -163,7 +163,7 @@ fn determine_range_month_start_after_cutoff() {
 fn determine_range_month_start_before_cutoff() {
     let period_end = Utc.with_ymd_and_hms(2024, 1, 15, 0, 0, 0).unwrap();
     let cutoff = Utc.with_ymd_and_hms(2024, 1, 10, 0, 0, 0).unwrap();
-    let (range_start, month_start) = determine_range(period_end, cutoff);
+    let (range_start, month_start) = determine_range(period_end, cutoff, None);
     assert_eq!(
         month_start,
         Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).unwrap()
@@ -175,12 +175,48 @@ fn determine_range_month_start_before_cutoff() {
 fn determine_range_at_month_boundary() {
     let period_end = Utc.with_ymd_and_hms(2024, 2, 1, 0, 0, 0).unwrap();
     let cutoff = Utc.with_ymd_and_hms(2023, 1, 1, 0, 0, 0).unwrap();
-    let (range_start, month_start) = determine_range(period_end, cutoff);
+    let (range_start, month_start) = determine_range(period_end, cutoff, None);
     assert_eq!(
         month_start,
         Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).unwrap()
     );
     assert_eq!(range_start, month_start);
+}
+
+#[test]
+fn determine_range_broad_search_uses_year() {
+    let period_end = Utc.with_ymd_and_hms(2022, 6, 15, 0, 0, 0).unwrap();
+    let cutoff = Utc.with_ymd_and_hms(2013, 1, 1, 0, 0, 0).unwrap();
+    let (range_start, year_start) = determine_range(period_end, cutoff, Some(2023));
+    assert_eq!(
+        year_start,
+        Utc.with_ymd_and_hms(2022, 1, 1, 0, 0, 0).unwrap()
+    );
+    assert_eq!(range_start, year_start);
+}
+
+#[test]
+fn determine_range_broad_search_above_threshold_uses_month() {
+    let period_end = Utc.with_ymd_and_hms(2024, 6, 15, 0, 0, 0).unwrap();
+    let cutoff = Utc.with_ymd_and_hms(2013, 1, 1, 0, 0, 0).unwrap();
+    let (range_start, month_start) = determine_range(period_end, cutoff, Some(2023));
+    assert_eq!(
+        month_start,
+        Utc.with_ymd_and_hms(2024, 6, 1, 0, 0, 0).unwrap()
+    );
+    assert_eq!(range_start, month_start);
+}
+
+#[test]
+fn determine_range_broad_search_clamps_to_cutoff() {
+    let period_end = Utc.with_ymd_and_hms(2013, 3, 10, 0, 0, 0).unwrap();
+    let cutoff = Utc.with_ymd_and_hms(2013, 2, 1, 0, 0, 0).unwrap();
+    let (range_start, year_start) = determine_range(period_end, cutoff, Some(2023));
+    assert_eq!(
+        year_start,
+        Utc.with_ymd_and_hms(2013, 1, 1, 0, 0, 0).unwrap()
+    );
+    assert_eq!(range_start, cutoff);
 }
 
 #[test]

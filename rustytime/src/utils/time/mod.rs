@@ -117,22 +117,33 @@ pub fn split_range_midpoint(start: DateTime<Utc>, end: DateTime<Utc>) -> Option<
 pub fn determine_range(
     period_end: DateTime<Utc>,
     cutoff: DateTime<Utc>,
+    broad_search_year: Option<i32>,
 ) -> (DateTime<Utc>, DateTime<Utc>) {
     let adjusted_end = period_end - Duration::nanoseconds(1);
-    let month_start = adjusted_end
-        .date_naive()
-        .with_day(1)
-        .expect("every month has a first day")
-        .and_hms_opt(0, 0, 0)
-        .expect("valid start of month")
-        .and_utc();
+    let year = adjusted_end.year();
 
-    let range_start = if month_start > cutoff {
-        month_start
+    let period_start = if broad_search_year.is_some_and(|bsy| year <= bsy) {
+        NaiveDate::from_ymd_opt(year, 1, 1)
+            .expect("valid year start")
+            .and_hms_opt(0, 0, 0)
+            .expect("valid year start time")
+            .and_utc()
+    } else {
+        adjusted_end
+            .date_naive()
+            .with_day(1)
+            .expect("every month has a first day")
+            .and_hms_opt(0, 0, 0)
+            .expect("valid start of month")
+            .and_utc()
+    };
+
+    let range_start = if period_start > cutoff {
+        period_start
     } else {
         cutoff
     };
-    (range_start, month_start)
+    (range_start, period_start)
 }
 
 #[inline(always)]
