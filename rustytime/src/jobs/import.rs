@@ -516,11 +516,9 @@ pub async fn enqueue_import(
 }
 
 pub async fn setup(
-    sqlx_pool: PgPool,
+    import_store: ImportStore,
     diesel_pool: DbPool,
 ) -> impl std::future::Future<Output = ()> {
-    let import_store = create_storage(&sqlx_pool).await;
-
     WorkerBuilder::new("import-worker")
         .backend(import_store)
         .enable_tracing()

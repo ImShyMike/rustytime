@@ -28,7 +28,7 @@ pub async fn setup_jobs(
 
     let import_store = import::create_storage(&sqlx_pool).await;
     let leaderboard_worker = leaderboard::setup(diesel_pool.clone()).await;
-    let import_worker = import::setup(sqlx_pool, diesel_pool.clone()).await;
+    let import_worker = import::setup(import_store.clone(), diesel_pool.clone()).await;
     let sessions_worker = sessions::setup(diesel_pool).await;
 
     (
