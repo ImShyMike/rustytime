@@ -289,21 +289,33 @@ async fn store_heartbeats_in_db_internal(
             let mut inserted_total = 0usize;
 
             for chunk in new_heartbeats.chunks(HEARTBEAT_INSERT_BATCH_SIZE) {
-                let chunk_len = chunk.len();
-                let returned: Vec<Heartbeat> =
-                    instrumented::load("Heartbeat::batch_insert", || {
+                if include_responses {
+                    let chunk_len = chunk.len();
+                    let returned: Vec<Heartbeat> =
+                        instrumented::load("Heartbeat::batch_insert", || {
+                            diesel::insert_into(heartbeats::table)
+                                .values(chunk)
+                                .on_conflict((heartbeats::user_id, heartbeats::time))
+                                .do_update()
+                                .set(heartbeats::time.eq(excluded(heartbeats::time)))
+                                .returning(heartbeats::all_columns)
+                                .load::<Heartbeat>(conn)
+                        })?;
+
+                    inserted_total += returned.len().min(chunk_len);
+                    for hb in returned {
+                        inserted_map.insert((hb.user_id, hb.time), hb);
+                    }
+                } else {
+                    let count = instrumented::first("Heartbeat::batch_insert_count", || {
                         diesel::insert_into(heartbeats::table)
                             .values(chunk)
                             .on_conflict((heartbeats::user_id, heartbeats::time))
-                            .do_update()
-                            .set(heartbeats::time.eq(excluded(heartbeats::time)))
-                            .returning(heartbeats::all_columns)
-                            .load::<Heartbeat>(conn)
+                            .do_nothing()
+                            .execute(conn)
                     })?;
 
-                inserted_total += returned.len().min(chunk_len);
-                for hb in returned {
-                    inserted_map.insert((hb.user_id, hb.time), hb);
+                    inserted_total += count;
                 }
             }
 

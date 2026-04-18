@@ -28,8 +28,9 @@ const HEARTBEAT_IMPORT_BATCH_SIZE: usize = 1_000;
 const HACKATIME_BODY_LOG_LIMIT: usize = 2_048;
 const MINIMUM_HACKATIME_RANGE: ChronoDuration = ChronoDuration::hours(6);
 const MAX_RANGE_SPLIT_DEPTH: u8 = 6;
-const CUTOFF_YEAR: i32 = 2024;
+const CUTOFF_YEAR: i32 = 2013;
 const CUTOFF_MONTH_DAY: [u32; 2] = [1, 1];
+const BROAD_SEARCH_YEAR: i32 = 2023;
 
 #[derive(Clone)]
 pub struct JsonCodec;
@@ -180,7 +181,8 @@ async fn execute_import(
     let mut earliest_requested: Option<DateTime<Utc>> = None;
 
     while period_end > cutoff {
-        let (range_start, next_period_end) = determine_range(period_end, cutoff);
+        let (range_start, next_period_end) =
+            determine_range(period_end, cutoff, Some(BROAD_SEARCH_YEAR));
         if range_start >= period_end {
             break;
         }
@@ -514,11 +516,9 @@ pub async fn enqueue_import(
 }
 
 pub async fn setup(
-    sqlx_pool: PgPool,
+    import_store: ImportStore,
     diesel_pool: DbPool,
 ) -> impl std::future::Future<Output = ()> {
-    let import_store = create_storage(&sqlx_pool).await;
-
     WorkerBuilder::new("import-worker")
         .backend(import_store)
         .enable_tracing()
