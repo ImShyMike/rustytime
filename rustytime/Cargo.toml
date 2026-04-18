@@ -82,7 +82,7 @@ opentelemetry-appender-tracing = { version = "0.31.1", default-features = false 
 apalis-postgres = { version = "1.0.0-rc.6", features = ["async-std", "time"] }
 apalis = { version = "1.0.0-rc.6", features = ["tracing", "catch-panic", "prometheus"] }
 apalis-cron = { version = "1.0.0-rc.6", features = ["cron"], default-features = false }
-cron = { version = "0.15.0", default-features = false }
+cron = { version = "0.16.0", default-features = false }
 futures = { version = "0.3.32", default-features = false }
 sqlx = { version = "0.8.6", default-features = false }
 moka = { version = "0.12.15", features = ["sync"], default-features = false }
