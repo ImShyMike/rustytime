@@ -17,24 +17,6 @@ path = "src/lib.rs"
 name = "rustytime"
 path = "src/main.rs"
 
-[profile.release]
-lto = true
-codegen-units = 1
-panic = "abort"
-strip = "symbols"
-overflow-checks = false
-debug = false
-
-[profile.good]
-inherits = "release"
-opt-level = 3
-lto = "thin"
-codegen-units = 8
-panic = "abort"
-strip = "symbols"
-overflow-checks = false
-debug = false
-
 [features]
 default = []
 seed = ["rand"]
