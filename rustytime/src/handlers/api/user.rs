@@ -28,7 +28,7 @@ use crate::utils::time::{
     TimeFormat, get_day_end_utc, get_day_start_utc, get_today_in_timezone, human_readable_duration,
     parse_timezone,
 };
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 const MAX_HEARTBEATS_PER_REQUEST: usize = 100;
 const HEARTBEAT_INSERT_BATCH_SIZE: usize = 1_000; // avoids hitting Postgres' 65k parameter limit
@@ -283,6 +283,11 @@ async fn store_heartbeats_in_db_internal(
                 }
 
                 keys.push((heartbeat.user_id, heartbeat.time));
+            }
+
+            {
+                let mut seen = HashSet::new();
+                new_heartbeats.retain(|hb| seen.insert((hb.user_id, hb.time)));
             }
 
             let mut inserted_map: HashMap<(i32, chrono::DateTime<Utc>), Heartbeat> = HashMap::new();

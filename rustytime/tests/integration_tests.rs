@@ -370,6 +370,49 @@ mod heartbeat_tests {
     }
 
     #[tokio::test]
+    async fn test_send_bulk_with_duplicate_timestamps() {
+        let config = TestConfig::default();
+        fail_without_db!(config);
+
+        let app = TestApp::new().await;
+        let user = app.create_test_user("test_duplicate_timestamp_user");
+        let auth_value = format!("Basic {}", encode_api_key(&user.api_key));
+
+        let now = chrono::Utc::now().timestamp() as f64;
+        let payload = serde_json::json!([
+            {
+                "entity": "/path/to/file1.rs",
+                "type": "file",
+                "time": now,
+                "project": "duplicate-timestamp-project",
+                "language": "Rust"
+            },
+            {
+                "entity": "/path/to/file2.rs",
+                "type": "file",
+                "time": now,
+                "project": "duplicate-timestamp-project",
+                "language": "Rust"
+            }
+        ]);
+
+        let response = app
+            .server
+            .post("/api/v1/users/current/heartbeats.bulk")
+            .add_header(header::AUTHORIZATION, auth_value)
+            .json(&payload)
+            .await;
+
+        response.assert_status(StatusCode::CREATED);
+        let body: serde_json::Value = response.json();
+        assert!(body.get("responses").is_some());
+        let responses = body["responses"].as_array().unwrap();
+        assert_eq!(responses.len(), 2);
+
+        app.cleanup_test_user(user.id);
+    }
+
+    #[tokio::test]
     async fn test_heartbeat_with_invalid_api_key_fails() {
         let config = TestConfig::default();
         fail_without_db!(config);
