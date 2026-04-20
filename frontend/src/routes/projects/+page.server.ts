@@ -26,6 +26,6 @@ export const load: PageServerLoad = async ({ fetch, depends, request, url }) => 
 	};
 
 	return {
-		projects: loadProjects()
+		projects: await loadProjects()
 	};
 };

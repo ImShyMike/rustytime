@@ -27,7 +27,7 @@ export const load: PageServerLoad = async ({ fetch, depends, url, request }) => 
 	};
 
 	return {
-		dashboard: loadDashboard(),
+		dashboard: await loadDashboard(),
 		range
 	};
 };

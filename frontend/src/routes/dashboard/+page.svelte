@@ -5,7 +5,7 @@
 	import type { Theme } from '$lib/stores/theme';
 	import type { PageData } from './$types';
 	import type { DashboardResponse } from '$lib/types/dashboard';
-	import { createDeferredData } from '$lib/utils/deferred-data.svelte';
+	import { useNavigationSkeleton } from '$lib/utils/deferred-data.svelte';
 	import { setupVisibilityRefresh } from '$lib/utils/refresh';
 	import { Container, PageScaffold, SectionTitle, StatCard, ToggleGroup, EmptyState } from '$lib';
 	import { noUnknownText, safeGraphData, safeText } from '$lib/utils/text';
@@ -23,10 +23,10 @@
 	let selectedRange = $derived(data?.range || 'month');
 	let loadedRange = $state('today');
 
-	const deferred = createDeferredData(() => data.dashboard);
+	const nav = useNavigationSkeleton();
 
 	$effect(() => {
-		if (deferred.data) {
+		if (data.dashboard) {
 			lastUpdatedAt = new Date();
 		}
 	});
@@ -67,11 +67,11 @@
 	});
 </script>
 
-{#if deferred.showSkeleton}
+{#if nav.showSkeleton}
 	<DashboardSkeleton />
-{:else if deferred.data}
+{:else}
 	{@const { topProjects, topLanguages, topEditors, topOperatingSystems } = getDerivedData(
-		deferred.data
+		data.dashboard
 	)}
 	<PageScaffold title="Dashboard" {lastUpdatedAt}>
 		<!-- Time Range Filter -->
@@ -79,28 +79,28 @@
 			<ToggleGroup options={rangeOptions} selected={selectedRange} onchange={handleRangeChange} />
 		</Container>
 
-		{#if deferred.data.projects.length || deferred.data.languages.length || deferred.data.editors.length || deferred.data.operating_systems.length}
+		{#if data.dashboard.projects.length || data.dashboard.languages.length || data.dashboard.editors.length || data.dashboard.operating_systems.length}
 			<!-- Top Stats -->
 			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
 				<StatCard
 					title="Total Time"
-					value={deferred.data?.human_readable_total || 'None'}
+					value={data.dashboard?.human_readable_total || 'None'}
 					valueClass="text-xl font-semibold text-text"
 				/>
 				<StatCard
 					title="Top Project"
-					value={noUnknownText(deferred.data?.projects?.[0]?.name) || 'None'}
+					value={noUnknownText(data.dashboard?.projects?.[0]?.name) || 'None'}
 					valueClass="text-xl font-semibold text-text"
 				/>
 				<StatCard
 					title="Top Language"
-					value={safeText(deferred.data?.languages?.[0]?.name) || 'None'}
+					value={safeText(data.dashboard?.languages?.[0]?.name) || 'None'}
 					valueClass="text-xl font-semibold text-text"
 				/>
 				<StatCard
 					title="Total Heartbeats"
-					value={deferred.data?.total_heartbeats
-						? deferred.data.total_heartbeats.toLocaleString()
+					value={data.dashboard?.total_heartbeats
+						? data.dashboard.total_heartbeats.toLocaleString()
 						: '0'}
 					valueClass="text-xl font-semibold text-text"
 				/>
@@ -129,7 +129,7 @@
 						{/if}
 					</div>
 
-					{#if deferred.data.editors.length > 1 && deferred.data.operating_systems.length > 1}
+					{#if data.dashboard.editors.length > 1 && data.dashboard.operating_systems.length > 1}
 						<!-- Editors (Pie Chart) -->
 						<div>
 							<SectionTitle size="sm" className="mb-4">Editors</SectionTitle>
@@ -165,13 +165,5 @@
 				className="mb-4"
 			/>
 		{/if}
-	</PageScaffold>
-{:else if deferred.loadError}
-	<PageScaffold title="Dashboard" showLastUpdated={false}>
-		<EmptyState
-			title="Failed to load dashboard"
-			description="Something went wrong loading your dashboard data. Please try again."
-			className="mb-4"
-		/>
 	</PageScaffold>
 {/if}

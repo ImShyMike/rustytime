@@ -3,7 +3,7 @@
 	import { replaceState } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import type { PageData } from './$types';
-	import { createDeferredData } from '$lib/utils/deferred-data.svelte';
+	import { useNavigationSkeleton } from '$lib/utils/deferred-data.svelte';
 	import { Container, PageScaffold, SectionTitle, StatCard, EmptyState } from '$lib';
 	import { formatDuration } from '$lib/utils/time';
 	import LucideExternalLink from '~icons/lucide/external-link';
@@ -19,12 +19,12 @@
 
 	let { data }: Props = $props();
 
-	const deferred = createDeferredData(() => data.profile);
+	const nav = useNavigationSkeleton();
 
 	onMount(() => {
 		requestAnimationFrame(() => {
-			if (deferred.data?.user.username && page.params.slug !== deferred.data.user.username) {
-				replaceState(resolve('/@[slug]', { slug: deferred.data.user.username }), {});
+			if (data.profile?.user.username && page.params.slug !== data.profile.user.username) {
+				replaceState(resolve('/@[slug]', { slug: data.profile.user.username }), {});
 			}
 		});
 	});
@@ -42,9 +42,9 @@
 	};
 </script>
 
-{#if deferred.showSkeleton}
+{#if nav.showSkeleton}
 	<ProfileSkeleton />
-{:else if deferred.data === null}
+{:else if data.profile === null}
 	<PageScaffold title="Not Found" showLastUpdated={false}>
 		<EmptyState
 			title="Profile not found"
@@ -52,8 +52,8 @@
 			className="mb-4"
 		/>
 	</PageScaffold>
-{:else if deferred.data}
-	{@const profileData = deferred.data}
+{:else if data.profile}
+	{@const profileData = data.profile}
 	<PageScaffold title="@{profileData.user.username}" showLastUpdated={false}>
 		<svelte:fragment slot="heading">
 			<div class="flex items-center gap-4 mb-6">
@@ -130,13 +130,5 @@
 				description="This user hasn't tracked any time this month."
 			/>
 		{/if}
-	</PageScaffold>
-{:else if deferred.loadError}
-	<PageScaffold title="Profile" showLastUpdated={false}>
-		<EmptyState
-			title="Failed to load profile"
-			description="Something went wrong loading the profile data. Please try again."
-			className="mb-4"
-		/>
 	</PageScaffold>
 {/if}

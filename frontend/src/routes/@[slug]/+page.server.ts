@@ -16,6 +16,6 @@ export const load: PageServerLoad = async ({ fetch, params }) => {
 	};
 
 	return {
-		profile: loadProfile()
+		profile: await loadProfile()
 	};
 };

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { invalidate } from '$app/navigation';
 	import { setupVisibilityRefresh } from '$lib/utils/refresh';
-	import { createDeferredData } from '$lib/utils/deferred-data.svelte';
+	import { useNavigationSkeleton } from '$lib/utils/deferred-data.svelte';
 	import type { PageData } from './$types';
 	import {
 		Container,
@@ -51,9 +51,9 @@
 
 	let { data }: Props = $props();
 
-	const deferred = createDeferredData(() => data.projects);
+	const nav = useNavigationSkeleton();
 
-	let projectsData = $derived(deferred.data);
+	let projectsData = $derived(data.projects);
 
 	let searchQuery = $state('');
 	let sortOption = $state<SortOption>('time');
@@ -87,7 +87,7 @@
 	});
 
 	$effect(() => {
-		if (deferred.data) {
+		if (data.projects) {
 			lastUpdatedAt = new Date();
 		}
 	});
@@ -218,9 +218,9 @@
 	/>
 {/if}
 
-{#if deferred.showSkeleton}
+{#if nav.showSkeleton}
 	<ProjectsSkeleton />
-{:else if projectsData}
+{:else}
 	<PageScaffold title="Projects" {lastUpdatedAt}>
 		{#if hasProjects}
 			<!-- Project Statistics -->
@@ -390,13 +390,5 @@
 				description="Start tracking your time to see your projects here!"
 			/>
 		{/if}
-	</PageScaffold>
-{:else if deferred.loadError}
-	<PageScaffold title="Projects" showLastUpdated={false}>
-		<EmptyState
-			title="Failed to load projects"
-			description="Something went wrong loading your projects data. Please try again."
-			className="mb-4"
-		/>
 	</PageScaffold>
 {/if}

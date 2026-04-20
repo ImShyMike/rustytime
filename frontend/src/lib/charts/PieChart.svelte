@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import { Chart } from 'svelte-echarts';
 	import { init, use } from 'echarts/core';
 	import { PieChart } from 'echarts/charts';
@@ -6,6 +7,7 @@
 	import { CanvasRenderer } from 'echarts/renderers';
 	import type { UsageStat } from '$lib/types/dashboard';
 	import { createPieChartOptions } from './echarts';
+	import Skeleton from '$lib/components/ui/Skeleton.svelte';
 
 	use([PieChart, TooltipComponent, LegendComponent, CanvasRenderer]);
 
@@ -22,5 +24,9 @@
 </script>
 
 <div class={className}>
-	<Chart {init} {options} />
+	{#if browser}
+		<Chart {init} {options} />
+	{:else}
+		<Skeleton className="w-full h-full" />
+	{/if}
 </div>
