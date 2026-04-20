@@ -1,6 +1,6 @@
 import { navigating } from '$app/state';
 
-const SKELETON_DELAY_MS = 150;
+const SKELETON_DELAY_MS = 250;
 
 export function useNavigationSkeleton() {
 	let showSkeleton = $state(false);
