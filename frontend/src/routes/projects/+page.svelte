@@ -200,7 +200,7 @@
 		formattedProjects.filter((project) => Boolean(project.project_url)).length
 	);
 	const hiddenCount = $derived(enhancedProjects.filter((project) => project.hidden).length);
-	const hasProjects = $derived(projectCount > 0);
+	const hasProjects = $derived(enhancedProjects.length > 0);
 	const hasActiveFilters = $derived.by(() => {
 		return Boolean(searchQuery.trim()) || !showHidden;
 	});
