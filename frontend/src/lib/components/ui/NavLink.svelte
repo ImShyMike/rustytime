@@ -7,6 +7,8 @@
 
 	interface Props {
 		href: string | Pathname;
+		target: '_blank' | '_self' | '_parent' | '_top';
+		rel?: string;
 		active?: boolean;
 		collapsed?: boolean;
 		permission?: RequiredPermission;
@@ -18,6 +20,8 @@
 
 	let {
 		href,
+		target = '_self',
+		rel,
 		active = false,
 		collapsed = false,
 		permission = 'default',
@@ -50,6 +54,8 @@
 <a
 	href={resolvedHref}
 	{onclick}
+	{target}
+	rel={rel ? rel : target === '_blank' ? 'noopener noreferrer' : undefined}
 	data-sveltekit-preload-data="hover"
 	class="{baseClasses} {active ? activeClasses : inactiveClasses} {permissionClasses} {collapsed
 		? 'justify-center'

@@ -245,7 +245,7 @@
 					</NavLink>
 				{/if}
 
-				<NavLink href="/docs" active={false} {collapsed}>
+				<NavLink href="/docs" target="_blank" rel="noopener external" active={false} {collapsed}>
 					{#snippet icon()}<LucideBook class="w-6 h-6" />{/snippet}
 					Docs
 				</NavLink>
