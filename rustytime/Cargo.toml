@@ -24,8 +24,8 @@ integration = []
 
 [dependencies]
 axum =  { version = "0.8.9", features = ["json", "query", "http1", "http2", "tokio", "macros"], default-features = false }
-diesel = { version = "2.3.7", features = ["32-column-tables", "chrono", "postgres", "uuid", "r2d2", "network-address"], default-features = false }
-diesel_migrations = { version = "2.3.1", default-features = false }
+diesel = { version = "2.3.9", features = ["32-column-tables", "chrono", "postgres", "uuid", "r2d2", "network-address"], default-features = false }
+diesel_migrations = { version = "2.3.2", default-features = false }
 tokio = { version = "1.52.1", features = ["signal", "rt-multi-thread"], default-features = false }
 tower-http = { version = "0.6.7", features = ["limit", "timeout", "trace", "cors", "normalize-path", "compression-gzip", "decompression-gzip"], default-features = false }
 tracing = { version = "0.1.44", default-features = false }
@@ -39,7 +39,7 @@ serde_json = { version = "1.0.149", default-features = false }
 base64 = { version = "0.22.1", default-features = false }
 ipnetwork = { version = "0.21.1", features = ["serde"], default-features = false }
 oauth2 = { version = "5.0.0",  features = ["reqwest"], default-features = false }
-reqwest = { version = "0.13.2", features = ["json", "cookies", "query", "rustls"], default-features = false }
+reqwest = { version = "0.13.3", features = ["json", "cookies", "query", "rustls"], default-features = false }
 url = { version = "2.5.8", default-features = false }
 tower = { version = "0.5.3", default-features = false }
 tower-cookies = { version = "0.11.0", features = ["axum-core"], default-features = false }
@@ -59,7 +59,7 @@ opentelemetry = { version = "0.31.0", default-features = false, features = ["log
 opentelemetry-otlp = { version = "0.31.1", default-features = false, features = ["logs", "http-proto", "reqwest-blocking-client", "reqwest-rustls"] }
 opentelemetry_sdk = { version = "0.31.0", default-features = false, features = ["logs"] }
 indexmap = { version = "2.14.0", default-features = false }
-pyroscope = { version = "2.0.0", default-features = false, features = ["backend-pprof-rs"] }
+pyroscope = { version = "2.0.3", default-features = false, features = ["backend-pprof-rs"] }
 opentelemetry-appender-tracing = { version = "0.31.1", default-features = false }
 apalis-postgres = { version = "1.0.0-rc.6", features = ["async-std", "time"] }
 apalis = { version = "1.0.0-rc.6", features = ["tracing", "catch-panic", "prometheus"] }
