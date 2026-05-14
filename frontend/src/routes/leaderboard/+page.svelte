@@ -102,7 +102,7 @@
 									page.data.auth?.user?.id
 										? 'text-blue'
 										: 'text-text'}"
-									href={resolve(`/@[slug]`, { slug: entry.user_name })}
+									href={resolve(`/@[username]`, { username: entry.user_name })}
 									>{entry.user_name || 'Unknown'}</a
 								>
 							</div>

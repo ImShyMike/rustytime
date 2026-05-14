@@ -158,7 +158,7 @@
 										class="text-sm font-medium {user.id === currentUser?.id
 											? 'text-blue'
 											: 'text-text'}"
-										href={resolve(`/@[slug]`, { slug: user.name })}>{user.name || 'Unknown'}</a
+										href={resolve(`/@[username]`, { username: user.name })}>{user.name || 'Unknown'}</a
 									>
 								</div>
 							</td>

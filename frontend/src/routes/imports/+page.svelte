@@ -114,7 +114,7 @@
 											class="text-sm font-medium {job.user_id === page.data.auth?.user?.id
 												? 'text-blue'
 												: 'text-text'}"
-											href={resolve(`/@[slug]`, { slug: job.user_name })}>{job.user_name}</a
+											href={resolve(`/@[username]`, { username: job.user_name })}>{job.user_name}</a
 										>
 									{:else}
 										<span class="text-sm font-medium text-subtext1">Unknown</span>
