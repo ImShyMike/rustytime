@@ -23,8 +23,8 @@
 
 	onMount(() => {
 		requestAnimationFrame(() => {
-			if (data.profile?.user.username && page.params.slug !== data.profile.user.username) {
-				replaceState(resolve('/@[slug]', { slug: data.profile.user.username }), {});
+			if (data.profile?.user.username && page.params.username !== data.profile.user.username) {
+				replaceState(resolve('/@[username]', { username: data.profile.user.username }), {});
 			}
 		});
 	});

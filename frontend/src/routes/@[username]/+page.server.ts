@@ -6,7 +6,7 @@ export const load: PageServerLoad = async ({ fetch, params }) => {
 	const loadProfile = async (): Promise<ProfileResponse | null> => {
 		try {
 			const api = createApi(fetch);
-			return await api.get<ProfileResponse>(`/page/profile/${params.slug}`);
+			return await api.get<ProfileResponse>(`/page/profile/${params.username}`);
 		} catch (e) {
 			if (e instanceof ApiError && e.status === 404) {
 				return null;
