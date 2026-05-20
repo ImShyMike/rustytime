@@ -74,7 +74,7 @@
 					>
 				</tr>
 			{:else}
-				{#each currentData.entries as entry (entry.rank)}
+				{#each currentData.entries as entry (entry.user_id)}
 					<tr class="border-b last:border-0 border-surface0 hover:bg-base/20">
 						<td class="w-12 pl-6 pr-0 py-4">
 							<div
