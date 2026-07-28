@@ -26,12 +26,12 @@
 
 ### Features
 
-- **WakaTime Compatible** — Drop-in replacement for the WakaTime API
-- **Fast and Memory Efficient** — Built for high performance and low resource usage
-- **GitHub OAuth** — Simple login with your GitHub account
-- **Data Importing** — Import your existing data from [Hackatime](https://hackatime.hackclub.com)
-- **Observability** — Built-in OpenTelemetry + Pyroscope support
-- **Self-Hosted** — Full control over your data
+- **WakaTime Compatible** -> Drop-in replacement for the WakaTime API
+- **Fast and Memory Efficient** -> Built for high performance and low resource usage
+- **GitHub OAuth** -> Simple login with your GitHub account
+- **Data Importing** -> Import your existing data from [Hackatime](https://hackatime.hackclub.com)
+- **Observability** -> Built-in OpenTelemetry + Pyroscope support
+- **Self-Hosted** -> Full control over your data
 
 ## Quick Start
 
@@ -142,16 +142,6 @@ actually production ready just use [Wakapi](https://wakapi.dev) 😭
 | **Backend** | [Rust](https://rust-lang.org), [Axum](https://github.com/tokio-rs/axum), [Diesel](https://diesel.rs) |
 | **Frontend** | [SvelteKit](https://github.com/sveltejs/kit), [TailwindCSS](https://tailwindcss.com) |
 | **Database** | [TimescaleDB](https://github.com/timescale/timescaledb) ([PostgreSQL](https://www.postgresql.org)) |
-
-## Star History
-
-<a href="https://www.star-history.com/#imshymike/rustytime&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=imshymike/rustytime&type=date&theme=dark&legend=top-left"/>
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=imshymike/rustytime&type=date&legend=top-left"/>
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=imshymike/rustytime&type=date&legend=top-left"/>
- </picture>
-</a>
 
 ## License
 
